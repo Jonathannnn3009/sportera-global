@@ -1,0 +1,767 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Register your team or as a player for Football 5 tournaments and IF5L.">
+    <title>Registration | Sportera Global</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="logo.png" type="image/png">
+    <style>
+        .reg-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 40px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .reg-tab {
+            flex: 1;
+            padding: 18px 30px;
+            text-align: center;
+            background: var(--white);
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .reg-tab.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+        .reg-tab:hover:not(.active) {
+            background: var(--light-gray);
+            color: var(--primary);
+        }
+        .reg-form-section { display: none; }
+        .reg-form-section.active { display: block; }
+        .form-box {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+        }
+        .form-box h3 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .form-box > p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        .form-section-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--gold);
+            margin: 28px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .payment-options {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .payment-option:hover { border-color: var(--primary); }
+        .payment-option input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; }
+        .payment-option.selected { border-color: var(--primary); background: #f0f3ff; }
+        .payment-option .pay-icon { font-size: 1.4rem; color: var(--primary); width: 28px; }
+        .payment-option strong { font-size: 0.95rem; color: var(--dark); }
+        .payment-option span { font-size: 0.82rem; color: var(--text-light); }
+        .fee-box {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .fee-box h4 { color: var(--gold); margin-bottom: 10px; font-size: 1rem; }
+        .fee-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; opacity: 0.9; }
+        .fee-row.total { font-weight: 700; font-size: 1.05rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 6px; opacity: 1; }
+        .payment-notice {
+            background: #fff8e1;
+            border-left: 4px solid var(--gold);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.88rem;
+            color: #5d4e00;
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .success-msg {
+            display: none;
+            text-align: center;
+            padding: 50px 30px;
+        }
+        .success-msg i { font-size: 3.5rem; color: #2e7d32; margin-bottom: 20px; display: block; }
+        .success-msg h3 { color: var(--primary); margin-bottom: 10px; }
+        .success-msg p { color: var(--text-light); }
+        .otp-screen {
+            display: none;
+            text-align: center;
+            padding: 50px 30px;
+        }
+        .otp-screen .otp-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; display: block; }
+        .otp-screen h3 { color: var(--primary); margin-bottom: 8px; }
+        .otp-screen .otp-subtitle { color: var(--text-light); margin-bottom: 30px; font-size: 0.95rem; }
+        .otp-boxes {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .otp-boxes input {
+            width: 58px;
+            height: 64px;
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+            color: var(--primary);
+        }
+        .otp-boxes input:focus { border-color: var(--primary); }
+        .otp-boxes input.error { border-color: #e53935; }
+        .otp-error { color: #e53935; font-size: 0.88rem; margin-bottom: 14px; display: none; }
+        .otp-demo-hint {
+            background: #fff8e1;
+            border-left: 4px solid var(--gold);
+            padding: 10px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.82rem;
+            color: #5d4e00;
+            text-align: left;
+            margin: 16px auto;
+            max-width: 340px;
+        }
+        .otp-resend { font-size: 0.85rem; color: var(--text-light); margin-top: 16px; }
+        .otp-resend a { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: none; }
+        .player-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 12px;
+            background: #f8f9ff;
+            border: 1px solid #e0e4f0;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .player-row .form-group { margin-bottom: 0; }
+        .player-row .form-group label { font-size: 0.78rem; }
+        .player-row .form-group input,
+        .player-row .form-group select { padding: 10px 12px; font-size: 0.9rem; }
+        .btn-remove-player {
+            background: #ffeaea;
+            border: 1px solid #ffcccc;
+            color: #e53935;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-remove-player:hover { background: #ffcccc; }
+        .btn-add-player {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: 2px dashed var(--primary);
+            color: var(--primary);
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            justify-content: center;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+        }
+        .btn-add-player:hover { background: #f0f3ff; }
+        .player-count-label { font-size: 0.8rem; color: var(--text-light); text-align: right; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="loader"><div class="loader-spinner"></div></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="Media (10).jpg" onerror="this.onerror=null;this.style.height='44px';this.style.width='auto'" alt="Sportera Global Logo">
+                <span class="logo-text">Sportera <span>Global</span></span>
+            </a>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="about.html" class="nav-link">About</a>
+                <a href="football5.html" class="nav-link">Football 5</a>
+                <a href="if5l.html" class="nav-link">IF5L</a>
+                <a href="tournaments.html" class="nav-link">Tournaments</a>
+                <a href="gallery.html" class="nav-link">Gallery</a>
+                <a href="registration.html" class="nav-link active">Register</a>
+                <a href="contact.html" class="nav-link">Contact</a>
+            </nav>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <h1>Registration</h1>
+            <p>Register Your Team or as a Player</p>
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> <span>/</span> <span>Registration</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Registration Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Register Now</h2>
+                <p>Choose your registration type below</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="reg-tabs fade-in">
+                <button class="reg-tab active" onclick="switchTab('team')">
+                    <i class="fas fa-users"></i> Team Registration
+                </button>
+                <button class="reg-tab" onclick="switchTab('player')">
+                    <i class="fas fa-user"></i> Player Registration
+                </button>
+            </div>
+
+            <!-- Team Registration Form -->
+            <div id="teamSection" class="reg-form-section active fade-in">
+                <div class="form-box">
+                    <h3><i class="fas fa-users"></i> Team Registration</h3>
+                    <p>Register your team for IF5L or Football 5 National Championship tournaments.</p>
+
+                    <div id="teamOtp" class="otp-screen">
+                        <i class="fas fa-shield-alt otp-icon"></i>
+                        <h3>Confirm Payment</h3>
+                        <p class="otp-subtitle">An OTP has been sent to your registered mobile number.<br>Enter it below to authorise and confirm your payment.</p>
+                        <div class="otp-boxes">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp1">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp2">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp3">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp4">
+                        </div>
+
+                        <p class="otp-error" id="tOtpError">Incorrect OTP. Please try again.</p>
+                        <button class="btn btn-primary" style="width:100%; max-width:340px; padding:14px;" onclick="verifyOtp('team')">
+                            <i class="fas fa-check-circle"></i> Verify & Complete Registration
+                        </button>
+                        <p class="otp-resend">Didn't receive it? <a onclick="resetOtpInputs('team')">Resend OTP</a></p>
+                    </div>
+
+                    <div id="teamSuccess" class="success-msg">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Registration Submitted!</h3>
+                        <p>Your team registration has been received. We will review your details and confirm via email within 48 hours.</p>
+                        <a href="index.html" class="btn btn-primary" style="margin-top:20px;">Back to Home</a>
+                    </div>
+
+                    <form id="teamForm">
+                        <p class="form-section-label">Team Information</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teamName">Team Name *</label>
+                                <input type="text" id="teamName" name="teamName" placeholder="Your team name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="teamCity">City *</label>
+                                <input type="text" id="teamCity" name="teamCity" placeholder="City / State" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="tournament">Tournament *</label>
+                            <select id="tournament" name="tournament" required>
+                                <option value="">Select tournament</option>
+                                <option value="IF5L Season 2">IF5L Season 2 (August 2026)</option>
+                                <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="teamEmail">Team Email *</label>
+                            <input type="email" id="teamEmail" name="teamEmail" placeholder="Contact email for team" required>
+                        </div>
+
+                        <p class="form-section-label">Coach / Manager Details</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="coachName">Coach Name *</label>
+                                <input type="text" id="coachName" name="coachName" placeholder="Head coach full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="coachPhone">Coach Phone *</label>
+                                <input type="tel" id="coachPhone" name="coachPhone" placeholder="10-digit mobile" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="managerName">Manager Name</label>
+                                <input type="text" id="managerName" name="managerName" placeholder="Team manager (if any)">
+                            </div>
+                            <div class="form-group">
+                                <label for="managerPhone">Manager Phone</label>
+                                <input type="tel" id="managerPhone" name="managerPhone" placeholder="10-digit mobile">
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Player List</p>
+                        <div id="playerRows"></div>
+                        <p class="player-count-label" id="playerCountLabel"></p>
+                        <button type="button" class="btn-add-player" onclick="addPlayerRow()">
+                            <i class="fas fa-plus"></i> Add Player
+                        </button>
+
+                        <p class="form-section-label">Payment</p>
+                        <div class="fee-box">
+                            <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
+                            <div class="fee-row"><span>Team Registration Fee</span><span>TBA</span></div>
+                            <div class="fee-row"><span>Player ID Cards (per player)</span><span>TBA</span></div>
+                            <div class="fee-row total"><span>Total</span><span>TBA</span></div>
+                        </div>
+                        <div class="payment-options">
+                            <label class="payment-option">
+                                <input type="radio" name="teamPayment" value="UPI" required>
+                                <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
+                                <div><strong>UPI Payment</strong><br><span>Pay via UPI ID — details sent after submission</span></div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="teamPayment" value="Bank Transfer">
+                                <span class="pay-icon"><i class="fas fa-university"></i></span>
+                                <div><strong>Bank Transfer / NEFT</strong><br><span>Bank details will be shared via email</span></div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="teamPayment" value="Online">
+                                <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
+                                <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
+                            </label>
+                        </div>
+                        <div class="payment-notice">
+                            <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
+                            <span>Payment gateway integration is being set up. Payment instructions will be sent to your email within 24 hours of submission.</span>
+                        </div>
+                        <br>
+                        <button type="submit" class="btn btn-primary" style="width:100%; font-size:1rem; padding:16px;">
+                            <i class="fas fa-paper-plane"></i> Submit Team Registration
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Player Registration Form -->
+            <div id="playerSection" class="reg-form-section fade-in">
+                <div class="form-box">
+                    <h3><i class="fas fa-user"></i> Player Registration</h3>
+                    <p>Register as an individual player and receive your official digital ID card.</p>
+
+                    <div id="playerOtp" class="otp-screen">
+                        <i class="fas fa-shield-alt otp-icon"></i>
+                        <h3>Confirm Payment</h3>
+                        <p class="otp-subtitle">An OTP has been sent to your registered mobile number.<br>Enter it below to authorise and confirm your payment.</p>
+                        <div class="otp-boxes">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp1">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp2">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp3">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp4">
+                        </div>
+
+                        <p class="otp-error" id="pOtpError">Incorrect OTP. Please try again.</p>
+                        <button class="btn btn-primary" style="width:100%; max-width:340px; padding:14px;" onclick="verifyOtp('player')">
+                            <i class="fas fa-check-circle"></i> Verify & Complete Registration
+                        </button>
+                        <p class="otp-resend">Didn't receive it? <a onclick="resetOtpInputs('player')">Resend OTP</a></p>
+                    </div>
+
+                    <div id="playerSuccess" class="success-msg">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Player Registration Submitted!</h3>
+                        <p>Your registration has been received. Your digital ID card will be issued after verification within 48 hours.</p>
+                        <a href="index.html" class="btn btn-primary" style="margin-top:20px;">Back to Home</a>
+                    </div>
+
+                    <form id="playerForm">
+                        <p class="form-section-label">Personal Details</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerName">Full Name *</label>
+                                <input type="text" id="playerName" name="playerName" placeholder="Player's full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerDOB">Date of Birth *</label>
+                                <input type="date" id="playerDOB" name="playerDOB" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerPhone">Phone Number *</label>
+                                <input type="tel" id="playerPhone" name="playerPhone" placeholder="10-digit mobile" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerEmail">Email Address *</label>
+                                <input type="email" id="playerEmail" name="playerEmail" placeholder="Player email" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerPosition">Position *</label>
+                                <select id="playerPosition" name="playerPosition" required>
+                                    <option value="">Select position</option>
+                                    <option value="Goalkeeper">Goalkeeper</option>
+                                    <option value="Defender">Defender</option>
+                                    <option value="Midfielder">Midfielder</option>
+                                    <option value="Forward">Forward</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerCity">City *</label>
+                                <input type="text" id="playerCity" name="playerCity" placeholder="City / State" required>
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Team &amp; Tournament</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerTeam">Team Name *</label>
+                                <input type="text" id="playerTeam" name="playerTeam" placeholder="Team you are registering with" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerTournament">Tournament *</label>
+                                <select id="playerTournament" name="playerTournament" required>
+                                    <option value="">Select tournament</option>
+                                    <option value="IF5L Season 2">IF5L Season 2 (August 2026)</option>
+                                    <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Guardian Details (if under 18)</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="guardianName">Guardian Name</label>
+                                <input type="text" id="guardianName" name="guardianName" placeholder="Parent / Guardian full name">
+                            </div>
+                            <div class="form-group">
+                                <label for="guardianPhone">Guardian Phone</label>
+                                <input type="tel" id="guardianPhone" name="guardianPhone" placeholder="Guardian contact number">
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Payment</p>
+                        <div class="fee-box">
+                            <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
+                            <div class="fee-row"><span>Player Registration Fee</span><span>TBA</span></div>
+                            <div class="fee-row"><span>Digital ID Card</span><span>TBA</span></div>
+                            <div class="fee-row total"><span>Total</span><span>TBA</span></div>
+                        </div>
+                        <div class="payment-options">
+                            <label class="payment-option">
+                                <input type="radio" name="playerPayment" value="UPI" required>
+                                <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
+                                <div><strong>UPI Payment</strong><br><span>Pay via UPI ID — details sent after submission</span></div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="playerPayment" value="Bank Transfer">
+                                <span class="pay-icon"><i class="fas fa-university"></i></span>
+                                <div><strong>Bank Transfer / NEFT</strong><br><span>Bank details will be shared via email</span></div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="playerPayment" value="Online">
+                                <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
+                                <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
+                            </label>
+                        </div>
+                        <div class="payment-notice">
+                            <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
+                            <span>Payment gateway integration is being set up. Payment instructions will be sent to your email within 24 hours of submission.</span>
+                        </div>
+                        <br>
+                        <button type="submit" class="btn btn-primary" style="width:100%; font-size:1rem; padding:16px;">
+                            <i class="fas fa-paper-plane"></i> Submit Player Registration
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo-text">Sportera <span>Global</span></div>
+                    <p>A sports development and event management platform dedicated to creating opportunities for athletes through competitions, leagues, and international exposure.</p>
+                    <div class="footer-social">
+                        <a href="https://instagram.com/football5association" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="football5.html">Football 5</a></li>
+                        <li><a href="if5l.html">IF5L</a></li>
+                        <li><a href="tournaments.html">Tournaments</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="registration.html">Registration</a></li>
+                        <li><a href="gallery.html">Gallery</a></li>
+                        <li><a href="downloads.html">Downloads</a></li>
+                        <li><a href="news.html">News</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:football5association@gmail.com"><i class="fas fa-envelope"></i> football5association@gmail.com</a></li>
+                        <li><a href="https://instagram.com/football5association" target="_blank"><i class="fab fa-instagram"></i> @football5association</a></li>
+                        <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="admin/login.html" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+    const _fbConfig = {
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
+    const _regDb = firebase.database();
+    </script>
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.reg-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.reg-form-section').forEach(s => s.classList.remove('active'));
+            if (tab === 'team') {
+                document.querySelectorAll('.reg-tab')[0].classList.add('active');
+                document.getElementById('teamSection').classList.add('active');
+            } else {
+                document.querySelectorAll('.reg-tab')[1].classList.add('active');
+                document.getElementById('playerSection').classList.add('active');
+            }
+        }
+
+        document.querySelectorAll('.payment-option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                this.closest('.payment-options').querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        const DEMO_OTP = '1234';
+        let pendingTeamData = null, pendingPlayerData = null;
+
+        // --- Player rows ---
+        let playerRowCount = 0;
+        function addPlayerRow() {
+            playerRowCount++;
+            const n = playerRowCount;
+            const row = document.createElement('div');
+            row.className = 'player-row';
+            row.id = 'prow-' + n;
+            row.innerHTML = `
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" placeholder="Full name" required>
+                </div>
+                <div class="form-group">
+                    <label>Age *</label>
+                    <input type="number" min="10" max="60" placeholder="Age" required>
+                </div>
+                <div class="form-group">
+                    <label>Position *</label>
+                    <select required>
+                        <option value="">Select</option>
+                        <option>Goalkeeper</option>
+                        <option>Defender</option>
+                        <option>Midfielder</option>
+                        <option>Forward</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-remove-player" onclick="removePlayerRow(${n})" title="Remove"><i class="fas fa-times"></i></button>
+            `;
+            document.getElementById('playerRows').appendChild(row);
+            updatePlayerCount();
+        }
+        function removePlayerRow(n) {
+            const row = document.getElementById('prow-' + n);
+            if (row) row.remove();
+            updatePlayerCount();
+        }
+        function updatePlayerCount() {
+            const count = document.querySelectorAll('#playerRows .player-row').length;
+            const lbl = document.getElementById('playerCountLabel');
+            lbl.textContent = count ? count + ' player' + (count > 1 ? 's' : '') + ' added' : '';
+        }
+        function getPlayerListData() {
+            const rows = document.querySelectorAll('#playerRows .player-row');
+            return Array.from(rows).map(row => {
+                const inputs = row.querySelectorAll('input, select');
+                return inputs[0].value + ', ' + inputs[1].value + ', ' + inputs[2].value;
+            }).join('\n');
+        }
+        // Start with 1 row
+        addPlayerRow();
+
+        // --- OTP digit auto-advance + backspace ---
+        function setupOtpInputs(prefix) {
+            const ids = [1,2,3,4].map(n => prefix + 'Otp' + n);
+            ids.forEach((id, i) => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', function() {
+                    this.value = this.value.replace(/\D/g,'').slice(-1);
+                    if (this.value && i < 3) document.getElementById(ids[i+1]).focus();
+                });
+                el.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !this.value && i > 0) document.getElementById(ids[i-1]).focus();
+                });
+            });
+        }
+        setupOtpInputs('t');
+        setupOtpInputs('p');
+
+        function getOtpValue(prefix) {
+            return [1,2,3,4].map(n => document.getElementById(prefix+'Otp'+n).value).join('');
+        }
+
+        function resetOtpInputs(type) {
+            const prefix = type === 'team' ? 't' : 'p';
+            [1,2,3,4].forEach(n => { document.getElementById(prefix+'Otp'+n).value = ''; document.getElementById(prefix+'Otp'+n).classList.remove('error'); });
+            document.getElementById(prefix+'OtpError').style.display = 'none';
+            document.getElementById(prefix+'Otp1').focus();
+        }
+
+        function verifyOtp(type) {
+            const prefix = type === 'team' ? 't' : 'p';
+            const entered = getOtpValue(prefix);
+            const errEl = document.getElementById(prefix + 'OtpError');
+            if (entered === DEMO_OTP) {
+                const data = type === 'team' ? pendingTeamData : pendingPlayerData;
+                _regDb.ref('registrations').push(data);
+                document.getElementById(type === 'team' ? 'teamOtp' : 'playerOtp').style.display = 'none';
+                document.getElementById(type === 'team' ? 'teamSuccess' : 'playerSuccess').style.display = 'block';
+            } else {
+                [1,2,3,4].forEach(n => document.getElementById(prefix+'Otp'+n).classList.add('error'));
+                errEl.style.display = 'block';
+            }
+        }
+
+        document.getElementById('teamForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            pendingTeamData = {
+                id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
+                type: 'team', status: 'pending',
+                submittedAt: new Date().toISOString(),
+                teamName: document.getElementById('teamName').value,
+                teamCity: document.getElementById('teamCity').value,
+                coachName: document.getElementById('coachName').value,
+                coachPhone: document.getElementById('coachPhone').value,
+                managerName: document.getElementById('managerName').value,
+                managerPhone: document.getElementById('managerPhone').value,
+                teamEmail: document.getElementById('teamEmail').value,
+                tournament: document.getElementById('tournament').value,
+                playerList: getPlayerListData(),
+                paymentMethod: document.querySelector('input[name="teamPayment"]:checked')?.value || ''
+            };
+            this.style.display = 'none';
+            resetOtpInputs('team');
+            document.getElementById('teamOtp').style.display = 'block';
+            document.getElementById('tOtp1').focus();
+        });
+
+        document.getElementById('playerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            pendingPlayerData = {
+                id: 'SG-PLY-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
+                type: 'player', status: 'pending',
+                submittedAt: new Date().toISOString(),
+                playerName: document.getElementById('playerName').value,
+                playerDOB: document.getElementById('playerDOB').value,
+                playerPhone: document.getElementById('playerPhone').value,
+                playerEmail: document.getElementById('playerEmail').value,
+                playerPosition: document.getElementById('playerPosition').value,
+                playerCity: document.getElementById('playerCity').value,
+                playerTeam: document.getElementById('playerTeam').value,
+                playerTournament: document.getElementById('playerTournament').value,
+                guardianName: document.getElementById('guardianName').value,
+                guardianPhone: document.getElementById('guardianPhone').value,
+                paymentMethod: document.querySelector('input[name="playerPayment"]:checked')?.value || ''
+            };
+            this.style.display = 'none';
+            resetOtpInputs('player');
+            document.getElementById('playerOtp').style.display = 'block';
+            document.getElementById('pOtp1').focus();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Contact Sportera Global - Get in touch with us for registrations, partnerships, and inquiries.">
+    <title>Contact Us | Sportera Global</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="logo.png" type="image/png">
+</head>
+<body>
+    <div class="loader"><div class="loader-spinner"></div></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="Media (10).jpg" onerror="this.onerror=null;this.style.height='44px';this.style.width='auto'" alt="Sportera Global Logo">
+                <span class="logo-text">Sportera <span>Global</span></span>
+            </a>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="about.html" class="nav-link">About</a>
+                <a href="football5.html" class="nav-link">Football 5</a>
+                <a href="if5l.html" class="nav-link">IF5L</a>
+                <a href="tournaments.html" class="nav-link">Tournaments</a>
+                <a href="gallery.html" class="nav-link">Gallery</a>
+                <a href="registration.html" class="nav-link">Register</a>
+                <a href="contact.html" class="nav-link active">Contact</a>
+            </nav>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <h1>Contact Us</h1>
+            <p>Get in Touch with Sportera Global</p>
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> <span>/</span> <span>Contact</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="section">
+        <div class="container">
+            <div class="contact-grid">
+                <!-- Contact Info -->
+                <div class="fade-in">
+                    <h2 style="font-size: 1.8rem; color: var(--primary); margin-bottom: 10px;">Get In Touch</h2>
+                    <p style="color: var(--text-light); margin-bottom: 30px;">Have questions about registration, tournaments, or partnerships? We'd love to hear from you.</p>
+                    
+                    <div class="contact-info-card">
+                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                        <div>
+                            <h4>Email</h4>
+                            <p>football5association@gmail.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-card">
+                        <div class="contact-icon"><i class="fab fa-instagram"></i></div>
+                        <div>
+                            <h4>Instagram</h4>
+                            <p>@football5association</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-card">
+                        <div class="contact-icon"><i class="fas fa-globe"></i></div>
+                        <div>
+                            <h4>Website</h4>
+                            <p><a href="https://www.sporteraglobal.com" target="_blank" style="color: var(--primary); font-weight: 600;">www.sporteraglobal.com</a></p>
+                        </div>
+                    </div>
+
+                    <div class="contact-info-card">
+                        <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <h4>Office</h4>
+                            <p>India</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <div class="fade-in">
+                    <form id="contactForm" style="background: var(--light-gray); padding: 40px; border-radius: var(--radius);">
+                        <h3 style="color: var(--primary); margin-bottom: 25px; font-size: 1.3rem;">Send us a Message</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name">Full Name</label>
+                                <input type="text" id="name" name="name" placeholder="Your full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" placeholder="Your email" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <select id="subject" name="subject" required>
+                                <option value="">Select a subject</option>
+                                <option value="registration">Team/Player Registration</option>
+                                <option value="tournament">Tournament Inquiry</option>
+                                <option value="partnership">Partnership/Sponsorship</option>
+                                <option value="media">Media/Press</option>
+                                <option value="general">General Inquiry</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" placeholder="Write your message here..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map placeholder -->
+    <section style="background: var(--light-gray); padding: 0;">
+        <div style="width: 100%; height: 350px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); display: flex; align-items: center; justify-content: center; color: var(--white); text-align: center;">
+            <div>
+                <i class="fas fa-map-marked-alt" style="font-size: 3rem; color: var(--gold); margin-bottom: 15px;"></i>
+                <p style="font-size: 1.1rem;">Google Maps integration will be added here</p>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Location details to be finalized</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo-text">Sportera <span>Global</span></div>
+                    <p>A sports development and event management platform dedicated to creating opportunities for athletes through competitions, leagues, and international exposure.</p>
+                    <div class="footer-social">
+                        <a href="https://instagram.com/football5association" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="football5.html">Football 5</a></li>
+                        <li><a href="if5l.html">IF5L</a></li>
+                        <li><a href="tournaments.html">Tournaments</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="registration.html">Registration</a></li>
+                        <li><a href="gallery.html">Gallery</a></li>
+                        <li><a href="downloads.html">Downloads</a></li>
+                        <li><a href="news.html">News</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:football5association@gmail.com"><i class="fas fa-envelope"></i> football5association@gmail.com</a></li>
+                        <li><a href="https://instagram.com/football5association" target="_blank"><i class="fab fa-instagram"></i> @football5association</a></li>
+                        <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="admin/login.html" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

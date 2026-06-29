@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Sportera Global</title>
+    <!-- No indexing by search engines -->
+    <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #0d1642 0%, #1a237e 50%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 50px 45px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+            text-align: center;
+        }
+        .login-logo img {
+            width: 80px;
+            margin: 0 auto 12px;
+            display: block;
+        }
+        .brand-name {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1a237e;
+        }
+        .brand-name span { color: #FFD700; }
+        .admin-badge {
+            display: inline-block;
+            background: #1a237e;
+            color: #FFD700;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 4px 14px;
+            border-radius: 20px;
+            margin: 10px 0 30px;
+        }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 7px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap .icon-left {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+        .input-wrap .toggle-pw {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 0.95rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .input-wrap .toggle-pw:hover { color: #1a237e; }
+        .form-group input {
+            width: 100%;
+            padding: 13px 40px 13px 40px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .form-group input:focus { border-color: #1a237e; }
+        .captcha-box {
+            background: #f7f8ff;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .captcha-box .question {
+            font-weight: 700;
+            color: #1a237e;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .captcha-box input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 700;
+            outline: none;
+        }
+        .captcha-box input:focus { border-color: #1a237e; }
+        .captcha-box .refresh-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #888;
+            font-size: 1rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .captcha-box .refresh-btn:hover { color: #1a237e; background: #eef; }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1a237e, #3949ab);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+        }
+        .btn-login:hover:not(:disabled) { background: linear-gradient(135deg, #0d1642, #1a237e); transform: translateY(-1px); }
+        .btn-login:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .alert {
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            margin-bottom: 16px;
+            text-align: left;
+            display: none;
+        }
+        .alert-error { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .alert-warning { background: #fff8e1; color: #5d4e00; border: 1px solid #ffe082; }
+        .attempts-bar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+        .attempt-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: background 0.3s;
+        }
+        .attempt-dot.used { background: #ef5350; }
+        .attempts-hint { font-size: 0.78rem; color: #aaa; text-align: left; margin-bottom: 16px; }
+        .divider { margin: 20px 0; border: none; border-top: 1px solid #f0f0f0; }
+        .back-link {
+            display: block;
+            margin-top: 24px;
+            color: #888;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #1a237e; }
+        .lockout-timer { font-weight: 700; color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <img src="../Media (10).jpg" alt="Football 5 Association">
+            <div class="brand-name">Sportera <span>Global</span></div>
+        </div>
+        <div class="admin-badge">Admin Panel</div>
+
+        <div class="alert alert-error" id="errorMsg"></div>
+        <div class="alert alert-warning" id="warnMsg"></div>
+
+        <form id="loginForm" autocomplete="off">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user icon-left"></i>
+                    <input type="text" id="username" placeholder="Enter admin username" required autocomplete="username">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock icon-left"></i>
+                    <input type="password" id="password" placeholder="Enter password" required autocomplete="current-password">
+                    <button type="button" class="toggle-pw" onclick="togglePw()" tabindex="-1">
+                        <i class="fas fa-eye" id="pwEyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Math CAPTCHA -->
+            <div style="text-align:left; margin-bottom:6px;">
+                <label style="font-size:0.85rem; font-weight:600; color:#555;">Security Check</label>
+            </div>
+            <div class="captcha-box">
+                <span class="question" id="captchaQuestion">— + — = ?</span>
+                <input type="number" id="captchaAnswer" placeholder="?" required>
+                <button type="button" class="refresh-btn" onclick="newCaptcha()" title="New question">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+
+            <!-- Attempt dots -->
+            <div class="attempts-bar" id="attemptDots">
+                <div class="attempt-dot" id="d1"></div>
+                <div class="attempt-dot" id="d2"></div>
+                <div class="attempt-dot" id="d3"></div>
+                <div class="attempt-dot" id="d4"></div>
+                <div class="attempt-dot" id="d5"></div>
+            </div>
+            <div class="attempts-hint" id="attemptsHint">5 attempts allowed before temporary lockout</div>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                <i class="fas fa-sign-in-alt"></i> &nbsp;Sign In
+            </button>
+        </form>
+
+        <hr class="divider">
+        <a href="../index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Website</a>
+    </div>
+
+    <script>
+    // ─── Hashed credentials (SHA-256) — plaintext never stored here ───────────
+    // To change credentials, compute new SHA-256 hashes and update these values.
+    // Username: sporteraadmin  Password: F5Admin@2026
+    const H_USER = '8ef8b3c93b2577b0ffa6fc30caeb41ffb44b5e02e37416319a0f41c360c8df1a';
+    const H_PASS = '3f1047f3f82a7838889cc7237125af025ffb256bbe121260dafc3b35b36311b4';
+
+    const MAX_ATTEMPTS = 5;
+    const LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
+
+    let captchaA, captchaB;
+
+    // ─── SHA-256 via Web Crypto API ───────────────────────────────────────────
+    async function sha256(str) {
+        const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    // ─── CAPTCHA ──────────────────────────────────────────────────────────────
+    function newCaptcha() {
+        captchaA = Math.floor(Math.random() * 15) + 1;
+        captchaB = Math.floor(Math.random() * 15) + 1;
+        document.getElementById('captchaQuestion').textContent = captchaA + ' + ' + captchaB + ' = ?';
+        document.getElementById('captchaAnswer').value = '';
+    }
+    newCaptcha();
+
+    // ─── Brute-force state ────────────────────────────────────────────────────
+    function getState() {
+        return JSON.parse(localStorage.getItem('sg_login_state') || '{"attempts":0,"lockedUntil":0}');
+    }
+    function saveState(s) {
+        localStorage.setItem('sg_login_state', JSON.stringify(s));
+    }
+
+    function checkLockout() {
+        const s = getState();
+        if (s.lockedUntil && Date.now() < s.lockedUntil) {
+            return Math.ceil((s.lockedUntil - Date.now()) / 1000);
+        }
+        if (s.lockedUntil && Date.now() >= s.lockedUntil) {
+            saveState({ attempts: 0, lockedUntil: 0 });
+        }
+        return 0;
+    }
+
+    function updateDots() {
+        const s = getState();
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById('d' + i).classList.toggle('used', i <= s.attempts);
+        }
+        const rem = MAX_ATTEMPTS - s.attempts;
+        document.getElementById('attemptsHint').textContent =
+            rem > 0 ? rem + ' attempt' + (rem === 1 ? '' : 's') + ' remaining' : 'Account locked';
+    }
+
+    let lockTimer = null;
+    function startLockoutCountdown(secs) {
+        const btn = document.getElementById('loginBtn');
+        const warn = document.getElementById('warnMsg');
+        btn.disabled = true;
+        warn.style.display = 'block';
+
+        function tick() {
+            const remaining = checkLockout();
+            if (remaining <= 0) {
+                btn.disabled = false;
+                warn.style.display = 'none';
+                updateDots();
+                return;
+            }
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            warn.innerHTML = '<i class="fas fa-clock"></i> Too many failed attempts. Try again in <span class="lockout-timer">' +
+                (m > 0 ? m + 'm ' : '') + s + 's</span>.';
+            lockTimer = setTimeout(tick, 1000);
+        }
+        tick();
+    }
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    updateDots();
+    const initLock = checkLockout();
+    if (initLock > 0) startLockoutCountdown(initLock);
+
+    // ─── Toggle password visibility ───────────────────────────────────────────
+    function togglePw() {
+        const pw = document.getElementById('password');
+        const ic = document.getElementById('pwEyeIcon');
+        if (pw.type === 'password') {
+            pw.type = 'text';
+            ic.className = 'fas fa-eye-slash';
+        } else {
+            pw.type = 'password';
+            ic.className = 'fas fa-eye';
+        }
+    }
+
+    // ─── Login submit ─────────────────────────────────────────────────────────
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const lockSecs = checkLockout();
+        if (lockSecs > 0) { startLockoutCountdown(lockSecs); return; }
+
+        const err  = document.getElementById('errorMsg');
+        err.style.display = 'none';
+
+        // CAPTCHA check first (fast, no async)
+        const answer = parseInt(document.getElementById('captchaAnswer').value, 10);
+        if (answer !== captchaA + captchaB) {
+            err.innerHTML = '<i class="fas fa-exclamation-circle"></i> Security check failed. Please solve the math question.';
+            err.style.display = 'block';
+            newCaptcha();
+            return;
+        }
+
+        // Hash entered credentials
+        const enteredUser = document.getElementById('username').value.trim();
+        const enteredPass = document.getElementById('password').value;
+        const [hU, hP] = await Promise.all([sha256(enteredUser), sha256(enteredPass)]);
+
+        if (hU === H_USER && hP === H_PASS) {
+            // ✅ Success — clear lockout state, set session
+            saveState({ attempts: 0, lockedUntil: 0 });
+            sessionStorage.setItem('sg_admin', 'authenticated');
+            sessionStorage.setItem('sg_admin_time', Date.now().toString());
+            window.location.href = 'index.html';
+        } else {
+            // ❌ Failed
+            const s = getState();
+            s.attempts = (s.attempts || 0) + 1;
+            if (s.attempts >= MAX_ATTEMPTS) {
+                s.lockedUntil = Date.now() + LOCKOUT_MS;
+            }
+            saveState(s);
+            updateDots();
+
+            document.getElementById('password').value = '';
+            newCaptcha();
+
+            if (s.attempts >= MAX_ATTEMPTS) {
+                err.style.display = 'none';
+                startLockoutCountdown(LOCKOUT_MS / 1000);
+            } else {
+                err.innerHTML = '<i class="fas fa-exclamation-circle"></i> Invalid username or password.';
+                err.style.display = 'block';
+            }
+        }
+    });
+    </script>
+</body>
+</html>
