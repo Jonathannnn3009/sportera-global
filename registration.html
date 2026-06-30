@@ -419,6 +419,10 @@
                                     <li><strong>Safety Protocols:</strong> We agree to follow any safety protocols introduced at the time of the event if required.</li>
                                 </ol>
                             </div>
+                            <div class="form-group" style="margin-bottom:14px;">
+                                <label for="teamSignature">Full Name as Digital Signature *</label>
+                                <input type="text" id="teamSignature" placeholder="Type your full name to sign this consent form" required style="font-style:italic;">
+                            </div>
                             <label class="consent-check">
                                 <input type="checkbox" id="teamConsent" required>
                                 <label for="teamConsent">I, on behalf of our team, <strong>confirm and accept all the above terms</strong> of the Football 5 Association Team Consent Form and confirm that all information provided is accurate.</label>
@@ -597,6 +601,10 @@
                                     <li>I understand that <strong>registration fees are non-refundable</strong> under any circumstances.</li>
                                     <li>I have read and agree to abide by the <strong>rules and regulations of Football 5 Association (F5A)</strong>.</li>
                                 </ol>
+                            </div>
+                            <div class="form-group" style="margin-bottom:14px;">
+                                <label for="playerSignature">Parent/Guardian Full Name as Digital Signature *</label>
+                                <input type="text" id="playerSignature" placeholder="Type your full name to sign this consent form" required style="font-style:italic;">
                             </div>
                             <label class="consent-check">
                                 <input type="checkbox" id="playerConsent" required>
@@ -906,7 +914,12 @@
                 tournament: document.getElementById('tournament').value,
                 playerList: getPlayerListData(),
                 teamLogoFile: logoName,
-                consentAccepted: true,
+                consent: {
+                    accepted: true,
+                    signedBy: document.getElementById('teamSignature').value,
+                    signedAt: new Date().toISOString(),
+                    formVersion: 'Team Consent Form - F5A 2025'
+                },
                 paymentMethod: document.querySelector('input[name="teamPayment"]:checked')?.value || ''
             };
             this.style.display = 'none';
@@ -948,7 +961,12 @@
                 guardianRelation: document.getElementById('guardianRelation').value,
                 guardianEmail: document.getElementById('guardianEmail').value,
                 ageDocFile: ageDocFile ? ageDocFile.name : '',
-                consentAccepted: true,
+                consent: {
+                    accepted: true,
+                    signedBy: document.getElementById('playerSignature').value,
+                    signedAt: new Date().toISOString(),
+                    formVersion: 'Parent/Guardian Consent Form - F5A 2025'
+                },
                 paymentMethod: document.querySelector('input[name="playerPayment"]:checked')?.value || ''
             };
             this.style.display = 'none';
