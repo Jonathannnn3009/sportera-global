@@ -269,6 +269,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 
   <div class="nav-label">League & Fixtures</div>
   <div class="nav-item" data-panel="fixtures"><i class="fas fa-calendar-alt"></i> Fixtures</div>
+  <div class="nav-item" data-panel="lineup"><i class="fas fa-clipboard-list"></i> Match Lineup</div>
   <div class="nav-item" data-panel="results"><i class="fas fa-futbol"></i> Update Results</div>
   <div class="nav-item" data-panel="tables"><i class="fas fa-table"></i> League Tables</div>
 
@@ -545,6 +546,91 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   </div>
 </div>
 
+<!-- ── LINEUP ──────────────────────────────────────────── -->
+<div class="panel" id="panel-lineup">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head"><h3><i class="fas fa-clipboard-list"></i> Match Lineup &amp; Events</h3></div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="fg">
+          <label>Select Fixture *</label>
+          <select id="lu-fixture" onchange="loadLineupFixture()">
+            <option value="">— Select a fixture —</option>
+          </select>
+        </div>
+        <div class="fg" style="display:flex;align-items:flex-end;">
+          <div style="background:#f0f3ff;border-radius:10px;padding:12px 18px;font-size:.85rem;color:var(--primary);font-weight:600;width:100%" id="lu-match-label">No fixture selected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lu-form-wrap" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <!-- Home Team -->
+      <div class="card">
+        <div class="card-head"><h3 id="lu-home-title"><i class="fas fa-home"></i> Home Team</h3></div>
+        <div class="card-body">
+          <p style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--gold);font-weight:700;margin-bottom:10px;">Starting Lineup</p>
+          <div id="lu-home-players"></div>
+          <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="addLineupPlayer('home')"><i class="fas fa-plus"></i> Add Player</button>
+        </div>
+      </div>
+      <!-- Away Team -->
+      <div class="card">
+        <div class="card-head"><h3 id="lu-away-title"><i class="fas fa-plane"></i> Away Team</h3></div>
+        <div class="card-body">
+          <p style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--gold);font-weight:700;margin-bottom:10px;">Starting Lineup</p>
+          <div id="lu-away-players"></div>
+          <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="addLineupPlayer('away')"><i class="fas fa-plus"></i> Add Player</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match Events -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><h3><i class="fas fa-bolt"></i> Match Events</h3></div>
+      <div class="card-body">
+        <div class="form-row" style="align-items:flex-end;">
+          <div class="fg"><label>Minute</label><input type="number" id="ev-min" placeholder="e.g. 23" min="1" max="90" style="width:90px;"></div>
+          <div class="fg"><label>Team</label>
+            <select id="ev-team">
+              <option value="home">Home</option><option value="away">Away</option>
+            </select>
+          </div>
+          <div class="fg"><label>Player Name</label><input type="text" id="ev-player" placeholder="Player name"></div>
+          <div class="fg"><label>Event</label>
+            <select id="ev-type">
+              <option value="goal">⚽ Goal</option>
+              <option value="yellow">🟨 Yellow Card</option>
+              <option value="red">🟥 Red Card</option>
+              <option value="foul">⚠️ Foul</option>
+              <option value="assist">🎯 Assist</option>
+              <option value="sub">🔄 Substitution</option>
+            </select>
+          </div>
+          <div class="fg" style="flex:0;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="addMatchEvent()"><i class="fas fa-plus"></i> Add</button>
+          </div>
+        </div>
+        <div id="lu-events-list" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="clearLineup()"><i class="fas fa-redo"></i> Reset</button>
+      <button class="btn btn-primary" onclick="saveLineup()"><i class="fas fa-save"></i> Save Lineup & Events</button>
+    </div>
+
+    <!-- Saved lineups -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-head"><h3><i class="fas fa-history"></i> Saved Lineups</h3></div>
+      <div class="card-body" id="lu-saved-list"><p style="color:var(--muted);font-size:.88rem;">No lineups saved yet.</p></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── RESULTS ──────────────────────────────────────────── -->
 <div class="panel" id="panel-results">
   <div class="card">
@@ -766,7 +852,7 @@ const DB = {
 const PANEL_TITLES = {
   dashboard:'Dashboard', approvals:'Approve Registrations', teams:'Manage Teams',
   players:'Manage Players', idcards:'Generate ID Cards', reports:'Export Reports',
-  fixtures:'Fixtures', results:'Update Results', tables:'League Tables',
+  fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads'
 };
 function switchPanel(id) {
@@ -780,7 +866,7 @@ function switchPanel(id) {
   const refresh = {
     dashboard: refreshDashboard, approvals: renderApprovals, teams: renderTeams,
     players: renderPlayers, idcards: refreshIDCards, reports: renderReports,
-    fixtures: renderFixtures, results: renderResultsFixtures, tables: renderLeagueTable,
+    fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads
   };
   if(refresh[id]) refresh[id]();
@@ -1013,6 +1099,153 @@ function printIDCard(){
   win.document.close();
 }
 function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-dob','id-num'].forEach(x=>document.getElementById(x).value=''); updateIDPreview(); }
+
+// ── LINEUP ────────────────────────────────────────────────────────────────
+let _luEvents = [];
+let _luHomePlayers = [];
+let _luAwayPlayers = [];
+let _luFixtureId = null;
+
+function renderLineupPanel(){
+  const fx = DB.get('sg_fixtures');
+  const sel = document.getElementById('lu-fixture');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select a fixture —</option>';
+  fx.forEach(f => {
+    sel.innerHTML += `<option value="${f.id}" ${f.id===cur?'selected':''}>${f.homeTeam} vs ${f.awayTeam} — ${f.tournament||''} (${f.round||''})</option>`;
+  });
+  renderSavedLineups();
+}
+
+function loadLineupFixture(){
+  const id = document.getElementById('lu-fixture').value;
+  if(!id){ document.getElementById('lu-form-wrap').style.display='none'; return; }
+  const fx = DB.get('sg_fixtures').find(f=>f.id===id);
+  if(!fx) return;
+  _luFixtureId = id;
+  _luEvents = [];
+  _luHomePlayers = [];
+  _luAwayPlayers = [];
+
+  // Check if a lineup already saved for this fixture
+  const saved = DB.get('sg_lineups').find(l=>l.fixtureId===id);
+  if(saved){
+    _luEvents = saved.events||[];
+    _luHomePlayers = saved.homePlayers||[];
+    _luAwayPlayers = saved.awayPlayers||[];
+  }
+
+  document.getElementById('lu-home-title').innerHTML = `<i class="fas fa-home"></i> ${fx.homeTeam}`;
+  document.getElementById('lu-away-title').innerHTML = `<i class="fas fa-plane"></i> ${fx.awayTeam}`;
+  document.getElementById('lu-match-label').innerHTML = `<strong>${fx.homeTeam}</strong> vs <strong>${fx.awayTeam}</strong> &nbsp;|&nbsp; ${fx.tournament||''} &nbsp;|&nbsp; ${fx.round||''} &nbsp;|&nbsp; ${fx.dateTime||''}`;
+  document.getElementById('lu-form-wrap').style.display='block';
+  renderLineupPlayers(); renderEventsList();
+}
+
+function renderLineupPlayers(){
+  ['home','away'].forEach(side=>{
+    const list = side==='home'?_luHomePlayers:_luAwayPlayers;
+    const el = document.getElementById('lu-'+side+'-players');
+    el.innerHTML = list.map((p,i)=>`
+      <div style="display:grid;grid-template-columns:40px 1fr 100px auto;gap:8px;align-items:center;margin-bottom:8px;background:#f8f9ff;border-radius:8px;padding:8px 10px;">
+        <input type="number" value="${p.num||''}" min="1" max="99" placeholder="#" style="padding:6px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-weight:700;" onchange="updateLineupPlayer('${side}',${i},'num',this.value)">
+        <input type="text" value="${p.name||''}" placeholder="Player name" style="padding:6px;border:1.5px solid var(--border);border-radius:6px;" onchange="updateLineupPlayer('${side}',${i},'name',this.value)">
+        <select style="padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;" onchange="updateLineupPlayer('${side}',${i},'pos',this.value)">
+          ${['GK','DEF','MID','FWD'].map(pos=>`<option ${p.pos===pos?'selected':''}>${pos}</option>`).join('')}
+        </select>
+        <button onclick="removeLineupPlayer('${side}',${i})" style="background:#ffeaea;border:1px solid #ffcccc;color:#e53935;width:30px;height:30px;border-radius:6px;cursor:pointer;"><i class="fas fa-times"></i></button>
+      </div>`).join('');
+  });
+}
+
+function addLineupPlayer(side){
+  if(side==='home') _luHomePlayers.push({num:'',name:'',pos:'GK'});
+  else _luAwayPlayers.push({num:'',name:'',pos:'GK'});
+  renderLineupPlayers();
+}
+function removeLineupPlayer(side,i){
+  if(side==='home') _luHomePlayers.splice(i,1);
+  else _luAwayPlayers.splice(i,1);
+  renderLineupPlayers();
+}
+function updateLineupPlayer(side,i,field,val){
+  const list = side==='home'?_luHomePlayers:_luAwayPlayers;
+  if(list[i]) list[i][field]=val;
+}
+
+function addMatchEvent(){
+  const ev = {
+    minute: document.getElementById('ev-min').value,
+    team: document.getElementById('ev-team').value,
+    player: document.getElementById('ev-player').value,
+    type: document.getElementById('ev-type').value
+  };
+  if(!ev.player){ alert('Enter player name'); return; }
+  _luEvents.push(ev);
+  document.getElementById('ev-min').value='';
+  document.getElementById('ev-player').value='';
+  renderEventsList();
+}
+
+function renderEventsList(){
+  const el = document.getElementById('lu-events-list');
+  if(!_luEvents.length){ el.innerHTML='<p style="color:var(--muted);font-size:.85rem;">No events added yet.</p>'; return; }
+  const icons = {goal:'⚽',yellow:'🟨',red:'🟥',foul:'⚠️',assist:'🎯',sub:'🔄'};
+  el.innerHTML = `<table class="dt" style="font-size:.83rem;"><thead><tr><th>Min</th><th>Team</th><th>Player</th><th>Event</th><th>Del</th></tr></thead><tbody>`+
+    _luEvents.map((e,i)=>`<tr>
+      <td><strong>${e.minute}'</strong></td>
+      <td>${e.team==='home'?'🏠 Home':'✈️ Away'}</td>
+      <td>${e.player}</td>
+      <td>${icons[e.type]||''} ${e.type}</td>
+      <td><button onclick="removeEvent(${i})" style="background:#ffeaea;border:none;color:#e53935;padding:3px 8px;border-radius:5px;cursor:pointer;"><i class="fas fa-times"></i></button></td>
+    </tr>`).join('')+`</tbody></table>`;
+}
+
+function removeEvent(i){ _luEvents.splice(i,1); renderEventsList(); }
+
+function saveLineup(){
+  if(!_luFixtureId){ alert('Select a fixture first'); return; }
+  const fx = DB.get('sg_fixtures').find(f=>f.id===_luFixtureId);
+  const lineups = DB.get('sg_lineups').filter(l=>l.fixtureId!==_luFixtureId);
+  lineups.push({
+    fixtureId: _luFixtureId,
+    matchLabel: fx ? `${fx.homeTeam} vs ${fx.awayTeam}` : '',
+    tournament: fx ? fx.tournament : '',
+    savedAt: new Date().toISOString(),
+    homePlayers: _luHomePlayers,
+    awayPlayers: _luAwayPlayers,
+    events: _luEvents
+  });
+  DB.set('sg_lineups', lineups);
+  alert('Lineup saved!');
+  renderSavedLineups();
+}
+
+function clearLineup(){
+  _luEvents=[]; _luHomePlayers=[]; _luAwayPlayers=[];
+  renderLineupPlayers(); renderEventsList();
+}
+
+function renderSavedLineups(){
+  const lineups = DB.get('sg_lineups');
+  const el = document.getElementById('lu-saved-list');
+  if(!lineups.length){ el.innerHTML='<p style="color:var(--muted);font-size:.88rem;">No lineups saved yet.</p>'; return; }
+  el.innerHTML = lineups.map(l=>`
+    <div style="background:#f8f9ff;border-radius:10px;padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <strong style="font-size:.92rem;">${l.matchLabel}</strong>
+        <span style="font-size:.78rem;color:var(--muted);margin-left:10px;">${l.tournament}</span><br>
+        <span style="font-size:.78rem;color:var(--muted);">${l.homePlayers.length} home players &bull; ${l.awayPlayers.length} away players &bull; ${l.events.length} events &bull; Saved ${new Date(l.savedAt).toLocaleString()}</span>
+      </div>
+      <button onclick="loadSavedLineup('${l.fixtureId}')" class="btn btn-ghost" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-edit"></i> Edit</button>
+    </div>`).join('');
+}
+
+function loadSavedLineup(fixtureId){
+  document.getElementById('lu-fixture').value = fixtureId;
+  loadLineupFixture();
+  document.querySelector('[data-panel="lineup"]').click();
+}
 
 // ── REPORTS ───────────────────────────────────────────────────────────────
 function renderReports(){
