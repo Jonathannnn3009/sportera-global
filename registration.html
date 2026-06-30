@@ -221,6 +221,40 @@
         }
         .btn-add-player:hover { background: #f0f3ff; }
         .player-count-label { font-size: 0.8rem; color: var(--text-light); text-align: right; margin-bottom: 10px; }
+        .age-badge { display:inline-block; background:var(--primary); color:#fff; font-size:.75rem; font-weight:700; padding:3px 10px; border-radius:20px; margin-left:10px; vertical-align:middle; }
+        .upload-box {
+            border: 2px dashed #c0c8e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            background: #f8f9ff;
+            position: relative;
+        }
+        .upload-box:hover { border-color: var(--primary); background: #f0f3ff; }
+        .upload-box input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+        .upload-box i { font-size:1.8rem; color:var(--primary); margin-bottom:8px; display:block; }
+        .upload-box .up-label { font-size:.88rem; color:var(--text-light); }
+        .upload-box .up-label strong { color:var(--primary); }
+        .upload-preview { margin-top:10px; font-size:.82rem; color:#2e7d32; display:none; }
+        .consent-box {
+            background: #f8f9ff;
+            border: 1px solid #dde3f5;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 8px;
+        }
+        .consent-box h5 { color:var(--primary); font-size:.95rem; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+        .consent-clauses { max-height: 220px; overflow-y: auto; margin-bottom:16px; padding-right:4px; }
+        .consent-clauses ol { padding-left:18px; }
+        .consent-clauses li { font-size:.83rem; color:var(--text-light); margin-bottom:8px; line-height:1.6; }
+        .consent-clauses li strong { color:var(--text); }
+        .consent-check { display:flex; align-items:flex-start; gap:12px; padding:14px; background:#fff; border-radius:8px; border:2px solid #e0e4f0; cursor:pointer; transition:border-color .2s; }
+        .consent-check:hover { border-color:var(--primary); }
+        .consent-check input[type="checkbox"] { accent-color:var(--primary); width:18px; height:18px; flex-shrink:0; margin-top:2px; }
+        .consent-check label { font-size:.85rem; color:var(--text); cursor:pointer; line-height:1.5; }
+        .consent-check label strong { color:var(--primary); }
     </style>
 </head>
 <body>
@@ -239,6 +273,7 @@
                 <a href="football5.html" class="nav-link">Football 5</a>
                 <a href="if5l.html" class="nav-link">IF5L</a>
                 <a href="tournaments.html" class="nav-link">Tournaments</a>
+                <a href="exposure.html" class="nav-link">International</a>
                 <a href="gallery.html" class="nav-link">Gallery</a>
                 <a href="registration.html" class="nav-link active">Register</a>
                 <a href="contact.html" class="nav-link">Contact</a>
@@ -354,12 +389,41 @@
                             </div>
                         </div>
 
+                        <p class="form-section-label">Team Logo</p>
+                        <div class="upload-box" id="logoUploadBox">
+                            <input type="file" id="teamLogo" name="teamLogo" accept="image/*" onchange="handleFileUpload('teamLogo','logoPreview','logoUploadBox')">
+                            <i class="fas fa-image"></i>
+                            <div class="up-label"><strong>Click to upload team logo</strong><br>PNG, JPG up to 2MB</div>
+                            <div class="upload-preview" id="logoPreview"></div>
+                        </div>
+
                         <p class="form-section-label">Player List</p>
                         <div id="playerRows"></div>
                         <p class="player-count-label" id="playerCountLabel"></p>
                         <button type="button" class="btn-add-player" onclick="addPlayerRow()">
                             <i class="fas fa-plus"></i> Add Player
                         </button>
+
+                        <p class="form-section-label">Team Consent Form</p>
+                        <div class="consent-box">
+                            <h5><i class="fas fa-file-contract"></i> Football 5 Association — Team Consent Form</h5>
+                            <div class="consent-clauses">
+                                <ol>
+                                    <li><strong>Age Requirements:</strong> All players in our team meet the age requirements of the category selected and possess valid age-proof documents (e.g., Aadhar card, birth certificate, or passport).</li>
+                                    <li><strong>Rules & Regulations:</strong> The team officials and players will abide by the rules and regulations laid out by F5A throughout the event.</li>
+                                    <li><strong>Conduct:</strong> We understand that misconduct, misbehavior, or indiscipline by any team member may lead to disqualification or removal from the venue.</li>
+                                    <li><strong>Medical Authorization:</strong> We authorize F5A and its staff to act in their best judgment in any emergency requiring medical attention. We release F5A from any liability for injuries incurred during the tournament, travel, or sightseeing related to the event. All medical expenses will be the responsibility of the team or its participants.</li>
+                                    <li><strong>Personal Belongings:</strong> We understand that F5A is not responsible for lost, stolen, or damaged personal belongings.</li>
+                                    <li><strong>Venue/Accommodation:</strong> We accept responsibility for any damage to the venue/accommodation facilities caused by any of our team members.</li>
+                                    <li><strong>Media Rights:</strong> We grant F5A the right to use photographs, video recordings, or any other media of the team and participants for publicity or promotional purposes.</li>
+                                    <li><strong>Safety Protocols:</strong> We agree to follow any safety protocols introduced at the time of the event if required.</li>
+                                </ol>
+                            </div>
+                            <label class="consent-check">
+                                <input type="checkbox" id="teamConsent" required>
+                                <label for="teamConsent">I, on behalf of our team, <strong>confirm and accept all the above terms</strong> of the Football 5 Association Team Consent Form and confirm that all information provided is accurate.</label>
+                            </label>
+                        </div>
 
                         <p class="form-section-label">Payment</p>
                         <div class="fee-box">
@@ -436,8 +500,8 @@
                                 <input type="text" id="playerName" name="playerName" placeholder="Player's full name" required>
                             </div>
                             <div class="form-group">
-                                <label for="playerDOB">Date of Birth *</label>
-                                <input type="date" id="playerDOB" name="playerDOB" required>
+                                <label for="playerDOB">Date of Birth * <span id="playerAgeDisplay"></span></label>
+                                <input type="date" id="playerDOB" name="playerDOB" required onchange="calcAge(this.value,'playerAgeDisplay')">
                             </div>
                         </div>
                         <div class="form-row">
@@ -471,7 +535,9 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="playerTeam">Team Name *</label>
-                                <input type="text" id="playerTeam" name="playerTeam" placeholder="Team you are registering with" required>
+                                <select id="playerTeam" name="playerTeam" required>
+                                    <option value="">Loading registered teams...</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="playerTournament">Tournament *</label>
@@ -481,6 +547,14 @@
                                     <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <p class="form-section-label">Age Proof Document *</p>
+                        <div class="upload-box" id="ageDocBox">
+                            <input type="file" id="ageDoc" name="ageDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload('ageDoc','ageDocPreview','ageDocBox')" required>
+                            <i class="fas fa-file-alt"></i>
+                            <div class="up-label"><strong>Upload age proof document</strong><br>Aadhar Card, Birth Certificate or Passport — PDF/JPG/PNG</div>
+                            <div class="upload-preview" id="ageDocPreview"></div>
                         </div>
 
                         <p class="form-section-label">Guardian Details (if under 18)</p>
@@ -493,6 +567,41 @@
                                 <label for="guardianPhone">Guardian Phone</label>
                                 <input type="tel" id="guardianPhone" name="guardianPhone" placeholder="Guardian contact number">
                             </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="guardianRelation">Relationship to Player</label>
+                                <input type="text" id="guardianRelation" name="guardianRelation" placeholder="e.g. Father, Mother, Guardian">
+                            </div>
+                            <div class="form-group">
+                                <label for="guardianEmail">Guardian Email</label>
+                                <input type="email" id="guardianEmail" name="guardianEmail" placeholder="Guardian email address">
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Parent / Guardian Consent Form</p>
+                        <div class="consent-box">
+                            <h5><i class="fas fa-file-contract"></i> Football 5 Association — Parent/Guardian Consent Form</h5>
+                            <div class="consent-clauses">
+                                <ol>
+                                    <li>I hereby authorize the staff of F5A to act on my behalf according to their best judgment in any emergency requiring medical attention. I waive and release F5A and its staff from any and all liability for any accident or injuries incurred during the tournament, traveling to/from the venue, or sightseeing.</li>
+                                    <li><strong>Accommodation</strong> will be provided by the organizers for the duration of the event.</li>
+                                    <li>All <strong>medical expenses</strong> incurred will be the responsibility of the participant or their parent/guardian.</li>
+                                    <li>F5A will not be held responsible for any <strong>lost, stolen, or damaged personal belongings</strong>.</li>
+                                    <li>I am fully responsible for any <strong>damage to the property or facilities</strong> caused by the participant.</li>
+                                    <li><strong>Misbehaviour or indiscipline</strong> will not be tolerated and may result in the participant being asked to leave the venue immediately.</li>
+                                    <li>I consent to the use of <strong>photographs, video, or motion recordings</strong> of my child by F5A for publicity, advertising, or any other legitimate purpose.</li>
+                                    <li>I acknowledge that F5A <strong>does not provide accident or medical insurance</strong>, and I am responsible for ensuring appropriate coverage.</li>
+                                    <li>For players in the <strong>U9 and U11 categories</strong>, a parent or guardian will accompany the participant at all times.</li>
+                                    <li>I consent to the <strong>collection and use of personal data</strong> for event management, communication, and emergency contact, in line with F5A's privacy policy.</li>
+                                    <li>I understand that <strong>registration fees are non-refundable</strong> under any circumstances.</li>
+                                    <li>I have read and agree to abide by the <strong>rules and regulations of Football 5 Association (F5A)</strong>.</li>
+                                </ol>
+                            </div>
+                            <label class="consent-check">
+                                <input type="checkbox" id="playerConsent" required>
+                                <label for="playerConsent">I, as parent/guardian, <strong>confirm and accept all the above terms</strong> of the Football 5 Association Parent/Guardian Consent Form and confirm that all information provided is accurate.</label>
+                            </label>
                         </div>
 
                         <p class="form-section-label">Payment</p>
@@ -618,6 +727,65 @@
             });
         });
 
+        // --- Age calculator ---
+        function calcAge(dob, displayId) {
+            if (!dob) return;
+            const today = new Date();
+            const birth = new Date(dob);
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+            const el = document.getElementById(displayId);
+            if (age >= 0 && age < 100) {
+                el.innerHTML = '<span class="age-badge">Age: ' + age + '</span>';
+            }
+        }
+
+        // --- File upload handler ---
+        function handleFileUpload(inputId, previewId, boxId) {
+            const file = document.getElementById(inputId).files[0];
+            const preview = document.getElementById(previewId);
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File too large. Please upload a file under 2MB.');
+                return;
+            }
+            preview.style.display = 'block';
+            preview.innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+            document.getElementById(boxId).style.borderColor = '#2e7d32';
+        }
+
+        // --- Load registered teams from Firebase into player dropdown ---
+        function loadTeamsDropdown() {
+            const sel = document.getElementById('playerTeam');
+            _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value', snap => {
+                const teams = [];
+                snap.forEach(child => { const d = child.val(); if (d.teamName) teams.push(d.teamName); });
+                sel.innerHTML = '<option value="">Select your team</option>';
+                if (teams.length === 0) {
+                    sel.innerHTML += '<option value="" disabled>No teams registered yet — team must register first</option>';
+                } else {
+                    teams.forEach(t => sel.innerHTML += '<option value="' + t + '">' + t + '</option>');
+                }
+                sel.innerHTML += '<option value="__other__">Other / Not listed</option>';
+            });
+        }
+        loadTeamsDropdown();
+
+        // If player selects "Other", show a text input
+        document.getElementById('playerTeam').addEventListener('change', function() {
+            let existing = document.getElementById('playerTeamOther');
+            if (this.value === '__other__') {
+                if (!existing) {
+                    const inp = document.createElement('input');
+                    inp.type = 'text'; inp.id = 'playerTeamOther'; inp.placeholder = 'Enter your team name';
+                    inp.className = ''; inp.style.marginTop = '10px';
+                    inp.required = true;
+                    this.parentNode.appendChild(inp);
+                }
+            } else if (existing) { existing.remove(); }
+        });
+
         const DEMO_OTP = '1234';
         let pendingTeamData = null, pendingPlayerData = null;
 
@@ -718,6 +886,12 @@
 
         document.getElementById('teamForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            if (!document.getElementById('teamConsent').checked) {
+                alert('Please read and accept the Team Consent Form to proceed.');
+                return;
+            }
+            const logoFile = document.getElementById('teamLogo').files[0];
+            const logoName = logoFile ? logoFile.name : '';
             pendingTeamData = {
                 id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
                 type: 'team', status: 'pending',
@@ -731,6 +905,8 @@
                 teamEmail: document.getElementById('teamEmail').value,
                 tournament: document.getElementById('tournament').value,
                 playerList: getPlayerListData(),
+                teamLogoFile: logoName,
+                consentAccepted: true,
                 paymentMethod: document.querySelector('input[name="teamPayment"]:checked')?.value || ''
             };
             this.style.display = 'none';
@@ -741,20 +917,38 @@
 
         document.getElementById('playerForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            if (!document.getElementById('playerConsent').checked) {
+                alert('Please read and accept the Parent/Guardian Consent Form to proceed.');
+                return;
+            }
+            const teamSel = document.getElementById('playerTeam');
+            const teamVal = teamSel.value === '__other__'
+                ? (document.getElementById('playerTeamOther')?.value || '')
+                : teamSel.value;
+            const ageDocFile = document.getElementById('ageDoc').files[0];
+            const dob = document.getElementById('playerDOB').value;
+            const today = new Date(); const birth = new Date(dob);
+            let age = today.getFullYear() - birth.getFullYear();
+            if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
             pendingPlayerData = {
                 id: 'SG-PLY-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
                 type: 'player', status: 'pending',
                 submittedAt: new Date().toISOString(),
                 playerName: document.getElementById('playerName').value,
-                playerDOB: document.getElementById('playerDOB').value,
+                playerDOB: dob,
+                playerAge: age,
                 playerPhone: document.getElementById('playerPhone').value,
                 playerEmail: document.getElementById('playerEmail').value,
                 playerPosition: document.getElementById('playerPosition').value,
                 playerCity: document.getElementById('playerCity').value,
-                playerTeam: document.getElementById('playerTeam').value,
+                playerTeam: teamVal,
                 playerTournament: document.getElementById('playerTournament').value,
                 guardianName: document.getElementById('guardianName').value,
                 guardianPhone: document.getElementById('guardianPhone').value,
+                guardianRelation: document.getElementById('guardianRelation').value,
+                guardianEmail: document.getElementById('guardianEmail').value,
+                ageDocFile: ageDocFile ? ageDocFile.name : '',
+                consentAccepted: true,
                 paymentMethod: document.querySelector('input[name="playerPayment"]:checked')?.value || ''
             };
             this.style.display = 'none';
