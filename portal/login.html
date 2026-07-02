@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player & Team Login | Sportera Global</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="../logo.png" type="image/png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0d1642;
+      --gold: #ffd700;
+      --gold-dark: #b8860b;
+      --white: #fff;
+      --light: #f4f6fb;
+      --text: #333;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(13,22,66,0.12);
+    }
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: linear-gradient(135deg, #0d1642 0%, #1a237e 60%, #0d1642 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-wrap {
+      width: 100%;
+      max-width: 440px;
+    }
+    .logo-area {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo-area img { height: 60px; margin-bottom: 12px; }
+    .logo-area h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.5rem;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+    .logo-area h1 span { color: var(--gold); }
+    .logo-area p { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-top: 4px; }
+
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #eee;
+    }
+    .tab {
+      flex: 1;
+      padding: 18px;
+      text-align: center;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #999;
+      cursor: pointer;
+      border: none;
+      background: none;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      color: var(--navy);
+      border-bottom: 3px solid var(--gold);
+      margin-bottom: -2px;
+    }
+    .tab i { margin-right: 8px; }
+
+    .form-body { padding: 32px; }
+    .form-body h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.3rem;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .form-body p { color: #888; font-size: 0.88rem; margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus { border-color: var(--navy); }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+    .btn:hover { background: #1a237e; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .forgot {
+      text-align: right;
+      margin-top: 8px;
+    }
+    .forgot a { font-size: 0.82rem; color: var(--gold-dark); text-decoration: none; }
+
+    .error-msg {
+      background: #fdecea;
+      color: #c62828;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .back-link a {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .back-link a:hover { color: var(--gold); }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="logo-area">
+      <img src="../Media (10).jpg" alt="Sportera Global" onerror="this.style.display='none'">
+      <h1>Sportera <span>Global</span></h1>
+      <p>Player & Team Portal</p>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('player')"><i class="fas fa-running"></i> Player</button>
+        <button class="tab" onclick="switchTab('team')"><i class="fas fa-users"></i> Team</button>
+      </div>
+
+      <div class="form-body">
+        <!-- Player Login -->
+        <div id="playerPanel" class="panel active">
+          <h2>Player Login</h2>
+          <p>View your stats, tournament history, and awards</p>
+          <div class="error-msg" id="playerError"></div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="playerEmail" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="playerPassword" placeholder="Enter your password">
+          </div>
+          <div class="forgot"><a href="#" onclick="forgotPassword()">Forgot password?</a></div>
+          <br>
+          <button class="btn" id="playerLoginBtn" onclick="loginPlayer()">
+            <i class="fas fa-sign-in-alt"></i> Login as Player
+          </button>
+        </div>
+
+        <!-- Team Login -->
+        <div id="teamPanel" class="panel">
+          <h2>Team Login</h2>
+          <p>Manage your squad and view team participation</p>
+          <div class="error-msg" id="teamError"></div>
+          <div class="form-group">
+            <label>Team Email Address</label>
+            <input type="email" id="teamEmail" placeholder="team@email.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="teamPassword" placeholder="Enter your password">
+          </div>
+          <div class="forgot"><a href="#" onclick="forgotPassword()">Forgot password?</a></div>
+          <br>
+          <button class="btn" id="teamLoginBtn" onclick="loginTeam()">
+            <i class="fas fa-sign-in-alt"></i> Login as Team
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="back-link">
+      <a href="../index.html"><i class="fas fa-arrow-left"></i> Back to main website</a>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    });
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentTab = 'player';
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      event.target.closest('.tab').classList.add('active');
+      document.getElementById(tab + 'Panel').classList.add('active');
+    }
+
+    function showError(panel, msg) {
+      const el = document.getElementById(panel + 'Error');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    function hideError(panel) {
+      document.getElementById(panel + 'Error').classList.remove('show');
+    }
+
+    async function loginPlayer() {
+      hideError('player');
+      const email = document.getElementById('playerEmail').value.trim();
+      const pass = document.getElementById('playerPassword').value;
+      if (!email || !pass) { showError('player', 'Please enter email and password.'); return; }
+
+      const btn = document.getElementById('playerLoginBtn');
+      btn.disabled = true; btn.textContent = 'Logging in...';
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, pass);
+        const doc = await db.collection('players').doc(cred.user.uid).get();
+        if (!doc.exists) {
+          await auth.signOut();
+          showError('player', 'No player account found. Please contact admin.');
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login as Player';
+          return;
+        }
+        window.location.href = 'player-dashboard.html';
+      } catch (e) {
+        showError('player', friendlyError(e.code));
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login as Player';
+      }
+    }
+
+    async function loginTeam() {
+      hideError('team');
+      const email = document.getElementById('teamEmail').value.trim();
+      const pass = document.getElementById('teamPassword').value;
+      if (!email || !pass) { showError('team', 'Please enter email and password.'); return; }
+
+      const btn = document.getElementById('teamLoginBtn');
+      btn.disabled = true; btn.textContent = 'Logging in...';
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, pass);
+        const doc = await db.collection('teams').doc(cred.user.uid).get();
+        if (!doc.exists) {
+          await auth.signOut();
+          showError('team', 'No team account found. Please contact admin.');
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login as Team';
+          return;
+        }
+        window.location.href = 'team-dashboard.html';
+      } catch (e) {
+        showError('team', friendlyError(e.code));
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login as Team';
+      }
+    }
+
+    async function forgotPassword() {
+      const email = currentTab === 'player'
+        ? document.getElementById('playerEmail').value.trim()
+        : document.getElementById('teamEmail').value.trim();
+      if (!email) { alert('Please enter your email address first.'); return; }
+      try {
+        await auth.sendPasswordResetEmail(email);
+        alert('Password reset email sent to ' + email);
+      } catch (e) {
+        alert('Could not send reset email: ' + e.message);
+      }
+    }
+
+    function friendlyError(code) {
+      const map = {
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password. Try again.',
+        'auth/invalid-email': 'Invalid email address.',
+        'auth/too-many-requests': 'Too many attempts. Please wait a moment.',
+        'auth/invalid-credential': 'Incorrect email or password.',
+      };
+      return map[code] || 'Login failed. Please try again.';
+    }
+
+    // If already logged in, redirect
+    auth.onAuthStateChanged(async user => {
+      if (!user) return;
+      const playerDoc = await db.collection('players').doc(user.uid).get();
+      if (playerDoc.exists) { window.location.href = 'player-dashboard.html'; return; }
+      const teamDoc = await db.collection('teams').doc(user.uid).get();
+      if (teamDoc.exists) { window.location.href = 'team-dashboard.html'; return; }
+    });
+  </script>
+</body>
+</html>

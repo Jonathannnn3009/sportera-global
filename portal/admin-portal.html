@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal | Sportera Global</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="../logo.png" type="image/png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0d1642; --gold: #ffd700; --gold-dark: #b8860b;
+      --light: #f4f6fb; --white: #fff; --text: #333; --text-light: #666;
+      --green: #2e7d32; --red: #c62828; --orange: #e65100;
+      --radius: 12px; --shadow: 0 2px 16px rgba(13,22,66,0.10);
+    }
+    body { font-family: 'Open Sans', sans-serif; background: var(--light); color: var(--text); }
+
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+      background: #0a0f2e; display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-logo .name { font-family: 'Montserrat', sans-serif; font-size: 1rem; color: #fff; font-weight: 800; }
+    .sidebar-logo .name span { color: var(--gold); }
+    .sidebar-logo .sub { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 3px; background: rgba(255,0,0,0.15); display: inline-block; padding: 2px 8px; border-radius: 4px; color: #ff8a80; }
+    .nav-items { flex: 1; padding: 16px 0; overflow-y: auto; }
+    .nav-section { padding: 12px 20px 4px; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.3); font-weight: 700; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+      color: rgba(255,255,255,0.6); font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; text-decoration: none;
+    }
+    .nav-item:hover, .nav-item.active { color: #fff; background: rgba(255,255,255,0.07); border-left-color: var(--gold); }
+    .nav-item i { width: 18px; text-align: center; }
+    .nav-item .badge-count { margin-left: auto; background: var(--red); color: #fff; font-size: 0.7rem; padding: 1px 7px; border-radius: 10px; }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .logout-btn { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.4); font-size: 0.85rem; cursor: pointer; background: none; border: none; font-family: inherit; width: 100%; }
+    .logout-btn:hover { color: #ff6b6b; }
+
+    .main { margin-left: 240px; min-height: 100vh; }
+    .topbar {
+      background: var(--white); padding: 14px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50;
+    }
+    .topbar h2 { font-family: 'Montserrat', sans-serif; font-size: 1rem; color: var(--navy); }
+    .admin-badge { display: flex; align-items: center; gap: 8px; }
+    .admin-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
+    .admin-label { font-size: 0.82rem; color: var(--text-light); }
+
+    .content { padding: 28px 32px; }
+
+    /* TIMELINE CONTROLS */
+    .timeline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .toggle-card {
+      background: var(--white); border-radius: var(--radius); padding: 22px;
+      box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between;
+    }
+    .toggle-card .tl-info h4 { font-family: 'Montserrat', sans-serif; font-size: 0.95rem; color: var(--navy); margin-bottom: 4px; }
+    .toggle-card .tl-info p { font-size: 0.8rem; color: var(--text-light); }
+    .toggle-card .tl-icon { font-size: 1.4rem; color: var(--navy); margin-right: 14px; }
+    .toggle-card .tl-left { display: flex; align-items: center; }
+
+    /* TOGGLE SWITCH */
+    .switch { position: relative; display: inline-block; width: 52px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #ccc; border-radius: 28px; transition: 0.3s;
+    }
+    .slider:before {
+      content: ''; position: absolute; height: 20px; width: 20px;
+      left: 4px; bottom: 4px; background: white; border-radius: 50%; transition: 0.3s;
+    }
+    input:checked + .slider { background: #4caf50; }
+    input:checked + .slider:before { transform: translateX(24px); }
+
+    /* STATS CARDS */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .stat-card { background: var(--white); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--gold); }
+    .stat-card .num { font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--navy); }
+    .stat-card .lbl { font-size: 0.78rem; color: var(--text-light); margin-top: 4px; }
+
+    /* SECTION */
+    .section-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; }
+    .section-head { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+    .section-head-left { display: flex; align-items: center; gap: 10px; }
+    .section-head h3 { font-family: 'Montserrat', sans-serif; font-size: 0.95rem; color: var(--navy); }
+    .section-head i { color: var(--gold-dark); }
+    .section-body { padding: 20px 24px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th { background: #f8f9fd; color: var(--navy); font-weight: 700; padding: 10px 14px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 11px 14px; border-bottom: 1px solid #f0f0f0; color: var(--text); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+    .badge-green { background: #e8f5e9; color: var(--green); }
+    .badge-red { background: #fdecea; color: var(--red); }
+    .badge-orange { background: #fff3e0; color: var(--orange); }
+    .badge-navy { background: #e8eaf6; color: var(--navy); }
+    .badge-gold { background: #fff8e1; color: var(--gold-dark); }
+
+    .btn { padding: 8px 16px; border-radius: 7px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.82rem; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-green { background: #e8f5e9; color: var(--green); }
+    .btn-green:hover { background: var(--green); color: #fff; }
+    .btn-red { background: #fdecea; color: var(--red); }
+    .btn-red:hover { background: var(--red); color: #fff; }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { background: #1a237e; }
+    .btn-gold { background: var(--gold); color: var(--navy); }
+    .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+    .btn-gap { display: flex; gap: 8px; }
+
+    /* STATS INPUT FORM */
+    .stats-form { background: #f8f9fd; border-radius: var(--radius); padding: 20px; display: none; }
+    .stats-form.open { display: block; }
+    .form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--navy); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #e0e0e0;
+      border-radius: 7px; font-size: 0.88rem; font-family: inherit; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--navy); }
+
+    /* AWARD ASSIGN */
+    .award-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 12px; }
+
+    .empty { text-align: center; padding: 32px; color: var(--text-light); }
+    .empty i { font-size: 2rem; color: #ddd; display: block; margin-bottom: 10px; }
+
+    .loading { text-align: center; padding: 60px; }
+    .loading i { font-size: 2rem; color: var(--navy); animation: spin 1s linear infinite; display: block; margin-bottom: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .sec { display: none; }
+    .sec.active { display: block; }
+
+    .success-toast {
+      position: fixed; bottom: 24px; right: 24px; background: #4caf50; color: #fff;
+      padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.88rem;
+      display: none; z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .success-toast.show { display: block; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="name">Sportera <span>Global</span></div>
+      <div class="sub"><i class="fas fa-shield-alt"></i> Admin Portal</div>
+    </div>
+    <nav class="nav-items">
+      <div class="nav-section">Dashboard</div>
+      <a class="nav-item active" onclick="showSec('overview')"><i class="fas fa-home"></i> Overview</a>
+
+      <div class="nav-section">Players & Teams</div>
+      <a class="nav-item" onclick="showSec('players')"><i class="fas fa-running"></i> All Players</a>
+      <a class="nav-item" onclick="showSec('teams')"><i class="fas fa-users"></i> All Teams</a>
+      <a class="nav-item" id="navApprovals" onclick="showSec('approvals')"><i class="fas fa-clock"></i> Pending Approvals <span class="badge-count" id="pendingCount">0</span></a>
+
+      <div class="nav-section">Match & Stats</div>
+      <a class="nav-item" onclick="showSec('inputStats')"><i class="fas fa-chart-bar"></i> Input Match Stats</a>
+      <a class="nav-item" onclick="showSec('awards')"><i class="fas fa-medal"></i> Assign Awards</a>
+
+      <div class="nav-section">Controls</div>
+      <a class="nav-item" onclick="showSec('timeline')"><i class="fas fa-toggle-on"></i> Timeline Controls</a>
+      <a class="nav-item" onclick="showSec('accounts')"><i class="fas fa-user-plus"></i> Create Accounts</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <h2 id="pageTitle">Overview</h2>
+      <div class="admin-badge"><div class="admin-dot"></div><span class="admin-label">Admin · Sportera Global</span></div>
+    </div>
+
+    <div class="content">
+      <div id="loadingState" class="loading"><i class="fas fa-spinner"></i><p>Loading admin panel...</p></div>
+      <div id="adminContent" style="display:none">
+
+        <!-- OVERVIEW -->
+        <div id="sec-overview" class="sec active">
+          <div class="stats-row">
+            <div class="stat-card"><div class="num" id="ovPlayers">0</div><div class="lbl">Total Players</div></div>
+            <div class="stat-card"><div class="num" id="ovTeams">0</div><div class="lbl">Total Teams</div></div>
+            <div class="stat-card"><div class="num" id="ovPending">0</div><div class="lbl">Pending Approvals</div></div>
+            <div class="stat-card"><div class="num" id="ovMatches">0</div><div class="lbl">Matches Logged</div></div>
+          </div>
+
+          <!-- Quick timeline status -->
+          <div class="section-card">
+            <div class="section-head"><div class="section-head-left"><i class="fas fa-toggle-on"></i><h3>Current Portal Status</h3></div></div>
+            <div class="section-body">
+              <div class="timeline-grid" style="margin:0">
+                <div class="toggle-card">
+                  <div class="tl-left"><div class="tl-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="tl-info"><h4>Registration Window</h4><p>Open/close new registrations</p></div>
+                  </div>
+                  <label class="switch"><input type="checkbox" id="tlReg" onchange="saveToggle('registrationOpen', this.checked)"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-card">
+                  <div class="tl-left"><div class="tl-icon"><i class="fas fa-users-cog"></i></div>
+                    <div class="tl-info"><h4>Squad Editing</h4><p>Allow teams to add/remove players</p></div>
+                  </div>
+                  <label class="switch"><input type="checkbox" id="tlSquad" onchange="saveToggle('squadEditingOpen', this.checked)"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-card">
+                  <div class="tl-left"><div class="tl-icon"><i class="fas fa-eye"></i></div>
+                    <div class="tl-info"><h4>Player Portal</h4><p>Players can log in and view stats</p></div>
+                  </div>
+                  <label class="switch"><input type="checkbox" id="tlPlayer" onchange="saveToggle('playerPortalOpen', this.checked)"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-card">
+                  <div class="tl-left"><div class="tl-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="tl-info"><h4>Team Portal</h4><p>Teams can log in and view data</p></div>
+                  </div>
+                  <label class="switch"><input type="checkbox" id="tlTeam" onchange="saveToggle('teamPortalOpen', this.checked)"><span class="slider"></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALL PLAYERS -->
+        <div id="sec-players" class="sec">
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-head-left"><i class="fas fa-running"></i><h3>All Registered Players</h3></div>
+            </div>
+            <div class="section-body"><div id="playersTable"><div class="loading"><i class="fas fa-spinner"></i></div></div></div>
+          </div>
+        </div>
+
+        <!-- ALL TEAMS -->
+        <div id="sec-teams" class="sec">
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-head-left"><i class="fas fa-users"></i><h3>All Registered Teams</h3></div>
+            </div>
+            <div class="section-body"><div id="teamsTable"><div class="loading"><i class="fas fa-spinner"></i></div></div></div>
+          </div>
+        </div>
+
+        <!-- PENDING APPROVALS -->
+        <div id="sec-approvals" class="sec">
+          <div class="section-card">
+            <div class="section-head"><div class="section-head-left"><i class="fas fa-clock"></i><h3>Pending Squad Requests</h3></div></div>
+            <div class="section-body"><div id="approvalsTable"></div></div>
+          </div>
+        </div>
+
+        <!-- INPUT MATCH STATS -->
+        <div id="sec-inputStats" class="sec">
+          <div class="section-card">
+            <div class="section-head"><div class="section-head-left"><i class="fas fa-chart-bar"></i><h3>Input Match Stats</h3></div>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('statsFormWrap').classList.toggle('open')"><i class="fas fa-plus"></i> New Match</button>
+            </div>
+            <div class="section-body">
+              <div class="stats-form" id="statsFormWrap">
+                <h4 style="margin-bottom:14px; font-family:'Montserrat',sans-serif; color:var(--navy)">Log Match Stats</h4>
+                <div class="form-row">
+                  <div class="form-group"><label>Tournament</label><input type="text" id="mTournament" placeholder="e.g. IF5L Season 2"></div>
+                  <div class="form-group"><label>Match Date</label><input type="date" id="mDate"></div>
+                  <div class="form-group"><label>Team A</label><input type="text" id="mTeamA" placeholder="Team name"></div>
+                  <div class="form-group"><label>Team B</label><input type="text" id="mTeamB" placeholder="Team name"></div>
+                  <div class="form-group"><label>Score (A–B)</label><input type="text" id="mScore" placeholder="e.g. 3-1"></div>
+                  <div class="form-group"><label>Stage</label>
+                    <select id="mStage">
+                      <option value="">Select stage</option>
+                      <option>Group Stage</option><option>Quarter Final</option>
+                      <option>Semi Final</option><option>Final</option><option>Friendly</option>
+                    </select>
+                  </div>
+                </div>
+                <h4 style="margin: 14px 0 10px; font-family:'Montserrat',sans-serif; color:var(--navy); font-size:0.9rem">Player Stats in This Match</h4>
+                <div id="playerStatsRows">
+                  <div class="form-row player-stat-row" style="margin-bottom:10px">
+                    <div class="form-group" style="margin:0"><label>Player Name</label><input type="text" class="ps-name" placeholder="Full name"></div>
+                    <div class="form-group" style="margin:0"><label>Team</label><input type="text" class="ps-team" placeholder="Team"></div>
+                    <div class="form-group" style="margin:0"><label>Goals</label><input type="number" class="ps-goals" min="0" value="0"></div>
+                    <div class="form-group" style="margin:0"><label>Assists</label><input type="number" class="ps-assists" min="0" value="0"></div>
+                    <div class="form-group" style="margin:0"><label>Yellow Cards</label><input type="number" class="ps-yc" min="0" value="0"></div>
+                    <div class="form-group" style="margin:0"><label>Red Cards</label><input type="number" class="ps-rc" min="0" value="0"></div>
+                  </div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap">
+                  <button class="btn btn-primary" onclick="addPlayerStatRow()"><i class="fas fa-plus"></i> Add Player</button>
+                  <button class="btn btn-gold" onclick="submitMatchStats()"><i class="fas fa-save"></i> Save Match Stats</button>
+                  <button class="btn" style="background:#f5f5f5; color:#666" onclick="document.getElementById('statsFormWrap').classList.remove('open')">Cancel</button>
+                </div>
+              </div>
+              <div id="matchLogTable" style="margin-top:20px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AWARDS -->
+        <div id="sec-awards" class="sec">
+          <div class="section-card">
+            <div class="section-head"><div class="section-head-left"><i class="fas fa-medal"></i><h3>Assign Awards</h3></div></div>
+            <div class="section-body">
+              <div style="margin-bottom:20px">
+                <div class="award-row">
+                  <div class="form-group" style="margin:0"><label style="font-size:0.75rem;font-weight:700;color:var(--navy);text-transform:uppercase;display:block;margin-bottom:5px">Award Type</label>
+                    <select id="awardType">
+                      <option>Golden Boot</option><option>Best Player</option>
+                      <option>Golden Glove</option><option>Best Team</option><option>Fair Play</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin:0"><label style="font-size:0.75rem;font-weight:700;color:var(--navy);text-transform:uppercase;display:block;margin-bottom:5px">Player / Team Name</label>
+                    <input type="text" id="awardRecipient" placeholder="Name">
+                  </div>
+                  <div class="form-group" style="margin:0"><label style="font-size:0.75rem;font-weight:700;color:var(--navy);text-transform:uppercase;display:block;margin-bottom:5px">Tournament</label>
+                    <input type="text" id="awardTournament" placeholder="e.g. IF5L Season 2">
+                  </div>
+                  <button class="btn btn-gold" onclick="assignAward()"><i class="fas fa-plus"></i> Assign</button>
+                </div>
+              </div>
+              <div id="awardsLog"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TIMELINE CONTROLS -->
+        <div id="sec-timeline" class="sec">
+          <div class="timeline-grid" style="margin-bottom:0">
+            <div class="toggle-card">
+              <div class="tl-left"><div class="tl-icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="tl-info"><h4>Registration Window</h4><p>Open: new team & player registrations accepted<br>Closed: form shows "registrations closed"</p></div>
+              </div>
+              <label class="switch"><input type="checkbox" id="tlReg2" onchange="saveToggle('registrationOpen', this.checked); document.getElementById('tlReg').checked=this.checked"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-card">
+              <div class="tl-left"><div class="tl-icon"><i class="fas fa-users-cog"></i></div>
+                <div class="tl-info"><h4>Squad Editing Window</h4><p>Open: teams can add/remove players<br>Closed: squad is locked, view only</p></div>
+              </div>
+              <label class="switch"><input type="checkbox" id="tlSquad2" onchange="saveToggle('squadEditingOpen', this.checked); document.getElementById('tlSquad').checked=this.checked"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-card">
+              <div class="tl-left"><div class="tl-icon"><i class="fas fa-eye"></i></div>
+                <div class="tl-info"><h4>Player Portal Access</h4><p>Open: players can log in and see stats<br>Closed: login blocked with message</p></div>
+              </div>
+              <label class="switch"><input type="checkbox" id="tlPlayer2" onchange="saveToggle('playerPortalOpen', this.checked); document.getElementById('tlPlayer').checked=this.checked"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-card">
+              <div class="tl-left"><div class="tl-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="tl-info"><h4>Team Portal Access</h4><p>Open: teams can log in and manage<br>Closed: login blocked with message</p></div>
+              </div>
+              <label class="switch"><input type="checkbox" id="tlTeam2" onchange="saveToggle('teamPortalOpen', this.checked); document.getElementById('tlTeam').checked=this.checked"><span class="slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- CREATE ACCOUNTS -->
+        <div id="sec-accounts" class="sec">
+          <div class="section-card">
+            <div class="section-head"><div class="section-head-left"><i class="fas fa-user-plus"></i><h3>Create Player / Team Account</h3></div></div>
+            <div class="section-body">
+              <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:20px">Create login credentials for a registered player or team. They will receive a password reset email to set their own password.</p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Account Type</label>
+                  <select id="acctType">
+                    <option value="player">Player</option>
+                    <option value="team">Team</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Full Name / Team Name</label>
+                  <input type="text" id="acctName" placeholder="Name">
+                </div>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" id="acctEmail" placeholder="email@example.com">
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="createAccount()"><i class="fas fa-user-plus"></i> Create Account & Send Login Email</button>
+              <div id="acctResult" style="margin-top:14px; font-size:0.88rem;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div class="success-toast" id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    });
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const ADMIN_EMAIL = 'football5association@gmail.com';
+
+    // Auth guard
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+      if (user.email !== ADMIN_EMAIL) {
+        alert('Access denied. Admin only.'); await auth.signOut(); window.location.href = 'login.html'; return;
+      }
+      loadDashboard();
+    });
+
+    async function loadDashboard() {
+      try {
+        const [players, teams, requests, settings, matches] = await Promise.all([
+          db.collection('players').get(),
+          db.collection('teams').get(),
+          db.collection('squadRequests').where('status','==','pending').get(),
+          db.collection('settings').doc('portal').get(),
+          db.collection('matches').get()
+        ]);
+
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+
+        const pCount = players.size, tCount = teams.size, rCount = requests.size, mCount = matches.size;
+        document.getElementById('ovPlayers').textContent = pCount;
+        document.getElementById('ovTeams').textContent = tCount;
+        document.getElementById('ovPending').textContent = rCount;
+        document.getElementById('ovMatches').textContent = mCount;
+        document.getElementById('pendingCount').textContent = rCount;
+        if (rCount === 0) document.getElementById('pendingCount').style.display = 'none';
+
+        // Settings toggles
+        if (settings.exists) {
+          const s = settings.data();
+          ['tlReg','tlReg2'].forEach(id => document.getElementById(id).checked = !!s.registrationOpen);
+          ['tlSquad','tlSquad2'].forEach(id => document.getElementById(id).checked = !!s.squadEditingOpen);
+          ['tlPlayer','tlPlayer2'].forEach(id => document.getElementById(id).checked = !!s.playerPortalOpen);
+          ['tlTeam','tlTeam2'].forEach(id => document.getElementById(id).checked = !!s.teamPortalOpen);
+        }
+
+        // Players table
+        if (players.size) {
+          document.getElementById('playersTable').innerHTML = `
+            <table><thead><tr><th>Name</th><th>Team</th><th>City</th><th>Position</th><th>Phone</th><th>Actions</th></tr></thead>
+            <tbody>${players.docs.map(d => {
+              const p = d.data();
+              return `<tr>
+                <td><strong>${p.playerName||'--'}</strong></td>
+                <td>${p.playerTeam||'--'}</td>
+                <td>${p.playerCity||'--'}</td>
+                <td>${p.playerPosition||'--'}</td>
+                <td>${p.playerPhone||'--'}</td>
+                <td><button class="btn btn-primary btn-sm" onclick="viewPlayerStats('${d.id}')"><i class="fas fa-chart-bar"></i> Stats</button></td>
+              </tr>`;
+            }).join('')}</tbody></table>`;
+        } else {
+          document.getElementById('playersTable').innerHTML = '<div class="empty"><i class="fas fa-running"></i>No players registered yet.</div>';
+        }
+
+        // Teams table
+        if (teams.size) {
+          document.getElementById('teamsTable').innerHTML = `
+            <table><thead><tr><th>Team Name</th><th>City</th><th>Coach</th><th>Email</th><th>Tournament</th></tr></thead>
+            <tbody>${teams.docs.map(d => {
+              const t = d.data();
+              return `<tr>
+                <td><strong>${t.teamName||'--'}</strong></td>
+                <td>${t.teamCity||'--'}</td>
+                <td>${t.coachName||'--'}</td>
+                <td>${t.teamEmail||'--'}</td>
+                <td>${t.tournament||'--'}</td>
+              </tr>`;
+            }).join('')}</tbody></table>`;
+        } else {
+          document.getElementById('teamsTable').innerHTML = '<div class="empty"><i class="fas fa-users"></i>No teams registered yet.</div>';
+        }
+
+        // Approvals
+        if (requests.size) {
+          document.getElementById('approvalsTable').innerHTML = `
+            <table><thead><tr><th>Team</th><th>Player Name</th><th>Position</th><th>DOB</th><th>Action</th></tr></thead>
+            <tbody>${requests.docs.map(d => {
+              const r = d.data();
+              return `<tr>
+                <td>${r.teamName||'--'}</td>
+                <td><strong>${r.playerName||'--'}</strong></td>
+                <td>${r.position||'--'}</td>
+                <td>${r.dob||'--'}</td>
+                <td><div class="btn-gap">
+                  <button class="btn btn-green btn-sm" onclick="approveRequest('${d.id}', true)"><i class="fas fa-check"></i> Approve</button>
+                  <button class="btn btn-red btn-sm" onclick="approveRequest('${d.id}', false)"><i class="fas fa-times"></i> Reject</button>
+                </div></td>
+              </tr>`;
+            }).join('')}</tbody></table>`;
+        } else {
+          document.getElementById('approvalsTable').innerHTML = '<div class="empty"><i class="fas fa-check-circle"></i>No pending approvals.</div>';
+        }
+
+        // Match log
+        if (matches.size) {
+          document.getElementById('matchLogTable').innerHTML = `
+            <table><thead><tr><th>Tournament</th><th>Match</th><th>Score</th><th>Date</th><th>Stage</th></tr></thead>
+            <tbody>${matches.docs.map(d => {
+              const m = d.data();
+              return `<tr>
+                <td>${m.tournament||'--'}</td>
+                <td><strong>${m.teamA||'--'} vs ${m.teamB||'--'}</strong></td>
+                <td style="font-family:'Montserrat',sans-serif;font-weight:700">${m.score||'--'}</td>
+                <td>${m.date||'--'}</td>
+                <td><span class="badge badge-navy">${m.stage||'--'}</span></td>
+              </tr>`;
+            }).join('')}</tbody></table>`;
+        } else {
+          document.getElementById('matchLogTable').innerHTML = '<div class="empty"><i class="fas fa-futbol"></i>No matches logged yet.</div>';
+        }
+
+        loadAwards();
+
+      } catch(e) {
+        console.error(e);
+        document.getElementById('loadingState').innerHTML = '<p style="color:red;text-align:center">Error loading dashboard: ' + e.message + '</p>';
+      }
+    }
+
+    async function saveToggle(key, val) {
+      try {
+        await db.collection('settings').doc('portal').set({ [key]: val }, { merge: true });
+        toast(key.replace(/([A-Z])/g, ' $1') + ' ' + (val ? 'OPENED' : 'CLOSED'));
+      } catch(e) { alert('Error saving: ' + e.message); }
+    }
+
+    async function approveRequest(id, approved) {
+      try {
+        const doc = await db.collection('squadRequests').doc(id).get();
+        const r = doc.data();
+        await db.collection('squadRequests').doc(id).update({ status: approved ? 'approved' : 'rejected' });
+        if (approved) {
+          const teamsQ = await db.collection('teams').where('teamName','==', r.teamName).limit(1).get();
+          if (!teamsQ.empty) {
+            await teamsQ.docs[0].ref.update({
+              squad: firebase.firestore.FieldValue.arrayUnion({
+                name: r.playerName, position: r.position, dob: r.dob, phone: r.phone, status: 'approved'
+              })
+            });
+          }
+        }
+        toast(approved ? `${r.playerName} approved and added to squad!` : `${r.playerName} request rejected.`);
+        loadDashboard();
+      } catch(e) { alert('Error: ' + e.message); }
+    }
+
+    function addPlayerStatRow() {
+      const row = document.createElement('div');
+      row.className = 'form-row player-stat-row';
+      row.style.marginBottom = '10px';
+      row.innerHTML = `
+        <div class="form-group" style="margin:0"><input type="text" class="ps-name" placeholder="Player name"></div>
+        <div class="form-group" style="margin:0"><input type="text" class="ps-team" placeholder="Team"></div>
+        <div class="form-group" style="margin:0"><input type="number" class="ps-goals" min="0" value="0"></div>
+        <div class="form-group" style="margin:0"><input type="number" class="ps-assists" min="0" value="0"></div>
+        <div class="form-group" style="margin:0"><input type="number" class="ps-yc" min="0" value="0"></div>
+        <div class="form-group" style="margin:0"><input type="number" class="ps-rc" min="0" value="0"></div>`;
+      document.getElementById('playerStatsRows').appendChild(row);
+    }
+
+    async function submitMatchStats() {
+      const tournament = document.getElementById('mTournament').value.trim();
+      const teamA = document.getElementById('mTeamA').value.trim();
+      const teamB = document.getElementById('mTeamB').value.trim();
+      const score = document.getElementById('mScore').value.trim();
+      if (!tournament || !teamA || !teamB || !score) { alert('Please fill Tournament, Team A, Team B and Score.'); return; }
+
+      const playerStats = [];
+      document.querySelectorAll('.player-stat-row').forEach(row => {
+        const name = row.querySelector('.ps-name').value.trim();
+        if (!name) return;
+        playerStats.push({
+          name, team: row.querySelector('.ps-team').value.trim(),
+          goals: +row.querySelector('.ps-goals').value,
+          assists: +row.querySelector('.ps-assists').value,
+          yellowCards: +row.querySelector('.ps-yc').value,
+          redCards: +row.querySelector('.ps-rc').value,
+        });
+      });
+
+      try {
+        const matchRef = await db.collection('matches').add({
+          tournament, teamA, teamB, score,
+          date: document.getElementById('mDate').value,
+          stage: document.getElementById('mStage').value,
+          playerStats,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Update each player's cumulative stats
+        for (const ps of playerStats) {
+          const q = await db.collection('players').where('playerName','==', ps.name).limit(1).get();
+          if (!q.empty) {
+            const pRef = q.docs[0].ref;
+            const pData = q.docs[0].data();
+            const existing = pData.stats || {};
+            await pRef.update({
+              stats: {
+                matchesPlayed: (existing.matchesPlayed||0) + 1,
+                goals: (existing.goals||0) + ps.goals,
+                assists: (existing.assists||0) + ps.assists,
+                yellowCards: (existing.yellowCards||0) + ps.yellowCards,
+                redCards: (existing.redCards||0) + ps.redCards,
+                cleanSheets: existing.cleanSheets || 0,
+              },
+              matches: firebase.firestore.FieldValue.arrayUnion({
+                matchId: matchRef.id, tournament, opponent: ps.team === teamA ? teamB : teamA,
+                date: document.getElementById('mDate').value, score,
+                goals: ps.goals, yellowCards: ps.yellowCards, redCards: ps.redCards,
+                result: (() => { const [a,b] = score.split('-').map(Number); if(ps.team===teamA) return a>b?'Win':a<b?'Loss':'Draw'; return b>a?'Win':b<a?'Loss':'Draw'; })()
+              })
+            });
+          }
+        }
+
+        toast('Match stats saved and player records updated!');
+        document.getElementById('statsFormWrap').classList.remove('open');
+        loadDashboard();
+      } catch(e) { alert('Error saving stats: ' + e.message); }
+    }
+
+    async function loadAwards() {
+      const snap = await db.collection('awards').orderBy('assignedAt','desc').limit(30).get().catch(()=>null);
+      if (!snap || snap.empty) {
+        document.getElementById('awardsLog').innerHTML = '<div class="empty"><i class="fas fa-medal"></i>No awards assigned yet.</div>';
+        return;
+      }
+      const icons = { 'Golden Boot':'fa-shoe-prints','Best Player':'fa-star','Golden Glove':'fa-hands','Best Team':'fa-shield-alt','Fair Play':'fa-handshake' };
+      document.getElementById('awardsLog').innerHTML = `
+        <table><thead><tr><th>Award</th><th>Recipient</th><th>Tournament</th></tr></thead>
+        <tbody>${snap.docs.map(d => { const a=d.data(); return `
+          <tr>
+            <td><i class="fas ${icons[a.type]||'fa-medal'}" style="color:var(--gold-dark);margin-right:8px"></i><strong>${a.type}</strong></td>
+            <td>${a.recipient}</td>
+            <td>${a.tournament}</td>
+          </tr>`; }).join('')}</tbody></table>`;
+    }
+
+    async function assignAward() {
+      const type = document.getElementById('awardType').value;
+      const recipient = document.getElementById('awardRecipient').value.trim();
+      const tournament = document.getElementById('awardTournament').value.trim();
+      if (!recipient || !tournament) { alert('Please fill recipient name and tournament.'); return; }
+      try {
+        await db.collection('awards').add({ type, recipient, tournament, assignedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const q = await db.collection('players').where('playerName','==', recipient).limit(1).get();
+        if (!q.empty) {
+          await q.docs[0].ref.update({ awards: firebase.firestore.FieldValue.arrayUnion({ type, tournament }) });
+        }
+        toast(`${type} awarded to ${recipient}!`);
+        document.getElementById('awardRecipient').value = '';
+        document.getElementById('awardTournament').value = '';
+        loadAwards();
+      } catch(e) { alert('Error assigning award: ' + e.message); }
+    }
+
+    async function createAccount() {
+      const type = document.getElementById('acctType').value;
+      const name = document.getElementById('acctName').value.trim();
+      const email = document.getElementById('acctEmail').value.trim();
+      if (!name || !email) { alert('Name and email required.'); return; }
+      const resultEl = document.getElementById('acctResult');
+      resultEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+      try {
+        const tempPass = Math.random().toString(36).slice(-10) + 'A1!';
+        const cred = await auth.createUserWithEmailAndPassword(email, tempPass);
+        const uid = cred.user.uid;
+        const col = type === 'player' ? 'players' : 'teams';
+        const nameField = type === 'player' ? 'playerName' : 'teamName';
+        await db.collection(col).doc(uid).set({ [nameField]: name, email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await auth.sendPasswordResetEmail(email);
+        resultEl.innerHTML = `<span style="color:var(--green)"><i class="fas fa-check-circle"></i> Account created! Password reset email sent to <strong>${email}</strong>. They can set their own password.</span>`;
+        document.getElementById('acctName').value = '';
+        document.getElementById('acctEmail').value = '';
+      } catch(e) {
+        resultEl.innerHTML = `<span style="color:var(--red)"><i class="fas fa-times-circle"></i> Error: ${e.message}</span>`;
+      }
+    }
+
+    function viewPlayerStats(uid) {
+      showSec('players');
+      toast('Open player dashboard to see full stats (uid: ' + uid.substring(0,8) + ')');
+    }
+
+    function showSec(id) {
+      if (event && event.target) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); event.target.closest('.nav-item').classList.add('active'); }
+      document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+      document.getElementById('sec-' + id).classList.add('active');
+      const titles = { overview:'Overview', players:'All Players', teams:'All Teams', approvals:'Pending Approvals', inputStats:'Input Match Stats', awards:'Assign Awards', timeline:'Timeline Controls', accounts:'Create Accounts' };
+      document.getElementById('pageTitle').textContent = titles[id] || id;
+    }
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function logout() { auth.signOut().then(() => window.location.href = 'login.html'); }
+  </script>
+</body>
+</html>
