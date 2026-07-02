@@ -66,6 +66,14 @@
     <div class="row"><span class="label">Note</span><span class="val">Use the real account — admin login uses Firebase Auth</span></div>
   </div>
 
+  <div class="card">
+    <h3>🔑 Your Admin Login <span class="badge">REQUIRED</span></h3>
+    <div style="margin-bottom:6px"><label style="color:rgba(255,255,255,0.45);font-size:0.82rem;">Admin Email</label>
+    <input type="email" id="adminEmail" value="football5association@gmail.com" style="width:100%;padding:8px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#fff;font-size:0.85rem;margin-top:4px;"></div>
+    <div><label style="color:rgba(255,255,255,0.45);font-size:0.82rem;">Admin Password</label>
+    <input type="password" id="adminPass" placeholder="Your admin password" style="width:100%;padding:8px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#fff;font-size:0.85rem;margin-top:4px;"></div>
+  </div>
+
   <button class="btn" id="runBtn" onclick="runSetup()">▶ Create Player & Team Test Accounts</button>
 
   <div id="log"></div>
@@ -168,9 +176,23 @@
     btn.textContent = 'Setting up...';
     document.getElementById('log').innerHTML = '';
 
+    const adminEmail = document.getElementById('adminEmail').value.trim();
+    const adminPass = document.getElementById('adminPass').value;
+    if (!adminPass) { log('Please enter your admin password above.', 'err'); btn.disabled = false; btn.textContent = '▶ Retry Setup'; return; }
+
     try {
-      // --- Player ---
+      // --- Collect UIDs first (creates accounts, signs in as each) ---
       const playerUid = await createOrGetUser('player@sportera.test', 'Player@123', 'Player');
+      await auth.signOut();
+      const teamUid = await createOrGetUser('team@sportera.test', 'Team@123', 'Team');
+      await auth.signOut();
+
+      // --- Sign in as ADMIN to write all Firestore docs ---
+      const adminEntry = log('Signing in as admin to write data...');
+      await auth.signInWithEmailAndPassword(adminEmail, adminPass);
+      adminEntry.className = 'log-item ok';
+      adminEntry.innerHTML = '<span>✓</span> Signed in as admin';
+
       await writeDoc('players', playerUid, {
         playerName: 'Rahul Sharma',
         playerCity: 'Mumbai',
@@ -206,10 +228,6 @@
         ]
       }, 'Player');
 
-      await auth.signOut();
-
-      // --- Team ---
-      const teamUid = await createOrGetUser('team@sportera.test', 'Team@123', 'Team');
       await writeDoc('teams', teamUid, {
         teamName: 'Mumbai Warriors FC',
         teamCity: 'Mumbai',
@@ -236,8 +254,6 @@
           { opponent: 'Kolkata Kings', tournament: 'Goa Cup 2024', date: '12 Mar 2024', score: '1 - 2', result: 'Loss' }
         ]
       }, 'Team');
-
-      await auth.signOut();
 
       // --- Portal Settings ---
       await writeSettings();
