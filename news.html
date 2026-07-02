@@ -227,8 +227,7 @@
             <div class="news-grid">
                 <!-- News Feed -->
                 <div id="newsArticlesFeed">
-                    <!-- Placeholder: news articles will be added here by admin -->
-                    <div class="news-card fade-in">
+                    <div class="news-card fade-in" data-category="announcements">
                         <div class="news-card-image" style="height: 220px;">
                             <i class="fas fa-futbol"></i>
                         </div>
@@ -239,11 +238,11 @@
                             </div>
                             <h3>Sportera Global Officially Launches at sporteraglobal.com</h3>
                             <p>We are thrilled to announce the official launch of the Sportera Global website — your one-stop destination for Football 5 development, the Indian Football 5 League, tournaments, and international opportunities for athletes across India.</p>
-                            <a href="#" class="news-read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                            <a href="about.html" class="news-read-more">Learn More <i class="fas fa-arrow-right"></i></a>
                         </div>
                     </div>
 
-                    <div class="news-card fade-in">
+                    <div class="news-card fade-in" data-category="if5l">
                         <div class="news-card-image" style="height: 220px;">
                             <i class="fas fa-trophy"></i>
                         </div>
@@ -258,7 +257,7 @@
                         </div>
                     </div>
 
-                    <div class="news-card fade-in">
+                    <div class="news-card fade-in" data-category="tournaments">
                         <div class="news-card-image" style="height: 220px;">
                             <i class="fas fa-medal"></i>
                         </div>
@@ -357,5 +356,21 @@
     </footer>
 
     <script src="js/main.js"></script>
+    <script>
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const filter = this.textContent.trim().toLowerCase().replace(' ', '');
+                document.querySelectorAll('#newsArticlesFeed .news-card').forEach(card => {
+                    if (filter === 'all' || card.dataset.category === filter) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
