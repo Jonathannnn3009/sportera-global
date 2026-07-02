@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Setup Test Accounts | Sportera Global</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Open Sans', sans-serif; background: #0d1642; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .wrap { width: 100%; max-width: 560px; }
+    h1 { font-family: 'Montserrat', sans-serif; color: #ffd700; font-size: 1.4rem; text-align: center; margin-bottom: 6px; }
+    .sub { color: rgba(255,255,255,0.45); font-size: 0.83rem; text-align: center; margin-bottom: 28px; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.15); border-radius: 14px; padding: 24px; margin-bottom: 16px; }
+    .card h3 { font-family: 'Montserrat', sans-serif; color: #fff; font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 0.7rem; background: rgba(255,215,0,0.2); color: #ffd700; padding: 2px 8px; border-radius: 4px; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .row .label { color: rgba(255,255,255,0.45); font-size: 0.82rem; }
+    .row .val { color: #fff; font-size: 0.82rem; font-weight: 600; font-family: monospace; }
+    .btn {
+      width: 100%; padding: 14px; background: #ffd700; color: #0d1642;
+      border: none; border-radius: 10px; font-family: 'Montserrat', sans-serif;
+      font-size: 1rem; font-weight: 800; cursor: pointer; margin-top: 8px; transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #log { margin-top: 20px; }
+    .log-item { padding: 9px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 0.83rem; display: flex; align-items: center; gap: 10px; }
+    .log-item.pending { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+    .log-item.ok { background: rgba(46,125,50,0.2); color: #81c784; }
+    .log-item.skip { background: rgba(230,145,0,0.15); color: #ffc107; }
+    .log-item.err { background: rgba(198,40,40,0.2); color: #ef9a9a; }
+    .done-box { background: rgba(46,125,50,0.15); border: 1px solid rgba(81,199,84,0.25); border-radius: 10px; padding: 18px; text-align: center; margin-top: 16px; display: none; }
+    .done-box h3 { color: #81c784; font-family: 'Montserrat', sans-serif; margin-bottom: 8px; }
+    .done-box p { color: rgba(255,255,255,0.5); font-size: 0.83rem; }
+    .done-box .links { margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .done-box a { background: #ffd700; color: #0d1642; padding: 8px 18px; border-radius: 7px; font-weight: 700; text-decoration: none; font-size: 0.85rem; font-family: 'Montserrat', sans-serif; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Test Account Setup</h1>
+  <p class="sub">Creates 3 dummy Firebase accounts with sample data — run once only</p>
+
+  <div class="card">
+    <h3>👤 Player Account <span class="badge">PLAYER</span></h3>
+    <div class="row"><span class="label">Email</span><span class="val">player@sportera.test</span></div>
+    <div class="row"><span class="label">Password</span><span class="val">Player@123</span></div>
+    <div class="row"><span class="label">Name</span><span class="val">Rahul Sharma</span></div>
+    <div class="row"><span class="label">Position</span><span class="val">Forward</span></div>
+    <div class="row"><span class="label">City</span><span class="val">Mumbai</span></div>
+  </div>
+
+  <div class="card">
+    <h3>🏟️ Team Account <span class="badge">TEAM</span></h3>
+    <div class="row"><span class="label">Email</span><span class="val">team@sportera.test</span></div>
+    <div class="row"><span class="label">Password</span><span class="val">Team@123</span></div>
+    <div class="row"><span class="label">Team Name</span><span class="val">Mumbai Warriors FC</span></div>
+    <div class="row"><span class="label">Coach</span><span class="val">Anil Mehta</span></div>
+    <div class="row"><span class="label">City</span><span class="val">Mumbai</span></div>
+  </div>
+
+  <div class="card">
+    <h3>🛡️ Admin Account <span class="badge">ADMIN</span></h3>
+    <div class="row"><span class="label">Email</span><span class="val">football5association@gmail.com</span></div>
+    <div class="row"><span class="label">Password</span><span class="val">(use your existing Gmail password)</span></div>
+    <div class="row"><span class="label">Note</span><span class="val">Use the real account — admin login uses Firebase Auth</span></div>
+  </div>
+
+  <button class="btn" id="runBtn" onclick="runSetup()">▶ Create Player & Team Test Accounts</button>
+
+  <div id="log"></div>
+  <div class="done-box" id="doneBox">
+    <h3>✓ Setup Complete</h3>
+    <p>All test accounts created. You can now log in to each portal.</p>
+    <div class="links">
+      <a href="login.html">Player / Team Login</a>
+      <a href="admin-portal.html">Admin Panel</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+    authDomain: "f5awebsite.firebaseapp.com",
+    databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+    projectId: "f5awebsite",
+    storageBucket: "f5awebsite.firebasestorage.app",
+    messagingSenderId: "751370782333",
+    appId: "1:751370782333:web:16637ab22e324a2fa25314"
+  });
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  function log(msg, type = 'pending') {
+    const icons = { pending: '⏳', ok: '✓', skip: '⚠', err: '✗' };
+    const el = document.createElement('div');
+    el.className = 'log-item ' + type;
+    el.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+    document.getElementById('log').appendChild(el);
+    return el;
+  }
+
+  async function createOrGetUser(email, password, label) {
+    const entry = log(`Creating ${label} account (${email})...`);
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      entry.className = 'log-item ok';
+      entry.innerHTML = `<span>✓</span> ${label} account created`;
+      return cred.user.uid;
+    } catch(e) {
+      if (e.code === 'auth/email-already-in-use') {
+        // Sign in to get UID
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        entry.className = 'log-item skip';
+        entry.innerHTML = `<span>⚠</span> ${label} account already exists — using existing`;
+        await auth.signOut();
+        return cred.user.uid;
+      }
+      entry.className = 'log-item err';
+      entry.innerHTML = `<span>✗</span> ${label} account failed: ${e.message}`;
+      throw e;
+    }
+  }
+
+  async function writeDoc(collection, uid, data, label) {
+    const entry = log(`Writing ${label} Firestore data...`);
+    try {
+      const existing = await db.collection(collection).doc(uid).get();
+      if (existing.exists) {
+        entry.className = 'log-item skip';
+        entry.innerHTML = `<span>⚠</span> ${label} Firestore doc already exists — skipped`;
+        return;
+      }
+      await db.collection(collection).doc(uid).set(data);
+      entry.className = 'log-item ok';
+      entry.innerHTML = `<span>✓</span> ${label} data written to Firestore`;
+    } catch(e) {
+      entry.className = 'log-item err';
+      entry.innerHTML = `<span>✗</span> ${label} Firestore write failed: ${e.message}`;
+      throw e;
+    }
+  }
+
+  async function writeSettings() {
+    const entry = log('Writing portal settings...');
+    try {
+      await db.collection('settings').doc('portal').set({
+        squadEditingOpen: true,
+        registrationOpen: true,
+        playerPortalOpen: true,
+        teamPortalOpen: true
+      }, { merge: true });
+      entry.className = 'log-item ok';
+      entry.innerHTML = '<span>✓</span> Portal settings written (all toggles ON)';
+    } catch(e) {
+      entry.className = 'log-item err';
+      entry.innerHTML = '<span>✗</span> Settings write failed: ' + e.message;
+    }
+  }
+
+  async function runSetup() {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.textContent = 'Setting up...';
+    document.getElementById('log').innerHTML = '';
+
+    try {
+      // --- Player ---
+      const playerUid = await createOrGetUser('player@sportera.test', 'Player@123', 'Player');
+      await writeDoc('players', playerUid, {
+        playerName: 'Rahul Sharma',
+        playerCity: 'Mumbai',
+        playerPosition: 'Forward',
+        playerTeam: 'Mumbai Warriors FC',
+        playerDOB: '15 March 2000',
+        playerId: 'SGP-001',
+        email: 'player@sportera.test',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        stats: {
+          matchesPlayed: 12,
+          goals: 8,
+          assists: 4,
+          yellowCards: 2,
+          redCards: 0,
+          cleanSheets: 0
+        },
+        tournaments: [
+          { name: 'IF5L Season 1', season: '2024', team: 'Mumbai Warriors FC', status: 'Champion' },
+          { name: 'Goa Cup 2024', season: '2024', team: 'Mumbai Warriors FC', status: 'Runner-Up' },
+          { name: 'Delhi Open 2025', season: '2025', team: 'Mumbai Warriors FC', status: 'Ongoing' }
+        ],
+        matches: [
+          { opponent: 'Delhi Dragons', tournament: 'IF5L Season 1', date: '10 Jan 2024', goals: 2, yellowCards: 0, redCards: 0, result: 'Win' },
+          { opponent: 'Bangalore Blaze', tournament: 'IF5L Season 1', date: '18 Jan 2024', goals: 1, yellowCards: 1, redCards: 0, result: 'Draw' },
+          { opponent: 'Chennai FC', tournament: 'Goa Cup 2024', date: '5 Mar 2024', goals: 3, yellowCards: 0, redCards: 0, result: 'Win' },
+          { opponent: 'Kolkata Kings', tournament: 'Goa Cup 2024', date: '12 Mar 2024', goals: 0, yellowCards: 1, redCards: 0, result: 'Loss' },
+          { opponent: 'Hyderabad Hawks', tournament: 'Delhi Open 2025', date: '2 Jan 2025', goals: 2, yellowCards: 0, redCards: 0, result: 'Win' }
+        ],
+        awards: [
+          { type: 'Golden Boot', tournament: 'IF5L Season 1', season: '2024' },
+          { type: 'Best Player', tournament: 'Goa Cup 2024', season: '2024' }
+        ]
+      }, 'Player');
+
+      await auth.signOut();
+
+      // --- Team ---
+      const teamUid = await createOrGetUser('team@sportera.test', 'Team@123', 'Team');
+      await writeDoc('teams', teamUid, {
+        teamName: 'Mumbai Warriors FC',
+        teamCity: 'Mumbai',
+        teamEmail: 'team@sportera.test',
+        coachName: 'Anil Mehta',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        squad: [
+          { name: 'Rahul Sharma', position: 'Forward', status: 'approved' },
+          { name: 'Vikram Nair', position: 'Midfielder', status: 'approved' },
+          { name: 'Prateek Singh', position: 'Defender', status: 'approved' },
+          { name: 'Arjun Patel', position: 'Goalkeeper', status: 'approved' },
+          { name: 'Suresh Rao', position: 'Defender', status: 'pending' }
+        ],
+        stats: { goalsScored: 24, goalsConceded: 11, wins: 7, losses: 2 },
+        tournaments: [
+          { name: 'IF5L Season 1', season: '2024', division: 'Open', status: 'Completed', position: '1st' },
+          { name: 'Goa Cup 2024', season: '2024', division: 'Open', status: 'Completed', position: '2nd' },
+          { name: 'Delhi Open 2025', season: '2025', division: 'Open', status: 'Ongoing', position: 'TBD' }
+        ],
+        matches: [
+          { opponent: 'Delhi Dragons', tournament: 'IF5L Season 1', date: '10 Jan 2024', score: '3 - 1', result: 'Win' },
+          { opponent: 'Bangalore Blaze', tournament: 'IF5L Season 1', date: '18 Jan 2024', score: '2 - 2', result: 'Draw' },
+          { opponent: 'Chennai FC', tournament: 'Goa Cup 2024', date: '5 Mar 2024', score: '4 - 0', result: 'Win' },
+          { opponent: 'Kolkata Kings', tournament: 'Goa Cup 2024', date: '12 Mar 2024', score: '1 - 2', result: 'Loss' }
+        ]
+      }, 'Team');
+
+      await auth.signOut();
+
+      // --- Portal Settings ---
+      await writeSettings();
+
+      log('All done!', 'ok');
+      document.getElementById('doneBox').style.display = 'block';
+      btn.textContent = '✓ Done';
+
+    } catch(e) {
+      log('Setup stopped due to error: ' + e.message, 'err');
+      btn.disabled = false;
+      btn.textContent = '▶ Retry Setup';
+    }
+  }
+</script>
+</body>
+</html>
