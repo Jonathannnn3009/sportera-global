@@ -17,6 +17,39 @@
     }
     body { font-family: 'Open Sans', sans-serif; background: var(--light); color: var(--text); }
 
+    /* ADMIN LOGIN SCREEN */
+    #adminLoginScreen {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #060c22 0%, #0d1642 60%, #060c22 100%);
+      align-items: center; justify-content: center; flex-direction: column;
+    }
+    #adminLoginScreen.show { display: flex; }
+    .admin-login-box {
+      width: 100%; max-width: 380px; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,215,0,0.15); border-radius: 16px; padding: 36px;
+      backdrop-filter: blur(8px);
+    }
+    .admin-login-box .lock-icon { text-align: center; font-size: 2.2rem; color: var(--gold); margin-bottom: 18px; }
+    .admin-login-box h2 { font-family: 'Montserrat', sans-serif; color: #fff; text-align: center; font-size: 1.2rem; margin-bottom: 4px; }
+    .admin-login-box p { color: rgba(255,255,255,0.4); text-align: center; font-size: 0.82rem; margin-bottom: 28px; }
+    .admin-login-box label { display: block; font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .admin-login-box input {
+      width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12); border-radius: 8px;
+      color: #fff; font-size: 0.92rem; font-family: inherit; outline: none; margin-bottom: 14px;
+    }
+    .admin-login-box input:focus { border-color: var(--gold); }
+    .admin-login-box input::placeholder { color: rgba(255,255,255,0.25); }
+    .admin-login-btn {
+      width: 100%; padding: 13px; background: var(--gold); color: var(--navy);
+      border: none; border-radius: 8px; font-family: 'Montserrat', sans-serif;
+      font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: opacity 0.2s; margin-top: 4px;
+    }
+    .admin-login-btn:hover { opacity: 0.88; }
+    .admin-login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .admin-error { background: rgba(198,40,40,0.15); color: #ff8a80; border-radius: 7px; padding: 9px 13px; font-size: 0.83rem; margin-bottom: 14px; display: none; }
+    .admin-error.show { display: block; }
+
     .sidebar {
       position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
       background: #0a0f2e; display: flex; flex-direction: column; z-index: 100;
@@ -149,6 +182,23 @@
   </style>
 </head>
 <body>
+
+  <!-- ADMIN LOGIN OVERLAY (shown when not authenticated) -->
+  <div id="adminLoginScreen">
+    <div class="admin-login-box">
+      <div class="lock-icon"><i class="fas fa-shield-alt"></i></div>
+      <h2>Admin Access</h2>
+      <p>Sportera Global — Restricted Area</p>
+      <div class="admin-error" id="adminError"></div>
+      <label>Email</label>
+      <input type="email" id="adminEmail" placeholder="admin@email.com" onkeydown="if(event.key==='Enter')adminLogin()">
+      <label>Password</label>
+      <input type="password" id="adminPass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()">
+      <button class="admin-login-btn" id="adminLoginBtn" onclick="adminLogin()">
+        <i class="fas fa-lock"></i> Sign In
+      </button>
+    </div>
+  </div>
 
   <aside class="sidebar">
     <div class="sidebar-logo">
@@ -416,12 +466,37 @@
 
     // Auth guard
     auth.onAuthStateChanged(async user => {
-      if (!user) { window.location.href = 'login.html'; return; }
+      if (!user) { document.getElementById('adminLoginScreen').classList.add('show'); return; }
       if (user.email !== ADMIN_EMAIL) {
-        alert('Access denied. Admin only.'); await auth.signOut(); window.location.href = 'login.html'; return;
+        await auth.signOut();
+        showAdminError('Access denied. This account is not an admin.');
+        document.getElementById('adminLoginScreen').classList.add('show');
+        return;
       }
+      document.getElementById('adminLoginScreen').classList.remove('show');
       loadDashboard();
     });
+
+    async function adminLogin() {
+      const email = document.getElementById('adminEmail').value.trim();
+      const pass = document.getElementById('adminPass').value;
+      if (!email || !pass) { showAdminError('Please enter email and password.'); return; }
+      const btn = document.getElementById('adminLoginBtn');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        // onAuthStateChanged will handle the rest
+      } catch(e) {
+        const map = { 'auth/wrong-password':'Incorrect password.', 'auth/user-not-found':'No account with this email.', 'auth/invalid-credential':'Incorrect email or password.', 'auth/too-many-requests':'Too many attempts. Wait a moment.' };
+        showAdminError(map[e.code] || e.message);
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Sign In';
+      }
+    }
+
+    function showAdminError(msg) {
+      const el = document.getElementById('adminError');
+      el.textContent = msg; el.classList.add('show');
+    }
 
     async function loadDashboard() {
       try {
