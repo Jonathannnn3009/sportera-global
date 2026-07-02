@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football 5 — 3D Experience | Sportera Global</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="icon" href="logo.png" type="image/png">
+<style>
+/* ── BASE ─────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --primary:#1a237e;--primary-light:#3949ab;--primary-dark:#0d1642;
+  --gold:#FFD700;--gold-dark:#c9a900;--white:#ffffff;
+  --light-gray:#f5f7ff;--dark:#1a1a2e;--text:#333;--text-light:#666;
+  --shadow:0 4px 20px rgba(0,0,0,.1);--shadow-lg:0 10px 40px rgba(0,0,0,.15);
+  --radius:12px;--transition:all .3s ease;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Open Sans',sans-serif;color:var(--text);overflow-x:hidden;background:#fff;}
+h1,h2,h3,h4{font-family:'Montserrat',sans-serif;font-weight:700;line-height:1.2;}
+a{text-decoration:none;color:inherit;transition:var(--transition);}
+img{max-width:100%;height:auto;display:block;}
+
+/* ── HEADER / NAV ────────────────────────────────────────────────────────── */
+header{
+  position:fixed;top:0;left:0;width:100%;z-index:1000;
+  background:rgba(10,15,50,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,215,0,.15);
+  transition:var(--transition);
+}
+.nav-container{
+  max-width:1300px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;height:68px;
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo img{height:40px;width:auto;border-radius:6px;}
+.logo-text{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.25rem;color:#fff;letter-spacing:1px;}
+.logo-text span{color:var(--gold);}
+.nav-menu{display:flex;gap:4px;align-items:center;}
+.nav-link{
+  font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;
+  color:rgba(255,255,255,.8);padding:6px 12px;border-radius:6px;letter-spacing:.5px;
+  text-transform:uppercase;transition:var(--transition);
+}
+.nav-link:hover,.nav-link.active{color:#fff;background:rgba(255,215,0,.15);}
+.nav-link.active{color:var(--gold);}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;}
+.hamburger span{display:block;width:24px;height:2px;background:#fff;border-radius:2px;transition:var(--transition);}
+
+/* ── HERO (Three.js canvas lives here) ───────────────────────────────────── */
+#hero{
+  position:relative;width:100%;height:100vh;overflow:hidden;
+}
+#three-canvas{position:absolute;inset:0;width:100%;height:100%;}
+.hero-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(4,9,28,.45) 0%,rgba(4,9,28,.15) 50%,rgba(4,9,28,.7) 100%);
+  pointer-events:none;
+}
+.hero-content{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;width:90%;max-width:760px;pointer-events:none;
+}
+.hero-badge{
+  display:inline-block;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.5);
+  color:var(--gold);font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:700;
+  letter-spacing:4px;text-transform:uppercase;padding:6px 18px;border-radius:30px;
+  margin-bottom:20px;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp .8s ease .3s forwards;
+}
+.hero-content h1{
+  font-size:clamp(2.4rem,7vw,5rem);font-weight:900;color:#fff;letter-spacing:3px;
+  text-transform:uppercase;
+  text-shadow:0 0 50px rgba(255,215,0,.5),0 4px 30px rgba(0,0,0,.5);
+  opacity:0;transform:translateY(24px);
+  animation:fadeUp .9s ease .55s forwards;
+}
+.hero-content h1 span{color:var(--gold);}
+.hero-content p{
+  font-size:clamp(.95rem,2.2vw,1.2rem);color:rgba(255,255,255,.75);
+  margin-top:14px;letter-spacing:.5px;line-height:1.7;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp .9s ease .8s forwards;
+}
+.hero-btns{
+  display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:32px;
+  pointer-events:all;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp .9s ease 1.05s forwards;
+}
+.btn{
+  font-family:'Montserrat',sans-serif;font-weight:700;font-size:.9rem;
+  letter-spacing:1px;text-transform:uppercase;padding:14px 32px;
+  border-radius:8px;border:none;cursor:pointer;transition:var(--transition);
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-gold{background:var(--gold);color:var(--primary-dark);}
+.btn-gold:hover{background:var(--gold-dark);transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,215,0,.4);}
+.btn-outline{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6);}
+.btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.12);transform:translateY(-2px);}
+
+.scroll-hint{
+  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+  font-family:'Montserrat',sans-serif;font-size:.68rem;letter-spacing:3px;
+  color:rgba(255,255,255,.35);text-transform:uppercase;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  animation:pulse 2s infinite;
+}
+.scroll-hint i{font-size:1rem;}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.7}}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+
+/* ── STATS BAR ───────────────────────────────────────────────────────────── */
+.stats-bar{
+  background:var(--primary-dark);padding:24px 0;
+  border-bottom:2px solid var(--gold);
+}
+.stats-bar .inner{
+  max-width:1100px;margin:0 auto;padding:0 24px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;
+}
+.stat-box h3{
+  font-family:'Montserrat',sans-serif;font-size:2rem;font-weight:900;color:var(--gold);
+}
+.stat-box p{font-size:.8rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── SECTIONS ────────────────────────────────────────────────────────────── */
+section.sec{padding:80px 0;}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;}
+.section-title{text-align:center;margin-bottom:52px;}
+.section-title h2{font-size:clamp(1.8rem,4vw,2.6rem);color:var(--primary);}
+.section-title h2 span{color:var(--gold);}
+.section-title p{color:var(--text-light);margin-top:12px;font-size:1rem;max-width:580px;margin-left:auto;margin-right:auto;}
+.pill{
+  display:inline-block;background:rgba(26,35,126,.1);color:var(--primary);
+  font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;
+  letter-spacing:3px;text-transform:uppercase;padding:5px 16px;border-radius:20px;
+  margin-bottom:14px;
+}
+
+/* Feature cards */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px;}
+.feat-card{
+  background:#fff;border-radius:var(--radius);padding:36px 28px;
+  box-shadow:var(--shadow);border:1px solid #eef0ff;
+  transition:var(--transition);text-align:center;
+}
+.feat-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:rgba(255,215,0,.4);}
+.feat-icon{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--primary-light));
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
+  font-size:1.5rem;color:#fff;
+}
+.feat-card h3{font-size:1.05rem;color:var(--primary);margin-bottom:10px;}
+.feat-card p{font-size:.9rem;color:var(--text-light);line-height:1.65;}
+
+/* 3D Highlight strip */
+.highlight-strip{
+  background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 100%);
+  padding:70px 0;overflow:hidden;position:relative;
+}
+.highlight-strip::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFD700' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.highlight-strip .inner{
+  max-width:1100px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;gap:60px;flex-wrap:wrap;
+}
+.hs-text{flex:1;min-width:280px;}
+.hs-text .pill{background:rgba(255,215,0,.15);color:var(--gold);}
+.hs-text h2{font-size:clamp(1.7rem,4vw,2.4rem);color:#fff;margin-bottom:16px;}
+.hs-text h2 span{color:var(--gold);}
+.hs-text p{color:rgba(255,255,255,.75);line-height:1.7;font-size:.95rem;}
+.hs-list{list-style:none;margin-top:24px;display:flex;flex-direction:column;gap:10px;}
+.hs-list li{color:rgba(255,255,255,.85);font-size:.9rem;display:flex;align-items:center;gap:10px;}
+.hs-list li i{color:var(--gold);width:18px;}
+.hs-cta{margin-top:30px;display:flex;gap:14px;flex-wrap:wrap;}
+.hs-visual{
+  flex:1;min-width:260px;max-width:380px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,215,0,.2);
+  border-radius:16px;padding:32px;text-align:center;
+}
+.hs-visual .big-icon{font-size:5rem;line-height:1;margin-bottom:16px;}
+.hs-visual h3{color:#fff;font-size:1.2rem;margin-bottom:8px;}
+.hs-visual p{color:rgba(255,255,255,.6);font-size:.85rem;}
+
+/* Destinations */
+.dest-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;}
+.dest-card{
+  border-radius:var(--radius);overflow:hidden;background:var(--light-gray);
+  border:1px solid #e8eaf6;transition:var(--transition);text-align:center;padding:28px 16px;
+}
+.dest-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg);border-color:rgba(255,215,0,.4);}
+.dest-flag{font-size:2.8rem;margin-bottom:10px;}
+.dest-card h4{color:var(--primary);font-size:.95rem;}
+.dest-card p{color:var(--text-light);font-size:.8rem;margin-top:4px;}
+
+/* CTA bottom */
+.cta-band{
+  background:var(--gold);padding:60px 24px;text-align:center;
+}
+.cta-band h2{font-size:clamp(1.8rem,4vw,2.8rem);color:var(--primary-dark);margin-bottom:10px;}
+.cta-band p{color:rgba(26,35,126,.75);margin-bottom:28px;font-size:1rem;}
+.btn-dark{background:var(--primary-dark);color:#fff;}
+.btn-dark:hover{background:var(--primary);transform:translateY(-2px);}
+.btn-white{background:#fff;color:var(--primary-dark);}
+.btn-white:hover{background:var(--light-gray);transform:translateY(-2px);}
+
+/* ── FOOTER ──────────────────────────────────────────────────────────────── */
+footer{background:var(--dark);padding:28px 24px;text-align:center;}
+footer p{color:rgba(255,255,255,.45);font-size:.8rem;letter-spacing:.5px;}
+footer a{color:var(--gold);font-weight:600;}
+
+/* ── MOBILE ──────────────────────────────────────────────────────────────── */
+@media(max-width:768px){
+  .nav-menu{display:none;}
+  .hamburger{display:flex;}
+  .stats-bar .inner{grid-template-columns:repeat(2,1fr);}
+  .highlight-strip .inner{flex-direction:column;}
+  .hs-visual{max-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="nav-container">
+    <a href="index.html" class="logo">
+      <img src="Media (10).jpg" alt="Sportera Global" onerror="this.style.display='none'">
+      <span class="logo-text">Sportera <span>Global</span></span>
+    </a>
+    <nav class="nav-menu">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="about.html" class="nav-link">About</a>
+      <a href="football5.html" class="nav-link active">Football 5</a>
+      <a href="if5l.html" class="nav-link">IF5L</a>
+      <a href="tournaments.html" class="nav-link">Tournaments</a>
+      <a href="exposure.html" class="nav-link">International</a>
+      <a href="gallery.html" class="nav-link">Gallery</a>
+      <a href="registration.html" class="nav-link">Register</a>
+      <a href="contact.html" class="nav-link">Contact</a>
+    </nav>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</header>
+
+<!-- ── HERO (Three.js) ─────────────────────────────────────────────────────── -->
+<section id="hero">
+  <canvas id="three-canvas"></canvas>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">⚽ Football 5 Association — 3D Experience</div>
+    <h1>The <span>Future</span> of<br>Five-a-Side</h1>
+    <p>Experience the game like never before. Sportera Global is redefining Football 5 — from grassroots pitches to international arenas.</p>
+    <div class="hero-btns">
+      <a href="registration.html" class="btn btn-gold"><i class="fas fa-futbol"></i> Register Now</a>
+      <a href="football5.html" class="btn btn-outline"><i class="fas fa-play"></i> Learn More</a>
+    </div>
+  </div>
+  <div class="scroll-hint"><span>Scroll to explore</span><i class="fas fa-chevron-down"></i></div>
+</section>
+
+<!-- ── STATS BAR ──────────────────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="inner">
+    <div class="stat-box"><h3>500+</h3><p>Athletes</p></div>
+    <div class="stat-box"><h3>50+</h3><p>Teams</p></div>
+    <div class="stat-box"><h3>20+</h3><p>Tournaments</p></div>
+    <div class="stat-box"><h3>6+</h3><p>Countries</p></div>
+  </div>
+</div>
+
+<!-- ── WHY FOOTBALL 5 ──────────────────────────────────────────────────────── -->
+<section class="sec" style="background:var(--light-gray);">
+  <div class="container">
+    <div class="section-title">
+      <div class="pill">Why Football 5</div>
+      <h2>Built for the <span>Modern Game</span></h2>
+      <p>Fast, technical, and globally recognised — Football 5 is the format that develops complete players.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-bolt"></i></div>
+        <h3>Fast-Paced Action</h3>
+        <p>Smaller pitch means more touches, more decisions, more goals. Every second counts in Football 5.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-brain"></i></div>
+        <h3>Technical Mastery</h3>
+        <p>The format demands elite close control, vision, and tactical awareness — skills that translate to 11-a-side.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-users"></i></div>
+        <h3>Team Chemistry</h3>
+        <p>Five players, one unit. Communication and chemistry are everything in this compact, high-intensity format.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-globe-asia"></i></div>
+        <h3>Globally Recognised</h3>
+        <p>Played across 50+ countries, Football 5 opens doors to international competition and exposure tours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── INTERNATIONAL HIGHLIGHT ────────────────────────────────────────────── -->
+<section class="highlight-strip">
+  <div class="inner">
+    <div class="hs-text">
+      <div class="pill">International Exposure</div>
+      <h2>Play Beyond <span>Borders</span></h2>
+      <p>Sportera Global takes the best Football 5 players on international tours — competing, training, and experiencing football at a global level.</p>
+      <ul class="hs-list">
+        <li><i class="fas fa-check-circle"></i> Curated international match programmes</li>
+        <li><i class="fas fa-check-circle"></i> Professional coaching &amp; mentorship</li>
+        <li><i class="fas fa-check-circle"></i> Cultural immersion &amp; travel experience</li>
+        <li><i class="fas fa-check-circle"></i> Talent identification for elite pathways</li>
+        <li><i class="fas fa-check-circle"></i> Certificates &amp; official documentation</li>
+      </ul>
+      <div class="hs-cta">
+        <a href="exposure.html" class="btn btn-gold">Explore Tours</a>
+        <a href="registration.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.5);color:#fff;">Register Interest</a>
+      </div>
+    </div>
+    <div class="hs-visual">
+      <div class="big-icon">✈️</div>
+      <h3>Next Tour Destinations</h3>
+      <p style="margin-bottom:20px;">Bangkok · Dubai · Singapore · Bali</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;">
+        <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:8px;padding:10px;">
+          <div style="font-size:1.5rem;">🇹🇭</div>
+          <div style="color:#fff;font-size:.8rem;font-weight:600;margin-top:4px;">Thailand</div>
+        </div>
+        <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:8px;padding:10px;">
+          <div style="font-size:1.5rem;">🇦🇪</div>
+          <div style="color:#fff;font-size:.8rem;font-weight:600;margin-top:4px;">Dubai</div>
+        </div>
+        <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:8px;padding:10px;">
+          <div style="font-size:1.5rem;">🇸🇬</div>
+          <div style="color:#fff;font-size:.8rem;font-weight:600;margin-top:4px;">Singapore</div>
+        </div>
+        <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:8px;padding:10px;">
+          <div style="font-size:1.5rem;">🌏</div>
+          <div style="color:#fff;font-size:.8rem;font-weight:600;margin-top:4px;">Bali</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TOURNAMENTS ─────────────────────────────────────────────────────────── -->
+<section class="sec">
+  <div class="container">
+    <div class="section-title">
+      <div class="pill">Compete</div>
+      <h2>Our <span>Tournaments</span></h2>
+      <p>From city-level leagues to national championships — there's a stage for every level.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card" style="text-align:left;">
+        <div style="font-size:2rem;margin-bottom:14px;">🏆</div>
+        <h3>National Championship</h3>
+        <p style="margin-bottom:12px;">India's premier Football 5 championship — teams from across the country compete for national glory.</p>
+        <span style="background:#e8eaf6;color:var(--primary);font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:20px;font-family:Montserrat,sans-serif;letter-spacing:1px;">Goa · Annual</span>
+      </div>
+      <div class="feat-card" style="text-align:left;">
+        <div style="font-size:2rem;margin-bottom:14px;">⚽</div>
+        <h3>IF5L — India Football 5 League</h3>
+        <p style="margin-bottom:12px;">A structured multi-city league season with promotion, relegation, and knockout stages.</p>
+        <span style="background:#e8eaf6;color:var(--primary);font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:20px;font-family:Montserrat,sans-serif;letter-spacing:1px;">Multi-City · Seasonal</span>
+      </div>
+      <div class="feat-card" style="text-align:left;">
+        <div style="font-size:2rem;margin-bottom:14px;">🌏</div>
+        <h3>Global Cup</h3>
+        <p style="margin-bottom:12px;">International Football 5 tournament bringing together teams from across Asia and beyond.</p>
+        <span style="background:#e8eaf6;color:var(--primary);font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:20px;font-family:Montserrat,sans-serif;letter-spacing:1px;">Phuket · Vietnam · Bali</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────────────────────────────── -->
+<div class="cta-band">
+  <h2>Ready to <span style="color:var(--primary);">Join the Game?</span></h2>
+  <p>Registrations are open for teams and individual players. Secure your spot today.</p>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <a href="registration.html" class="btn btn-dark"><i class="fas fa-futbol"></i> Register Now</a>
+    <a href="contact.html" class="btn btn-white"><i class="fas fa-envelope"></i> Contact Us</a>
+  </div>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <p>© 2025 <a href="index.html">Sportera Global</a> · Football 5 Association · All rights reserved.</p>
+</footer>
+
+<!-- ── THREE.JS ───────────────────────────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('three-canvas');
+
+  function W(){ return window.innerWidth; }
+  function H(){ return window.innerHeight; }
+
+  // ── SCENE ───────────────────────────────────────────────────────────────
+  const scene    = new THREE.Scene();
+  scene.background = new THREE.Color(0x04091c);
+  scene.fog        = new THREE.FogExp2(0x04091c, 0.028);
+
+  const camera = new THREE.PerspectiveCamera(55, W()/H(), 0.1, 500);
+  camera.position.set(0,3.5,11);
+
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setSize(W(), H());
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+  renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  // ── FOOTBALL TEXTURE — per-pixel equirectangular (smooth, no UV distortion)
+  function makeFootballTex(){
+    const TW=1024, TH=512;
+    const cv=document.createElement('canvas'); cv.width=TW; cv.height=TH;
+    const ctx=cv.getContext('2d');
+    const img=ctx.createImageData(TW,TH);
+
+    // 12 pentagon centres = icosahedron vertices on unit sphere
+    const IP=(1+Math.sqrt(5))/2, IN=Math.sqrt(1+IP*IP);
+    const P=[
+      [0,1/IN,IP/IN],[0,-1/IN,IP/IN],[0,1/IN,-IP/IN],[0,-1/IN,-IP/IN],
+      [1/IN,IP/IN,0],[-1/IN,IP/IN,0],[1/IN,-IP/IN,0],[-1/IN,-IP/IN,0],
+      [IP/IN,0,1/IN],[-IP/IN,0,1/IN],[IP/IN,0,-1/IN],[-IP/IN,0,-1/IN],
+    ];
+
+    const THR=0.39, SW=0.038; // pentagon angular radius + seam width
+    function ss(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
+
+    for(let py=0;py<TH;py++){
+      // THREE.js SphereGeometry UV: stored as (u, 1-v), so texture py=0 → sphere bottom
+      const theta=(1-py/TH)*Math.PI; // polar angle from north
+      const sinT=Math.sin(theta), cosT=Math.cos(theta);
+      for(let px=0;px<TW;px++){
+        const phi=(px/TW)*Math.PI*2;
+        const nx=-Math.cos(phi)*sinT, ny=cosT, nz=Math.sin(phi)*sinT;
+        let minD=Math.PI;
+        for(const [ax,ay,az] of P){
+          const d=Math.acos(Math.max(-1,Math.min(1,nx*ax+ny*ay+nz*az)));
+          if(d<minD)minD=d;
+        }
+        const t=ss(THR-SW/2,THR+SW/2,minD);
+        // Leather-white panel with subtle warm tint; sharp black inside pentagon
+        const seam=t>0.05&&t<0.95?Math.pow(Math.sin(t*Math.PI),3)*0.35:0;
+        let r,g,b;
+        if(t<0.05){ r=20;g=20;b=20; }          // black pentagon
+        else if(t>0.95){ r=245;g=240;b=232; }  // off-white leather panel
+        else{ // seam transition — bright white line
+          const v=Math.round(220+seam*35);
+          r=v;g=v;b=v;
+        }
+        const i4=(py*TW+px)*4;
+        img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
+      }
+    }
+    ctx.putImageData(img,0,0);
+    const tex=new THREE.CanvasTexture(cv);
+    tex.anisotropy=4;
+    return tex;
+  }
+
+  const ballR=1.15;
+  const ball=new THREE.Mesh(
+    new THREE.SphereGeometry(ballR,128,64),
+    new THREE.MeshStandardMaterial({
+      map:makeFootballTex(),
+      roughness:0.35, metalness:0.04,
+    })
+  );
+  ball.castShadow=true;
+  ball.add(new THREE.Mesh(
+    new THREE.SphereGeometry(ballR*1.07,32,32),
+    new THREE.MeshBasicMaterial({color:0x2244cc,transparent:true,opacity:.04,side:THREE.BackSide})
+  ));
+  scene.add(ball);
+
+  // ── GROUND ──────────────────────────────────────────────────────────────
+  const gnd=new THREE.Mesh(new THREE.PlaneGeometry(80,80),
+    new THREE.MeshStandardMaterial({color:0x0a2009,roughness:.95}));
+  gnd.rotation.x=-Math.PI/2; gnd.receiveShadow=true; scene.add(gnd);
+
+  // Field lines
+  function ln(pts,col=0x1a5c1a,op=.55){
+    scene.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op})
+    ));
+  }
+  const circ=[];
+  for(let i=0;i<=80;i++){const a=i/80*Math.PI*2;circ.push(new THREE.Vector3(Math.cos(a)*5,.015,Math.sin(a)*5));}
+  ln(circ);
+  ln([new THREE.Vector3(-22,.015,0),new THREE.Vector3(22,.015,0)]);
+  ln([[-22,.015,-13],[22,.015,-13],[22,.015,13],[-22,.015,13],[-22,.015,-13]].map(p=>new THREE.Vector3(...p)));
+
+  // ── GOALS ───────────────────────────────────────────────────────────────
+  function makeGoal(xOff,flip){
+    const g=new THREE.Group();
+    const GW=3.0, GH=2.4, GD=1.2;
+    const PR=0.12; // post radius — thick & visible
+
+    const pm=new THREE.MeshStandardMaterial({
+      color:0xffffff, roughness:0.25, metalness:0.6,
+      emissive:0x333333, emissiveIntensity:0.15,
+    });
+
+    function cyl(h,ox,oy,oz,rx,rz){
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(PR,PR,h,20),pm);
+      if(rx) m.rotation.x=rx;
+      if(rz) m.rotation.z=rz;
+      m.position.set(ox,oy,oz); m.castShadow=true; g.add(m);
+    }
+
+    // Front frame
+    cyl(GH,   -GW/2, GH/2,    0);           // left post
+    cyl(GH,    GW/2, GH/2,    0);           // right post
+    cyl(GW,       0, GH,      0, 0, Math.PI/2); // crossbar
+
+    // Back uprights
+    cyl(GH,   -GW/2, GH/2,   -GD);
+    cyl(GH,    GW/2, GH/2,   -GD);
+
+    // Top rails (front→back)
+    cyl(GD,   -GW/2, GH,  -GD/2, Math.PI/2);
+    cyl(GD,    GW/2, GH,  -GD/2, Math.PI/2);
+
+    // Back crossbar
+    cyl(GW,       0, GH,     -GD, 0, Math.PI/2);
+
+    // Bottom rails
+    cyl(GD,   -GW/2, PR*0.5, -GD/2, Math.PI/2);
+    cyl(GD,    GW/2, PR*0.5, -GD/2, Math.PI/2);
+
+    // ── NET ── canvas texture grid on a flat plane (clean & solid-looking)
+    function netCanvas(w,h, cols,rows, bgAlpha=0){
+      const S=512; const cv=document.createElement('canvas');
+      cv.width=S; cv.height=Math.round(S*h/w);
+      const ctx=cv.getContext('2d');
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.strokeStyle='rgba(255,255,255,0.65)';
+      ctx.lineWidth=3;
+      const cw=cv.width/cols, ch=cv.height/rows;
+      for(let i=0;i<=cols;i++){ctx.beginPath();ctx.moveTo(i*cw,0);ctx.lineTo(i*cw,cv.height);ctx.stroke();}
+      for(let j=0;j<=rows;j++){ctx.beginPath();ctx.moveTo(0,j*ch);ctx.lineTo(cv.width,j*ch);ctx.stroke();}
+      return new THREE.CanvasTexture(cv);
+    }
+    const netM=new THREE.MeshBasicMaterial({
+      map:netCanvas(GW,GH,18,12), transparent:true, opacity:0.55,
+      side:THREE.DoubleSide, depthWrite:false,
+    });
+    const netMside=new THREE.MeshBasicMaterial({
+      map:netCanvas(GD,GH,6,12), transparent:true, opacity:0.45,
+      side:THREE.DoubleSide, depthWrite:false,
+    });
+    const netMtop=new THREE.MeshBasicMaterial({
+      map:netCanvas(GW,GD,18,6), transparent:true, opacity:0.4,
+      side:THREE.DoubleSide, depthWrite:false,
+    });
+
+    // Front net face
+    const fp=new THREE.Mesh(new THREE.PlaneGeometry(GW,GH), netM);
+    fp.position.set(0,GH/2,0); g.add(fp);
+    // Back net face
+    const bp=new THREE.Mesh(new THREE.PlaneGeometry(GW,GH), netM);
+    bp.position.set(0,GH/2,-GD); g.add(bp);
+    // Left side
+    const lp=new THREE.Mesh(new THREE.PlaneGeometry(GD,GH), netMside);
+    lp.rotation.y=Math.PI/2; lp.position.set(-GW/2,GH/2,-GD/2); g.add(lp);
+    // Right side
+    const rp=new THREE.Mesh(new THREE.PlaneGeometry(GD,GH), netMside);
+    rp.rotation.y=Math.PI/2; rp.position.set(GW/2,GH/2,-GD/2); g.add(rp);
+    // Top net
+    const tp=new THREE.Mesh(new THREE.PlaneGeometry(GW,GD), netMtop);
+    tp.rotation.x=Math.PI/2; tp.position.set(0,GH,-GD/2); g.add(tp);
+
+    g.position.set(xOff,0,0);
+    if(flip) g.rotation.y=Math.PI;
+    scene.add(g);
+  }
+  makeGoal(-22,false);
+  makeGoal( 22,true);
+
+  // ── PARTICLES ───────────────────────────────────────────────────────────
+  const PC=260;
+  const pPos=new Float32Array(PC*3),pSpd=new Float32Array(PC);
+  for(let i=0;i<PC;i++){
+    pPos[i*3]=(Math.random()-.5)*50;pPos[i*3+1]=Math.random()*15;pPos[i*3+2]=(Math.random()-.5)*50;
+    pSpd[i]=.003+Math.random()*.007;
+  }
+  const pGeo=new THREE.BufferGeometry();
+  pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+  scene.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xFFD700,size:.07,transparent:true,opacity:.4,sizeAttenuation:true})));
+
+  // ── LIGHTS ──────────────────────────────────────────────────────────────
+  scene.add(new THREE.AmbientLight(0x1a2a44,.9));
+  [[12,14,10],[-12,14,10],[12,14,-10],[-12,14,-10]].forEach(([x,y,z])=>{
+    const s=new THREE.SpotLight(0xffffff,1.6,60,Math.PI/5,.4);
+    s.position.set(x,y,z);s.target.position.set(0,0,0);s.castShadow=true;
+    scene.add(s,s.target);
+  });
+  const gold=new THREE.PointLight(0xFFD700,2.5,10); scene.add(gold);
+  scene.add(new THREE.PointLight(0x1a237e,3,12)).position.set(-5,3,-4);
+
+  // ── BALL STATE MACHINE ───────────────────────────────────────────────────
+  let state='HOVER',stateT=0,goalDir=1;
+  const HOVER=2.8,FLY=1.4,GOAL=1.6,RESET=0.9;
+
+  function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+  function lerp(a,b,t){return a+(b-a)*t;}
+
+  const flash=document.createElement('div');
+  Object.assign(flash.style,{position:'fixed',inset:'0',pointerEvents:'none',zIndex:'5',background:'rgba(255,215,0,0)',transition:'background .1s'});
+  document.body.appendChild(flash);
+
+  // ── CAMERA DRAG ─────────────────────────────────────────────────────────
+  let camTheta=0,camPhi=.30,camR=10,tgtTheta=0,tgtPhi=.30;
+  let drag=false,px=0,py=0;
+
+  canvas.addEventListener('mousedown',e=>{drag=true;px=e.clientX;py=e.clientY;});
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    tgtTheta-=(e.clientX-px)*.012;
+    tgtPhi=Math.max(.08,Math.min(1.3,tgtPhi-(e.clientY-py)*.009));
+    px=e.clientX;py=e.clientY;
+  });
+  canvas.addEventListener('wheel',e=>{camR=Math.max(5,Math.min(20,camR+e.deltaY*.012));},{passive:true});
+  canvas.addEventListener('touchstart',e=>{drag=true;px=e.touches[0].clientX;py=e.touches[0].clientY;});
+  window.addEventListener('touchend',()=>drag=false);
+  window.addEventListener('touchmove',e=>{
+    if(!drag)return;
+    tgtTheta-=(e.touches[0].clientX-px)*.012;px=e.touches[0].clientX;
+  });
+
+  window.addEventListener('resize',()=>{
+    camera.aspect=W()/H();camera.updateProjectionMatrix();
+    renderer.setSize(W(),H());
+  });
+
+  // ── LOOP ────────────────────────────────────────────────────────────────
+  const clock=new THREE.Clock();
+  function animate(){
+    requestAnimationFrame(animate);
+    const dt=clock.getDelta(),t=clock.getElapsedTime();
+
+    // Particles
+    for(let i=0;i<PC;i++){pPos[i*3+1]+=pSpd[i];if(pPos[i*3+1]>16)pPos[i*3+1]=0;}
+    pGeo.attributes.position.needsUpdate=true;
+
+    // Gold light
+    gold.intensity=2+Math.sin(t*2.5)*.6;
+    gold.position.set(Math.sin(t*.7)*4,4+Math.sin(t*1.1),Math.cos(t*.7)*3);
+
+    stateT+=dt;
+
+    if(state==='HOVER'){
+      ball.position.set(0,ballR+Math.sin(t*1.4)*.28,0);
+      ball.rotation.y+=dt*.6;ball.rotation.x+=dt*.3;
+      if(stateT>HOVER){state='FLY';stateT=0;goalDir=goalDir===1?-1:1;}
+    }
+    else if(state==='FLY'){
+      const p=Math.min(stateT/FLY,1),ep=ease(p);
+      ball.position.x=lerp(0,goalDir*21,ep);
+      ball.position.z=0;
+      ball.position.y=lerp(ballR,1.3,ep)+Math.sin(p*Math.PI)*2.4;
+      ball.rotation.x+=dt*8;ball.rotation.z+=dt*3;
+      if(p>=1){state='GOAL';stateT=0;}
+    }
+    else if(state==='GOAL'){
+      const p=Math.min(stateT/GOAL,1);
+      ball.position.x=goalDir*21+goalDir*p*.6;
+      ball.position.y=lerp(1.3,.8,p);
+      const fa=p<.15?p/.15:(1-p);
+      flash.style.background=`rgba(255,215,0,${fa*.3})`;
+      if(p>=1){state='RESET';stateT=0;flash.style.background='rgba(255,215,0,0)';}
+    }
+    else if(state==='RESET'){
+      const p=Math.min(stateT/RESET,1),ep=ease(p);
+      ball.position.x=lerp(goalDir*21.6,0,ep);
+      ball.position.y=lerp(.8,ballR,ep);
+      ball.rotation.y+=dt*.4;
+      if(p>=1){state='HOVER';stateT=0;}
+    }
+
+    // Camera
+    if(!drag)tgtTheta+=dt*.22;
+    camTheta+=(tgtTheta-camTheta)*.07;
+    camPhi  +=(tgtPhi  -camPhi  )*.07;
+    camera.position.x=Math.sin(camTheta)*Math.cos(camPhi)*camR;
+    camera.position.y=Math.sin(camPhi)*camR*.75+1.5;
+    camera.position.z=Math.cos(camTheta)*Math.cos(camPhi)*camR;
+    camera.lookAt(0,1.8,0);
+
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+
+// Hamburger
+document.querySelector('.hamburger').addEventListener('click',function(){
+  const m=document.querySelector('.nav-menu');
+  const open=m.style.display==='flex';
+  m.style.cssText=open?'':'display:flex;flex-direction:column;position:fixed;top:68px;left:0;width:100%;background:rgba(10,15,50,.97);padding:20px;gap:8px;z-index:999;';
+});
+</script>
+</body>
+</html>
