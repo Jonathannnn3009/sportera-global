@@ -514,25 +514,43 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card">
       <div class="card-head"><h3><i class="fas fa-plus-circle"></i> Add Fixture</h3></div>
       <div class="card-body">
+        <div class="notice info"><i class="fas fa-info-circle"></i> Select Tournament and Age Category first — the team dropdowns will only show teams registered under that exact tournament + age group.</div>
         <div class="form-row">
-          <div class="fg"><label>Home Team *</label><input type="text" id="fx-home" placeholder="Home team"></div>
-          <div class="fg"><label>Away Team *</label><input type="text" id="fx-away" placeholder="Away team"></div>
+          <div class="fg"><label>Tournament *</label>
+            <select id="fx-tournament" onchange="onFixtureFilterChange()">
+              <option value="">Select tournament</option>
+              <option value="IF5L Season 2">IF5L Season 2</option>
+              <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
+            </select>
+          </div>
+          <div class="fg"><label>Age Category *</label>
+            <select id="fx-agecat" onchange="onFixtureFilterChange()">
+              <option value="">Select age category</option>
+              <option value="U9">Under 9</option><option value="U11">Under 11</option><option value="U13">Under 13</option>
+              <option value="U15">Under 15</option><option value="U17">Under 17</option><option value="U19">Under 19</option>
+              <option value="Senior">Senior / Open</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Home Team *</label>
+            <select id="fx-home"><option value="">Select tournament + age category first</option></select>
+          </div>
+          <div class="fg"><label>Away Team *</label>
+            <select id="fx-away"><option value="">Select tournament + age category first</option></select>
+          </div>
         </div>
         <div class="form-row">
           <div class="fg"><label>Date & Time *</label><input type="datetime-local" id="fx-dt"></div>
           <div class="fg"><label>Venue</label><input type="text" id="fx-venue" placeholder="e.g. Goa Sports Complex"></div>
         </div>
         <div class="form-row">
-          <div class="fg"><label>Tournament</label>
-            <select id="fx-tournament">
-              <option>IF5L Season 2</option><option>National Championship 2026</option>
-            </select>
-          </div>
           <div class="fg"><label>Round / Stage</label>
             <select id="fx-round">
               <option>League Stage</option><option>Quarter-Final</option><option>Semi-Final</option><option>Third Place</option><option>Grand Final</option>
             </select>
           </div>
+          <div class="fg"><label>Match Number</label><input type="text" id="fx-matchnum" readonly placeholder="Auto — set by tournament + age category"></div>
         </div>
         <button class="btn btn-primary" onclick="addFixture()"><i class="fas fa-save"></i> Save Fixture</button>
       </div>
@@ -540,11 +558,16 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card">
       <div class="card-head">
         <h3><i class="fas fa-calendar-alt"></i> All Fixtures</h3>
-        <select id="fx-filter" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-          <option value="">All Tournaments</option><option>IF5L Season 2</option><option>National Championship 2026</option>
-        </select>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="fx-filter" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+            <option value="">All Tournaments</option><option value="IF5L Season 2">IF5L Season 2</option><option value="National Championship 2026">National Championship 2026</option>
+          </select>
+          <select id="fx-filter-age" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+            <option value="">All Ages</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option><option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
+          </select>
+        </div>
       </div>
-      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th>Del</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>#</th><th>Age</th><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th>Del</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
     </div>
   </div>
 </div>
@@ -555,14 +578,31 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-head"><h3><i class="fas fa-clipboard-list"></i> Match Lineup &amp; Events</h3></div>
     <div class="card-body">
       <div class="form-row">
+        <div class="fg"><label>Tournament *</label>
+          <select id="lu-tournament" onchange="onLineupFilterChange()">
+            <option value="">Select tournament</option>
+            <option value="IF5L Season 2">IF5L Season 2</option>
+            <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
+          </select>
+        </div>
+        <div class="fg"><label>Age Category *</label>
+          <select id="lu-agecat" onchange="onLineupFilterChange()">
+            <option value="">Select age category</option>
+            <option value="U9">Under 9</option><option value="U11">Under 11</option><option value="U13">Under 13</option>
+            <option value="U15">Under 15</option><option value="U17">Under 17</option><option value="U19">Under 19</option>
+            <option value="Senior">Senior / Open</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
         <div class="fg">
-          <label>Select Fixture *</label>
+          <label>Match Number *</label>
           <select id="lu-fixture" onchange="loadLineupFixture()">
-            <option value="">— Select a fixture —</option>
+            <option value="">Select tournament + age category first</option>
           </select>
         </div>
         <div class="fg" style="display:flex;align-items:flex-end;">
-          <div style="background:#f0f3ff;border-radius:10px;padding:12px 18px;font-size:.85rem;color:var(--primary);font-weight:600;width:100%" id="lu-match-label">No fixture selected</div>
+          <div style="background:#f0f3ff;border-radius:10px;padding:12px 18px;font-size:.85rem;color:var(--primary);font-weight:600;width:100%" id="lu-match-label">No match selected</div>
         </div>
       </div>
     </div>
@@ -639,9 +679,14 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="card">
     <div class="card-head">
       <h3><i class="fas fa-futbol"></i> Enter Match Results</h3>
-      <select id="res-tournament" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-        <option value="">All Tournaments</option><option>IF5L Season 2</option><option>National Championship 2026</option>
-      </select>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="res-tournament" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Tournaments</option><option value="IF5L Season 2">IF5L Season 2</option><option value="National Championship 2026">National Championship 2026</option>
+        </select>
+        <select id="res-agecat" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Ages</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option><option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
+        </select>
+      </div>
     </div>
     <div class="card-body">
       <div class="notice info"><i class="fas fa-info-circle"></i> Enter scores for played fixtures. League table updates automatically when you save a result.</div>
@@ -659,9 +704,14 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="card">
     <div class="card-head">
       <h3><i class="fas fa-table"></i> League Table</h3>
-      <select id="lt-tournament" onchange="renderLeagueTable()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-        <option>IF5L Season 2</option><option>National Championship 2026</option>
-      </select>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="lt-tournament" onchange="renderLeagueTable()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="IF5L Season 2">IF5L Season 2</option><option value="National Championship 2026">National Championship 2026</option>
+        </select>
+        <select id="lt-agecat" onchange="renderLeagueTable()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">Select Age Category</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option><option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
+        </select>
+      </div>
     </div>
     <div class="card-body">
       <div class="notice"><i class="fas fa-info-circle"></i> Table is auto-calculated from match results. Win = 3 pts, Draw = 1 pt, Loss = 0 pts.</div>
@@ -1174,38 +1224,53 @@ let _luHomePlayers = [];
 let _luAwayPlayers = [];
 let _luFixtureId = null;
 
-function renderLineupPanel(){
-  const fx = DB.get('sg_fixtures');
+function onLineupFilterChange(){
+  const tournament = document.getElementById('lu-tournament').value;
+  const ageCategory = document.getElementById('lu-agecat').value;
   const sel = document.getElementById('lu-fixture');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Select a fixture —</option>';
-  fx.forEach(f => {
-    sel.innerHTML += `<option value="${f.id}" ${f.id===cur?'selected':''}>${f.homeTeam} vs ${f.awayTeam} — ${f.tournament||''} (${f.round||''})</option>`;
-  });
+  document.getElementById('lu-form-wrap').style.display='none';
+  if(!tournament || !ageCategory){
+    sel.innerHTML = '<option value="">Select tournament + age category first</option>';
+    return;
+  }
+  const fx = (_fbFixtures||[]).filter(f=>f.tournament===tournament && f.ageCategory===ageCategory).sort((a,b)=>(a.matchNumber||0)-(b.matchNumber||0));
+  sel.innerHTML = '<option value="">Select match number</option>' + (fx.length
+    ? fx.map(f=>`<option value="${f._key}">Match ${f.matchNumber}: ${f.home} vs ${f.away} (${f.round||''})</option>`).join('')
+    : '<option value="" disabled>No fixtures saved for this tournament/age category yet</option>');
+}
+
+function renderLineupPanel(){
+  onLineupFilterChange();
   renderSavedLineups();
 }
 
 function loadLineupFixture(){
-  const id = document.getElementById('lu-fixture').value;
-  if(!id){ document.getElementById('lu-form-wrap').style.display='none'; return; }
-  const fx = DB.get('sg_fixtures').find(f=>f.id===id);
+  const key = document.getElementById('lu-fixture').value;
+  if(!key){ document.getElementById('lu-form-wrap').style.display='none'; return; }
+  const fx = (_fbFixtures||[]).find(f=>f._key===key);
   if(!fx) return;
-  _luFixtureId = id;
+  _luFixtureId = key;
   _luEvents = [];
   _luHomePlayers = [];
   _luAwayPlayers = [];
 
   // Check if a lineup already saved for this fixture
-  const saved = DB.get('sg_lineups').find(l=>l.fixtureId===id);
+  const saved = _fbLineups.find(l=>l._key===key);
   if(saved){
     _luEvents = saved.events||[];
     _luHomePlayers = saved.homePlayers||[];
     _luAwayPlayers = saved.awayPlayers||[];
+  } else {
+    // Auto-fill roster from registered players matching this team + tournament + age category
+    const roster = t => (_fbRegs||[]).filter(r => r.type==='player' && r.playerTeam===t && r.playerTournament===fx.tournament && r.playerAgeCategory===fx.ageCategory)
+      .map(r => ({num:'', name:r.playerName, dob:r.playerDob, pos:(r.playerPosition||'GK').toUpperCase().slice(0,3)}));
+    _luHomePlayers = roster(fx.home);
+    _luAwayPlayers = roster(fx.away);
   }
 
-  document.getElementById('lu-home-title').innerHTML = `<i class="fas fa-home"></i> ${fx.homeTeam}`;
-  document.getElementById('lu-away-title').innerHTML = `<i class="fas fa-plane"></i> ${fx.awayTeam}`;
-  document.getElementById('lu-match-label').innerHTML = `<strong>${fx.homeTeam}</strong> vs <strong>${fx.awayTeam}</strong> &nbsp;|&nbsp; ${fx.tournament||''} &nbsp;|&nbsp; ${fx.round||''} &nbsp;|&nbsp; ${fx.dateTime||''}`;
+  document.getElementById('lu-home-title').innerHTML = `<i class="fas fa-home"></i> ${fx.home}`;
+  document.getElementById('lu-away-title').innerHTML = `<i class="fas fa-plane"></i> ${fx.away}`;
+  document.getElementById('lu-match-label').innerHTML = `<strong>${fx.home}</strong> vs <strong>${fx.away}</strong> &nbsp;|&nbsp; ${fx.tournament||''} &nbsp;|&nbsp; ${fx.ageCategory||''} &nbsp;|&nbsp; ${fx.round||''} &nbsp;|&nbsp; ${fmtDateTime(fx.dt)}`;
   document.getElementById('lu-form-wrap').style.display='block';
   renderLineupPlayers(); renderEventsList();
 }
@@ -1215,9 +1280,10 @@ function renderLineupPlayers(){
     const list = side==='home'?_luHomePlayers:_luAwayPlayers;
     const el = document.getElementById('lu-'+side+'-players');
     el.innerHTML = list.map((p,i)=>`
-      <div style="display:grid;grid-template-columns:40px 1fr 100px auto;gap:8px;align-items:center;margin-bottom:8px;background:#f8f9ff;border-radius:8px;padding:8px 10px;">
+      <div style="display:grid;grid-template-columns:40px 1fr 110px 90px auto;gap:8px;align-items:center;margin-bottom:8px;background:#f8f9ff;border-radius:8px;padding:8px 10px;">
         <input type="number" value="${p.num||''}" min="1" max="99" placeholder="#" style="padding:6px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-weight:700;" onchange="updateLineupPlayer('${side}',${i},'num',this.value)">
         <input type="text" value="${p.name||''}" placeholder="Player name" style="padding:6px;border:1.5px solid var(--border);border-radius:6px;" onchange="updateLineupPlayer('${side}',${i},'name',this.value)">
+        <input type="date" value="${p.dob||''}" style="padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;" onchange="updateLineupPlayer('${side}',${i},'dob',this.value)">
         <select style="padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;" onchange="updateLineupPlayer('${side}',${i},'pos',this.value)">
           ${['GK','DEF','MID','FWD'].map(pos=>`<option ${p.pos===pos?'selected':''}>${pos}</option>`).join('')}
         </select>
@@ -1227,8 +1293,8 @@ function renderLineupPlayers(){
 }
 
 function addLineupPlayer(side){
-  if(side==='home') _luHomePlayers.push({num:'',name:'',pos:'GK'});
-  else _luAwayPlayers.push({num:'',name:'',pos:'GK'});
+  if(side==='home') _luHomePlayers.push({num:'',name:'',dob:'',pos:'GK'});
+  else _luAwayPlayers.push({num:'',name:'',dob:'',pos:'GK'});
   renderLineupPlayers();
 }
 function removeLineupPlayer(side,i){
@@ -1271,22 +1337,27 @@ function renderEventsList(){
 
 function removeEvent(i){ _luEvents.splice(i,1); renderEventsList(); }
 
+let _fbLineups = [];
+_fbDb.ref('lineups').on('value', snap => {
+  _fbLineups = [];
+  snap.forEach(child => { _fbLineups.push({ _key: child.key, ...child.val() }); });
+  renderSavedLineups();
+});
+
 function saveLineup(){
   if(!_luFixtureId){ alert('Select a fixture first'); return; }
-  const fx = DB.get('sg_fixtures').find(f=>f.id===_luFixtureId);
-  const lineups = DB.get('sg_lineups').filter(l=>l.fixtureId!==_luFixtureId);
-  lineups.push({
-    fixtureId: _luFixtureId,
-    matchLabel: fx ? `${fx.homeTeam} vs ${fx.awayTeam}` : '',
+  const fx = (_fbFixtures||[]).find(f=>f._key===_luFixtureId);
+  _fbDb.ref('lineups/'+_luFixtureId).set({
+    matchLabel: fx ? `${fx.home} vs ${fx.away}` : '',
     tournament: fx ? fx.tournament : '',
+    ageCategory: fx ? fx.ageCategory : '',
+    matchNumber: fx ? fx.matchNumber : '',
     savedAt: new Date().toISOString(),
     homePlayers: _luHomePlayers,
     awayPlayers: _luAwayPlayers,
     events: _luEvents
   });
-  DB.set('sg_lineups', lineups);
   alert('Lineup saved!');
-  renderSavedLineups();
 }
 
 function clearLineup(){
@@ -1295,24 +1366,59 @@ function clearLineup(){
 }
 
 function renderSavedLineups(){
-  const lineups = DB.get('sg_lineups');
   const el = document.getElementById('lu-saved-list');
-  if(!lineups.length){ el.innerHTML='<p style="color:var(--muted);font-size:.88rem;">No lineups saved yet.</p>'; return; }
-  el.innerHTML = lineups.map(l=>`
-    <div style="background:#f8f9ff;border-radius:10px;padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+  if(!el) return;
+  if(!_fbLineups.length){ el.innerHTML='<p style="color:var(--muted);font-size:.88rem;">No lineups saved yet.</p>'; return; }
+  el.innerHTML = _fbLineups.map(l=>`
+    <div style="background:#f8f9ff;border-radius:10px;padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
       <div>
-        <strong style="font-size:.92rem;">${l.matchLabel}</strong>
-        <span style="font-size:.78rem;color:var(--muted);margin-left:10px;">${l.tournament}</span><br>
-        <span style="font-size:.78rem;color:var(--muted);">${l.homePlayers.length} home players &bull; ${l.awayPlayers.length} away players &bull; ${l.events.length} events &bull; Saved ${new Date(l.savedAt).toLocaleString()}</span>
+        <strong style="font-size:.92rem;">Match ${l.matchNumber||''}: ${l.matchLabel}</strong>
+        <span style="font-size:.78rem;color:var(--muted);margin-left:10px;">${l.tournament} &bull; ${l.ageCategory}</span><br>
+        <span style="font-size:.78rem;color:var(--muted);">${(l.homePlayers||[]).length} home players &bull; ${(l.awayPlayers||[]).length} away players &bull; ${(l.events||[]).length} events &bull; Saved ${new Date(l.savedAt).toLocaleString()}</span>
       </div>
-      <button onclick="loadSavedLineup('${l.fixtureId}')" class="btn btn-ghost" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-edit"></i> Edit</button>
+      <div style="display:flex;gap:8px;">
+        <button onclick="printLineup('${l._key}')" class="btn btn-gold" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-print"></i> Print</button>
+        <button onclick="loadSavedLineup('${l._key}')" class="btn btn-ghost" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-edit"></i> Edit</button>
+      </div>
     </div>`).join('');
 }
 
-function loadSavedLineup(fixtureId){
-  document.getElementById('lu-fixture').value = fixtureId;
+function loadSavedLineup(fixtureKey){
+  const fx = (_fbFixtures||[]).find(f=>f._key===fixtureKey);
+  if(fx){ document.getElementById('lu-tournament').value = fx.tournament; document.getElementById('lu-agecat').value = fx.ageCategory; onLineupFilterChange(); }
+  document.getElementById('lu-fixture').value = fixtureKey;
   loadLineupFixture();
   document.querySelector('[data-panel="lineup"]').click();
+}
+
+function printLineup(fixtureKey){
+  const l = _fbLineups.find(x=>x._key===fixtureKey);
+  if(!l) return;
+  const rows = side => (l[side]||[]).map(p=>`<tr><td>${p.num||'—'}</td><td>${p.name||'—'}</td><td>${p.dob?fmtDate(p.dob):'—'}</td><td>${p.pos||'—'}</td></tr>`).join('');
+  const win = window.open('','_blank','width=800,height=900');
+  win.document.write(`<!DOCTYPE html><html><head><title>Match Lineup — ${l.matchLabel}</title>
+  <style>
+    *{box-sizing:border-box;font-family:Arial,sans-serif;}
+    body{padding:24px;color:#222;}
+    h1{font-size:1.3rem;color:#0d1642;margin-bottom:4px;}
+    .meta{font-size:.85rem;color:#666;margin-bottom:20px;}
+    .cols{display:flex;gap:24px;}
+    .col{flex:1;}
+    h3{font-size:1rem;color:#1a237e;border-bottom:2px solid #FFD700;padding-bottom:6px;margin-bottom:10px;}
+    table{width:100%;border-collapse:collapse;font-size:.85rem;}
+    th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;}
+    th{background:#f4f6fb;color:#1a237e;}
+  </style></head>
+  <body>
+    <h1>Match ${l.matchNumber}: ${l.matchLabel}</h1>
+    <div class="meta">${l.tournament} &bull; ${l.ageCategory} Age Category</div>
+    <div class="cols">
+      <div class="col"><h3>Home Team</h3><table><thead><tr><th>#</th><th>Name</th><th>DOB</th><th>Pos</th></tr></thead><tbody>${rows('homePlayers')}</tbody></table></div>
+      <div class="col"><h3>Away Team</h3><table><thead><tr><th>#</th><th>Name</th><th>DOB</th><th>Pos</th></tr></thead><tbody>${rows('awayPlayers')}</tbody></table></div>
+    </div>
+    <script>setTimeout(()=>window.print(),700);<\/script>
+  </body></html>`);
+  win.document.close();
 }
 
 // ── REPORTS ───────────────────────────────────────────────────────────────
@@ -1347,76 +1453,136 @@ function exportCSV(type){
 }
 
 // ── FIXTURES ──────────────────────────────────────────────────────────────
-function addFixture(){
-  const home=document.getElementById('fx-home').value.trim();
-  const away=document.getElementById('fx-away').value.trim();
-  const dt=document.getElementById('fx-dt').value;
-  if(!home||!away||!dt){ alert('Home team, away team, and date are required.'); return; }
-  const fixtures=DB.get('sg_fixtures');
-  fixtures.push({id:generateId('FX',fixtures),home,away,dt,venue:document.getElementById('fx-venue').value,tournament:document.getElementById('fx-tournament').value,round:document.getElementById('fx-round').value,status:'upcoming'});
-  DB.set('sg_fixtures',fixtures);
-  ['fx-home','fx-away','fx-dt','fx-venue'].forEach(x=>document.getElementById(x).value='');
+let _fbFixtures = [];
+_fbDb.ref('fixtures').on('value', snap => {
+  _fbFixtures = [];
+  snap.forEach(child => { _fbFixtures.push({ _key: child.key, ...child.val() }); });
   renderFixtures(); renderResultsFixtures();
+});
+
+function onFixtureFilterChange(){
+  const tournament = document.getElementById('fx-tournament').value;
+  const ageCategory = document.getElementById('fx-agecat').value;
+  const homeSel = document.getElementById('fx-home');
+  const awaySel = document.getElementById('fx-away');
+  if(!tournament || !ageCategory){
+    homeSel.innerHTML = '<option value="">Select tournament + age category first</option>';
+    awaySel.innerHTML = '<option value="">Select tournament + age category first</option>';
+    document.getElementById('fx-matchnum').value = '';
+    return;
+  }
+  const teams = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory);
+  const opts = '<option value="">Select team</option>' + (teams.length
+    ? teams.map(t => `<option value="${t.teamName}">${t.teamName}</option>`).join('')
+    : '<option value="" disabled>No teams registered for this tournament/age category</option>');
+  homeSel.innerHTML = opts;
+  awaySel.innerHTML = opts;
+  const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory).length;
+  document.getElementById('fx-matchnum').value = 'Match ' + (count+1);
+}
+
+function addFixture(){
+  const tournament = document.getElementById('fx-tournament').value;
+  const ageCategory = document.getElementById('fx-agecat').value;
+  const home=document.getElementById('fx-home').value;
+  const away=document.getElementById('fx-away').value;
+  const dt=document.getElementById('fx-dt').value;
+  if(!tournament||!ageCategory){ alert('Please select tournament and age category.'); return; }
+  if(!home||!away||!dt){ alert('Home team, away team, and date are required.'); return; }
+  if(home===away){ alert('Home and away team cannot be the same.'); return; }
+  const matchNumber = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory).length + 1;
+  _fbDb.ref('fixtures').push({
+    tournament, ageCategory, matchNumber, home, away, dt,
+    venue: document.getElementById('fx-venue').value,
+    round: document.getElementById('fx-round').value,
+    status: 'upcoming'
+  });
+  ['fx-dt','fx-venue'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('fx-home').value=''; document.getElementById('fx-away').value='';
+  onFixtureFilterChange();
 }
 function renderFixtures(){
   const ft=(document.getElementById('fx-filter')||{}).value||'';
-  let fx=DB.get('sg_fixtures');
+  const fa=(document.getElementById('fx-filter-age')||{}).value||'';
+  let fx=_fbFixtures;
   if(ft) fx=fx.filter(f=>f.tournament===ft);
+  if(fa) fx=fx.filter(f=>f.ageCategory===fa);
   const tbody=document.getElementById('fixtures-body');
-  if(!fx.length){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
+  if(!fx.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
   tbody.innerHTML=fx.sort((a,b)=>new Date(a.dt)-new Date(b.dt)).map(f=>`<tr>
+    <td>${f.matchNumber||'—'}</td><td>${f.ageCategory||'—'}</td>
     <td><strong>${f.home}</strong></td><td><strong>${f.away}</strong></td>
     <td>${fmtDateTime(f.dt)}</td><td>${f.venue||'—'}</td><td>${f.round}</td>
     <td>${badge(f.status)}</td>
-    <td><button class="btn btn-danger btn-xs" onclick="deleteFixture('${f.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+    <td><button class="btn btn-danger btn-xs" onclick="deleteFixture('${f._key}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
 }
-function deleteFixture(id){ if(!confirm('Delete fixture?')) return; DB.set('sg_fixtures',DB.get('sg_fixtures').filter(f=>f.id!==id)); renderFixtures(); }
+function deleteFixture(key){ if(!confirm('Delete fixture?')) return; _fbDb.ref('fixtures/'+key).remove(); }
 
 // ── RESULTS ───────────────────────────────────────────────────────────────
+let _fbResults = [];
+_fbDb.ref('results').on('value', snap => {
+  _fbResults = [];
+  snap.forEach(child => { _fbResults.push({ _key: child.key, ...child.val() }); });
+  renderResultsLog(); renderLeagueTable();
+});
+
 function renderResultsFixtures(){
   const t=(document.getElementById('res-tournament')||{}).value||'';
-  let fx=DB.get('sg_fixtures').filter(f=>f.status==='upcoming');
+  const a=(document.getElementById('res-agecat')||{}).value||'';
+  let fx=(_fbFixtures||[]).filter(f=>f.status==='upcoming');
   if(t) fx=fx.filter(f=>f.tournament===t);
+  if(a) fx=fx.filter(f=>f.ageCategory===a);
   const container=document.getElementById('results-fixtures-list');
   if(!fx.length){ container.innerHTML='<div class="empty"><i class="fas fa-calendar-check"></i><h4>No upcoming fixtures</h4><p>All fixtures are played, or none added yet.</p></div>'; renderResultsLog(); return; }
   container.innerHTML=fx.map(f=>`
     <div class="score-row">
       <div class="score-team">${f.home}</div>
-      <input type="number" class="score-input" id="hs-${f.id}" min="0" value="0">
+      <input type="number" class="score-input" id="hs-${f._key}" min="0" value="0">
       <div class="score-vs">VS</div>
-      <input type="number" class="score-input" id="as-${f.id}" min="0" value="0">
+      <input type="number" class="score-input" id="as-${f._key}" min="0" value="0">
       <div class="score-team away">${f.away}</div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
+      <input type="text" placeholder="Man of the Match" id="motm-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
+      <input type="text" placeholder="Yellow cards (jersey #s, comma separated)" id="yellow-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="text" placeholder="Red cards (jersey #s, comma separated)" id="red-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:18px;padding:0 4px;">
-      <input type="text" placeholder="Man of the Match" id="motm-${f.id}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f.id}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <div style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;">${f.tournament} · ${f.round}</div>
-      <button class="btn btn-success btn-sm" onclick="saveResult('${f.id}')"><i class="fas fa-save"></i> Save</button>
+      <input type="number" placeholder="Home Fouls" id="hfoul-${f._key}" min="0" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="number" placeholder="Away Fouls" id="afoul-${f._key}" min="0" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <div style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;">${f.tournament} · ${f.ageCategory} · Match ${f.matchNumber}</div>
+      <button class="btn btn-success btn-sm" onclick="saveResult('${f._key}')"><i class="fas fa-save"></i> Save</button>
     </div>`).join('<hr style="border:none;border-top:1px solid var(--border);margin-bottom:18px;">');
   renderResultsLog();
 }
-function saveResult(fxId){
-  const hs=parseInt(document.getElementById('hs-'+fxId).value)||0;
-  const as=parseInt(document.getElementById('as-'+fxId).value)||0;
-  const motm=document.getElementById('motm-'+fxId).value;
-  const scorer=document.getElementById('scorer-'+fxId).value;
-  // mark fixture played
-  const fixtures=DB.get('sg_fixtures');
-  const fi=fixtures.findIndex(f=>f.id===fxId); if(fi<0) return;
-  const fx=fixtures[fi]; fx.status='played'; fx.homeScore=hs; fx.awayScore=as; fixtures[fi]=fx;
-  DB.set('sg_fixtures',fixtures);
-  // save result record
-  const results=DB.get('sg_results');
-  results.push({fxId,home:fx.home,away:fx.away,homeScore:hs,awayScore:as,motm,scorer,tournament:fx.tournament,dt:new Date().toISOString()});
-  DB.set('sg_results',results);
-  renderResultsFixtures(); renderLeagueTable();
+function saveResult(fxKey){
+  const hs=parseInt(document.getElementById('hs-'+fxKey).value)||0;
+  const as=parseInt(document.getElementById('as-'+fxKey).value)||0;
+  const motm=document.getElementById('motm-'+fxKey).value;
+  const scorer=document.getElementById('scorer-'+fxKey).value;
+  const yellow=document.getElementById('yellow-'+fxKey).value;
+  const red=document.getElementById('red-'+fxKey).value;
+  const hfoul=parseInt(document.getElementById('hfoul-'+fxKey).value)||0;
+  const afoul=parseInt(document.getElementById('afoul-'+fxKey).value)||0;
+  const fx=(_fbFixtures||[]).find(f=>f._key===fxKey); if(!fx) return;
+  _fbDb.ref('fixtures/'+fxKey).update({status:'played', homeScore:hs, awayScore:as});
+  _fbDb.ref('results/'+fxKey).set({
+    home:fx.home, away:fx.away, homeScore:hs, awayScore:as, motm, scorer,
+    yellowCards:yellow, redCards:red, homeFouls:hfoul, awayFouls:afoul,
+    tournament:fx.tournament, ageCategory:fx.ageCategory, matchNumber:fx.matchNumber,
+    dt:new Date().toISOString()
+  });
+  renderResultsFixtures();
 }
 function renderResultsLog(){
-  const results=DB.get('sg_results').reverse();
+  const results=[..._fbResults].reverse();
   const tbody=document.getElementById('results-log');
   if(!results.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No results yet.</td></tr>'; return; }
   tbody.innerHTML=results.map(r=>`<tr>
-    <td>${r.home} vs ${r.away}</td>
+    <td>${r.home} vs ${r.away} <span style="color:var(--muted);font-size:.75rem;">(${r.ageCategory||''})</span></td>
     <td style="font-weight:800;font-size:1rem;color:var(--primary);">${r.homeScore} – ${r.awayScore}</td>
     <td>${r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td></tr>`).join('');
 }
@@ -1424,9 +1590,10 @@ function renderResultsLog(){
 // ── LEAGUE TABLE ──────────────────────────────────────────────────────────
 function renderLeagueTable(){
   const tourn=(document.getElementById('lt-tournament')||{}).value||'IF5L Season 2';
-  const results=DB.get('sg_results').filter(r=>DB.get('sg_fixtures').find(f=>f.id===r.fxId&&f.tournament===tourn)||true);
-  // build from fixtures of this tournament
-  const fx=DB.get('sg_fixtures').filter(f=>f.tournament===tourn&&f.status==='played');
+  const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
+  // build from fixtures of this tournament + age category
+  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
+  if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
   const table={};
   fx.forEach(f=>{
     [f.home,f.away].forEach(t=>{ if(!table[t]) table[t]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
