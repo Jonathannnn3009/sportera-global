@@ -278,6 +278,9 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="nav-item" data-panel="media"><i class="fas fa-images"></i> Photos & Videos</div>
   <div class="nav-item" data-panel="downloads-mgr"><i class="fas fa-download"></i> Manage Downloads</div>
 
+  <div class="nav-label">Messages</div>
+  <div class="nav-item" data-panel="messages"><i class="fas fa-envelope"></i> Contact Messages <span class="badge-count" id="sb-messages">0</span></div>
+
   <div class="sb-foot">
     <a href="../index.html" target="_blank" style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);font-size:.8rem;margin-bottom:10px;"><i class="fas fa-globe"></i> View Website</a>
     <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -745,6 +748,34 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   </div>
 </div>
 
+<!-- ── CONTACT MESSAGES ──────────────────────────────────── -->
+<div class="panel" id="panel-messages">
+  <div class="card">
+    <div class="card-head">
+      <h3><i class="fas fa-envelope"></i> Contact Form Messages</h3>
+      <div class="search-bar">
+        <input type="text" id="msgSearch" placeholder="Search name / email / message…" oninput="renderMessages()">
+        <select id="msgSubjectFilter" onchange="renderMessages()">
+          <option value="">All Subjects</option>
+          <option value="registration">Team/Player Registration</option>
+          <option value="tournament">Tournament Inquiry</option>
+          <option value="partnership">Partnership/Sponsorship</option>
+          <option value="media">Media/Press</option>
+          <option value="general">General Inquiry</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <div class="tbl-wrap">
+        <table class="dt">
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th><th>Actions</th></tr></thead>
+          <tbody id="messages-body"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No messages yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <!-- ══════════════ MODALS ══════════════ -->
@@ -835,6 +866,16 @@ _fbDb.ref('registrations').on('value', snap => {
   renderApprovals();
 });
 
+// Live listener — contact form messages
+let _fbMessages = [];
+_fbDb.ref('contactMessages').on('value', snap => {
+  _fbMessages = [];
+  snap.forEach(child => { _fbMessages.push({ _key: child.key, ...child.val() }); });
+  _fbMessages.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  document.getElementById('sb-messages').textContent = _fbMessages.length;
+  renderMessages();
+});
+
 // ── STORAGE HELPERS ───────────────────────────────────────────────────────
 const DB = {
   get: k => JSON.parse(localStorage.getItem(k)||'[]'),
@@ -853,7 +894,8 @@ const PANEL_TITLES = {
   dashboard:'Dashboard', approvals:'Approve Registrations', teams:'Manage Teams',
   players:'Manage Players', idcards:'Generate ID Cards', reports:'Export Reports',
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
-  news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads'
+  news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
+  messages:'Contact Messages'
 };
 function switchPanel(id) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -867,7 +909,8 @@ function switchPanel(id) {
     dashboard: refreshDashboard, approvals: renderApprovals, teams: renderTeams,
     players: renderPlayers, idcards: refreshIDCards, reports: renderReports,
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
-    news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads
+    news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
+    messages: renderMessages
   };
   if(refresh[id]) refresh[id]();
 }
@@ -905,6 +948,31 @@ function refreshDashboard(){
   const recent = [...regs].reverse().slice(0,5);
   if(!recent.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No registrations yet</td></tr>'; return; }
   tbody.innerHTML = recent.map(r=>`<tr><td style="font-family:monospace;font-size:.75rem;">${r.id}</td><td>${r.teamName||r.playerName||'—'}</td><td><span class="badge ${r.type==='team'?'b-upcoming':'b-played'}">${r.type}</span></td><td>${badge(r.status)}</td></tr>`).join('');
+}
+
+// ── CONTACT MESSAGES ──────────────────────────────────────────────────────
+function renderMessages(){
+  const tbody = document.getElementById('messages-body');
+  if(!tbody) return;
+  const q=(document.getElementById('msgSearch')||{}).value?.toLowerCase()||'';
+  const sf=(document.getElementById('msgSubjectFilter')||{}).value||'';
+  let msgs = _fbMessages || [];
+  if(sf) msgs = msgs.filter(m=>m.subject===sf);
+  if(q) msgs = msgs.filter(m => (m.name||'').toLowerCase().includes(q) || (m.email||'').toLowerCase().includes(q) || (m.message||'').toLowerCase().includes(q));
+  if(!msgs.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No messages yet</td></tr>'; return; }
+  const subjectLabels = {registration:'Team/Player Registration', tournament:'Tournament Inquiry', partnership:'Partnership/Sponsorship', media:'Media/Press', general:'General Inquiry'};
+  tbody.innerHTML = msgs.map(m => `<tr>
+    <td style="white-space:nowrap;font-size:.8rem;">${fmtDateTime(m.submittedAt)}</td>
+    <td>${m.name||'—'}</td>
+    <td><a href="mailto:${m.email}" style="color:var(--primary);">${m.email||'—'}</a></td>
+    <td><span class="badge b-upcoming">${subjectLabels[m.subject]||m.subject||'—'}</span></td>
+    <td style="max-width:280px;white-space:normal;">${(m.message||'').replace(/</g,'&lt;')}</td>
+    <td class="actions"><button class="btn btn-danger btn-xs" onclick="deleteMessage('${m._key}')"><i class="fas fa-trash"></i></button></td>
+  </tr>`).join('');
+}
+function deleteMessage(key){
+  if(!confirm('Delete this message?')) return;
+  _fbDb.ref('contactMessages/'+key).remove();
 }
 
 // ── APPROVALS ─────────────────────────────────────────────────────────────
