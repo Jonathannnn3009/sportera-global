@@ -364,6 +364,19 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="ageCategory">Age Category *</label>
+                            <select id="ageCategory" name="ageCategory" required>
+                                <option value="">Select age category</option>
+                                <option value="U9">Under 9</option>
+                                <option value="U11">Under 11</option>
+                                <option value="U13">Under 13</option>
+                                <option value="U15">Under 15</option>
+                                <option value="U17">Under 17</option>
+                                <option value="U19">Under 19</option>
+                                <option value="Senior">Senior / Open</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="teamEmail">Team Email *</label>
                             <input type="email" id="teamEmail" name="teamEmail" placeholder="Contact email for team" required>
                         </div>
@@ -550,6 +563,21 @@
                                     <option value="">Select tournament</option>
                                     <option value="IF5L Season 2">IF5L Season 2 (August 2026)</option>
                                     <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerAgeCategory">Age Category *</label>
+                                <select id="playerAgeCategory" name="playerAgeCategory" required>
+                                    <option value="">Select age category</option>
+                                    <option value="U9">Under 9</option>
+                                    <option value="U11">Under 11</option>
+                                    <option value="U13">Under 13</option>
+                                    <option value="U15">Under 15</option>
+                                    <option value="U17">Under 17</option>
+                                    <option value="U19">Under 19</option>
+                                    <option value="Senior">Senior / Open</option>
                                 </select>
                             </div>
                         </div>
@@ -765,21 +793,32 @@
         }
 
         // --- Load registered teams from Firebase into player dropdown ---
+        let _allRegisteredTeams = [];
         function loadTeamsDropdown() {
-            const sel = document.getElementById('playerTeam');
             _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value', snap => {
-                const teams = [];
-                snap.forEach(child => { const d = child.val(); if (d.teamName) teams.push(d.teamName); });
-                sel.innerHTML = '<option value="">Select your team</option>';
-                if (teams.length === 0) {
-                    sel.innerHTML += '<option value="" disabled>No teams registered yet — team must register first</option>';
-                } else {
-                    teams.forEach(t => sel.innerHTML += '<option value="' + t + '">' + t + '</option>');
-                }
-                sel.innerHTML += '<option value="__other__">Other / Not listed</option>';
+                _allRegisteredTeams = [];
+                snap.forEach(child => { const d = child.val(); if (d.teamName) _allRegisteredTeams.push(d); });
+                renderTeamDropdown();
             });
         }
+        function renderTeamDropdown() {
+            const sel = document.getElementById('playerTeam');
+            const tournament = document.getElementById('playerTournament').value;
+            const ageCategory = document.getElementById('playerAgeCategory').value;
+            let teams = _allRegisteredTeams;
+            if (tournament) teams = teams.filter(t => t.tournament === tournament);
+            if (ageCategory) teams = teams.filter(t => t.ageCategory === ageCategory);
+            sel.innerHTML = '<option value="">Select your team</option>';
+            if (teams.length === 0) {
+                sel.innerHTML += '<option value="" disabled>No teams registered yet for this tournament/age category</option>';
+            } else {
+                teams.forEach(t => sel.innerHTML += '<option value="' + t.teamName + '">' + t.teamName + '</option>');
+            }
+            sel.innerHTML += '<option value="__other__">Other / Not listed</option>';
+        }
         loadTeamsDropdown();
+        document.getElementById('playerTournament').addEventListener('change', renderTeamDropdown);
+        document.getElementById('playerAgeCategory').addEventListener('change', renderTeamDropdown);
 
         // If player selects "Other", show a text input
         document.getElementById('playerTeam').addEventListener('change', function() {
@@ -913,6 +952,7 @@
                 managerPhone: document.getElementById('managerPhone').value,
                 teamEmail: document.getElementById('teamEmail').value,
                 tournament: document.getElementById('tournament').value,
+                ageCategory: document.getElementById('ageCategory').value,
                 playerList: getPlayerListData(),
                 teamLogoFile: logoName,
                 consent: {
@@ -957,6 +997,7 @@
                 playerCity: document.getElementById('playerCity').value,
                 playerTeam: teamVal,
                 playerTournament: document.getElementById('playerTournament').value,
+                playerAgeCategory: document.getElementById('playerAgeCategory').value,
                 guardianName: document.getElementById('guardianName').value,
                 guardianPhone: document.getElementById('guardianPhone').value,
                 guardianRelation: document.getElementById('guardianRelation').value,
