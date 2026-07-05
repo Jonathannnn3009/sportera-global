@@ -744,7 +744,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="js/main.js"></script>
     <script>
     const _fbConfig = {
@@ -758,7 +757,6 @@
     };
     if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
     const _regDb = firebase.database();
-    const _regStorage = firebase.storage();
     </script>
     <script>
         function switchTab(tab) {
@@ -794,8 +792,9 @@
             }
         }
 
-        // --- File upload handler: uploads to Firebase Storage, stores the URL ---
-        const _uploadedFileUrls = {}; // inputId -> download URL
+        // --- File upload handler: encodes file as base64 and stores directly in
+        // Realtime Database (no Firebase Storage / billing plan needed) ---
+        const _uploadedFileUrls = {}; // inputId -> base64 data URL
         function handleFileUpload(inputId, previewId, boxId) {
             const file = document.getElementById(inputId).files[0];
             const preview = document.getElementById(previewId);
@@ -806,19 +805,19 @@
             }
             delete _uploadedFileUrls[inputId];
             preview.style.display = 'block';
-            preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + file.name + '...';
+            preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing ' + file.name + '...';
             document.getElementById(boxId).style.borderColor = '#FFD700';
-            const folder = inputId === 'teamLogo' ? 'teamLogos' : inputId === 'playerPhoto' ? 'playerPhotos' : 'ageDocs';
-            const path = folder + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const ref = _regStorage.ref(path);
-            ref.put(file).then(snap => snap.ref.getDownloadURL()).then(url => {
-                _uploadedFileUrls[inputId] = url;
-                preview.innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB) — uploaded';
+            const reader = new FileReader();
+            reader.onload = function() {
+                _uploadedFileUrls[inputId] = reader.result;
+                preview.innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB) — ready';
                 document.getElementById(boxId).style.borderColor = '#2e7d32';
-            }).catch(err => {
-                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> Upload failed: ' + err.message;
+            };
+            reader.onerror = function() {
+                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> Could not read file. Please try again.';
                 document.getElementById(boxId).style.borderColor = '#c62828';
-            });
+            };
+            reader.readAsDataURL(file);
         }
 
         // --- Load registered teams from Firebase into player dropdown ---

@@ -307,7 +307,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script>
     firebase.initializeApp({
       apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
@@ -321,7 +320,6 @@
 
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const storage = firebase.storage();
     let teamData = null;
     let editingOpen = false;
     let newPlayerDocUrl = '';
@@ -441,24 +439,25 @@
       form.classList.toggle('open');
     }
 
-    async function uploadNewPlayerDoc() {
+    function uploadNewPlayerDoc() {
       const file = document.getElementById('newPlayerAgeDoc').files[0];
       const statusEl = document.getElementById('newPlayerDocStatus');
       newPlayerDocUrl = '';
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        statusEl.innerHTML = '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i> File too large — max 2MB.</span>';
+      if (file.size > 600 * 1024) {
+        statusEl.innerHTML = '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i> File too large — max 600KB (Firestore document size limit).</span>';
         return;
       }
-      statusEl.innerHTML = '<span style="color:#b8860b;"><i class="fas fa-spinner fa-spin"></i> Uploading...</span>';
-      try {
-        const path = 'ageDocs/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const snap = await storage.ref(path).put(file);
-        newPlayerDocUrl = await snap.ref.getDownloadURL();
-        statusEl.innerHTML = '<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> ' + file.name + ' uploaded</span>';
-      } catch (e) {
-        statusEl.innerHTML = '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i> Upload failed: ' + e.message + '</span>';
-      }
+      statusEl.innerHTML = '<span style="color:#b8860b;"><i class="fas fa-spinner fa-spin"></i> Processing...</span>';
+      const reader = new FileReader();
+      reader.onload = function() {
+        newPlayerDocUrl = reader.result;
+        statusEl.innerHTML = '<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> ' + file.name + ' ready</span>';
+      };
+      reader.onerror = function() {
+        statusEl.innerHTML = '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i> Could not read file. Please try again.</span>';
+      };
+      reader.readAsDataURL(file);
     }
 
     async function submitAddPlayer() {
