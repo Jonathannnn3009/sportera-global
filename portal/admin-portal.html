@@ -568,7 +568,7 @@
         // Approvals
         if (requests.size) {
           document.getElementById('approvalsTable').innerHTML = `
-            <table><thead><tr><th>Team</th><th>Player Name</th><th>Position</th><th>DOB</th><th>Action</th></tr></thead>
+            <table><thead><tr><th>Team</th><th>Player Name</th><th>Position</th><th>DOB</th><th>Age Doc</th><th>Action</th></tr></thead>
             <tbody>${requests.docs.map(d => {
               const r = d.data();
               return `<tr>
@@ -576,6 +576,7 @@
                 <td><strong>${r.playerName||'--'}</strong></td>
                 <td>${r.position||'--'}</td>
                 <td>${r.dob||'--'}</td>
+                <td>${r.ageDocUrl ? `<a href="${r.ageDocUrl}" target="_blank" style="color:#0d1642;font-weight:600;"><i class="fas fa-file-alt"></i> View</a>` : '<span style="color:#999;">None</span>'}</td>
                 <td><div class="btn-gap">
                   <button class="btn btn-green btn-sm" onclick="approveRequest('${d.id}', true)"><i class="fas fa-check"></i> Approve</button>
                   <button class="btn btn-red btn-sm" onclick="approveRequest('${d.id}', false)"><i class="fas fa-times"></i> Reject</button>

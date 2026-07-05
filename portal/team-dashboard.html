@@ -268,11 +268,16 @@
                   <div class="form-group"><label>Date of Birth</label><input type="date" id="newPlayerDOB"></div>
                   <div class="form-group"><label>Contact Number</label><input type="tel" id="newPlayerPhone" placeholder="10-digit number"></div>
                 </div>
+                <div class="form-group" style="margin-top:10px;">
+                  <label>Age Verification Document * <span style="font-weight:400; color:var(--text-light);">(Aadhaar Card, Birth Certificate, or Passport)</span></label>
+                  <input type="file" id="newPlayerAgeDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="uploadNewPlayerDoc()">
+                  <div id="newPlayerDocStatus" style="font-size:0.82rem; margin-top:6px;"></div>
+                </div>
                 <div style="display:flex; gap:10px; margin-top:4px;">
                   <button class="btn btn-primary" onclick="submitAddPlayer()"><i class="fas fa-paper-plane"></i> Submit for Approval</button>
                   <button class="btn btn-outline" onclick="toggleAddForm()">Cancel</button>
                 </div>
-                <p style="font-size:0.8rem; color:var(--text-light); margin-top:10px;"><i class="fas fa-info-circle"></i> Player addition is subject to admin approval before they appear in your squad.</p>
+                <p style="font-size:0.8rem; color:var(--text-light); margin-top:10px;"><i class="fas fa-info-circle"></i> Player addition is subject to admin approval before they appear in your squad. Admin will verify the age document before approving.</p>
               </div>
               <div id="squadGrid" class="squad-grid"></div>
             </div>
@@ -302,6 +307,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script>
     firebase.initializeApp({
       apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
@@ -315,8 +321,10 @@
 
     const auth = firebase.auth();
     const db = firebase.firestore();
+    const storage = firebase.storage();
     let teamData = null;
     let editingOpen = false;
+    let newPlayerDocUrl = '';
 
     auth.onAuthStateChanged(async user => {
       if (!user) { window.location.href = 'login.html'; return; }
@@ -433,10 +441,33 @@
       form.classList.toggle('open');
     }
 
+    async function uploadNewPlayerDoc() {
+      const file = document.getElementById('newPlayerAgeDoc').files[0];
+      const statusEl = document.getElementById('newPlayerDocStatus');
+      newPlayerDocUrl = '';
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        statusEl.innerHTML = '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i> File too large — max 2MB.</span>';
+        return;
+      }
+      statusEl.innerHTML = '<span style="color:#b8860b;"><i class="fas fa-spinner fa-spin"></i> Uploading...</span>';
+      try {
+        const path = 'ageDocs/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const snap = await storage.ref(path).put(file);
+        newPlayerDocUrl = await snap.ref.getDownloadURL();
+        statusEl.innerHTML = '<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> ' + file.name + ' uploaded</span>';
+      } catch (e) {
+        statusEl.innerHTML = '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i> Upload failed: ' + e.message + '</span>';
+      }
+    }
+
     async function submitAddPlayer() {
       if (!editingOpen) { alert('Squad editing is currently closed.'); return; }
       const name = document.getElementById('newPlayerName').value.trim();
       if (!name) { alert('Player name is required.'); return; }
+      const docFile = document.getElementById('newPlayerAgeDoc').files[0];
+      if (!docFile) { alert('Please upload an age verification document (Aadhaar, Birth Certificate, or Passport).'); return; }
+      if (docFile && !newPlayerDocUrl) { alert('The age document is still uploading. Please wait a moment and try again.'); return; }
       try {
         await db.collection('squadRequests').add({
           teamId: teamData.id,
@@ -445,13 +476,17 @@
           position: document.getElementById('newPlayerPosition').value,
           dob: document.getElementById('newPlayerDOB').value,
           phone: document.getElementById('newPlayerPhone').value,
+          ageDocUrl: newPlayerDocUrl,
+          docVerified: false,
           status: 'pending',
           requestedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert('Player addition request submitted! Admin will review and approve shortly.');
+        alert('Player addition request submitted! Admin will review the document and approve shortly.');
         document.getElementById('addPlayerForm').classList.remove('open');
-        ['newPlayerName','newPlayerPhone','newPlayerDOB'].forEach(id => document.getElementById(id).value = '');
+        ['newPlayerName','newPlayerPhone','newPlayerDOB','newPlayerAgeDoc'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('newPlayerPosition').value = '';
+        document.getElementById('newPlayerDocStatus').innerHTML = '';
+        newPlayerDocUrl = '';
       } catch (e) {
         alert('Error submitting request: ' + e.message);
       }

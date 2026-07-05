@@ -730,6 +730,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="js/main.js"></script>
     <script>
     const _fbConfig = {
@@ -743,6 +744,7 @@
     };
     if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
     const _regDb = firebase.database();
+    const _regStorage = firebase.storage();
     </script>
     <script>
         function switchTab(tab) {
@@ -778,7 +780,8 @@
             }
         }
 
-        // --- File upload handler ---
+        // --- File upload handler: uploads to Firebase Storage, stores the URL ---
+        const _uploadedFileUrls = {}; // inputId -> download URL
         function handleFileUpload(inputId, previewId, boxId) {
             const file = document.getElementById(inputId).files[0];
             const preview = document.getElementById(previewId);
@@ -787,9 +790,21 @@
                 alert('File too large. Please upload a file under 2MB.');
                 return;
             }
+            delete _uploadedFileUrls[inputId];
             preview.style.display = 'block';
-            preview.innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
-            document.getElementById(boxId).style.borderColor = '#2e7d32';
+            preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + file.name + '...';
+            document.getElementById(boxId).style.borderColor = '#FFD700';
+            const folder = inputId === 'teamLogo' ? 'teamLogos' : 'ageDocs';
+            const path = folder + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const ref = _regStorage.ref(path);
+            ref.put(file).then(snap => snap.ref.getDownloadURL()).then(url => {
+                _uploadedFileUrls[inputId] = url;
+                preview.innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB) — uploaded';
+                document.getElementById(boxId).style.borderColor = '#2e7d32';
+            }).catch(err => {
+                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> Upload failed: ' + err.message;
+                document.getElementById(boxId).style.borderColor = '#c62828';
+            });
         }
 
         // --- Load registered teams from Firebase into player dropdown ---
@@ -940,6 +955,7 @@
             }
             const logoFile = document.getElementById('teamLogo').files[0];
             const logoName = logoFile ? logoFile.name : '';
+            const logoUrl = _uploadedFileUrls['teamLogo'] || '';
             pendingTeamData = {
                 id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
                 type: 'team', status: 'pending',
@@ -955,6 +971,7 @@
                 ageCategory: document.getElementById('ageCategory').value,
                 playerList: getPlayerListData(),
                 teamLogoFile: logoName,
+                teamLogoUrl: logoUrl,
                 consent: {
                     accepted: true,
                     signedBy: document.getElementById('teamSignature').value,
@@ -980,6 +997,11 @@
                 ? (document.getElementById('playerTeamOther')?.value || '')
                 : teamSel.value;
             const ageDocFile = document.getElementById('ageDoc').files[0];
+            const ageDocUrl = _uploadedFileUrls['ageDoc'] || '';
+            if (ageDocFile && !ageDocUrl) {
+                alert('Your age proof document is still uploading. Please wait a moment and try again.');
+                return;
+            }
             const dob = document.getElementById('playerDOB').value;
             const today = new Date(); const birth = new Date(dob);
             let age = today.getFullYear() - birth.getFullYear();
@@ -1003,6 +1025,8 @@
                 guardianRelation: document.getElementById('guardianRelation').value,
                 guardianEmail: document.getElementById('guardianEmail').value,
                 ageDocFile: ageDocFile ? ageDocFile.name : '',
+                ageDocUrl: ageDocUrl,
+                docVerified: false,
                 consent: {
                     accepted: true,
                     signedBy: document.getElementById('playerSignature').value,
