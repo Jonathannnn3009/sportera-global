@@ -411,12 +411,9 @@
                             <div class="upload-preview" id="logoPreview"></div>
                         </div>
 
-                        <p class="form-section-label">Player List</p>
-                        <div id="playerRows"></div>
-                        <p class="player-count-label" id="playerCountLabel"></p>
-                        <button type="button" class="btn-add-player" onclick="addPlayerRow()">
-                            <i class="fas fa-plus"></i> Add Player
-                        </button>
+                        <div class="notice info" style="background:#e8eaf6;border:1px solid #c5cae9;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:0.88rem;color:#1a237e;">
+                            <i class="fas fa-info-circle"></i> Player details are not required at this stage. Once your team registration is confirmed, add your players individually through the <strong>Player Registration</strong> section below.
+                        </div>
 
                         <p class="form-section-label">Team Consent Form</p>
                         <div class="consent-box">
@@ -443,12 +440,15 @@
                             </label>
                         </div>
 
-                        <p class="form-section-label">Payment</p>
+                        <p class="form-section-label">Token Registration Amount</p>
                         <div class="fee-box">
-                            <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
-                            <div class="fee-row"><span>Team Registration Fee</span><span>TBA</span></div>
-                            <div class="fee-row"><span>Player ID Cards (per player)</span><span>TBA</span></div>
-                            <div class="fee-row total"><span>Total</span><span>TBA</span></div>
+                            <h4><i class="fas fa-receipt"></i> Slot Reservation Fee</h4>
+                            <div class="fee-row"><span>Token Amount (confirms your slot in this age category)</span><span>TBA</span></div>
+                            <div class="fee-row total"><span>Total Payable Now</span><span>TBA</span></div>
+                        </div>
+                        <div class="payment-notice" style="margin-bottom:16px;">
+                            <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
+                            <span>This token amount only reserves your team's slot in the selected tournament and age category. Individual player registration is free unless the specific event requires per-player fees.</span>
                         </div>
                         <div class="payment-options">
                             <label class="payment-option">
@@ -582,6 +582,14 @@
                             </div>
                         </div>
 
+                        <p class="form-section-label">Passport-Size Photograph *</p>
+                        <div class="upload-box" id="playerPhotoBox">
+                            <input type="file" id="playerPhoto" name="playerPhoto" accept="image/*" onchange="handleFileUpload('playerPhoto','playerPhotoPreview','playerPhotoBox')" required>
+                            <i class="fas fa-user-circle"></i>
+                            <div class="up-label"><strong>Upload passport-size photo</strong><br>JPG, PNG up to 2MB</div>
+                            <div class="upload-preview" id="playerPhotoPreview"></div>
+                        </div>
+
                         <p class="form-section-label">Age Proof Document *</p>
                         <div class="upload-box" id="ageDocBox">
                             <input type="file" id="ageDoc" name="ageDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload('ageDoc','ageDocPreview','ageDocBox')" required>
@@ -641,33 +649,39 @@
                             </label>
                         </div>
 
-                        <p class="form-section-label">Payment</p>
-                        <div class="fee-box">
-                            <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
-                            <div class="fee-row"><span>Player Registration Fee</span><span>TBA</span></div>
-                            <div class="fee-row"><span>Digital ID Card</span><span>TBA</span></div>
-                            <div class="fee-row total"><span>Total</span><span>TBA</span></div>
+                        <div id="playerNoPaymentNotice" class="payment-notice" style="display:none;">
+                            <i class="fas fa-check-circle" style="color:#2e7d32; margin-top:2px;"></i>
+                            <span>No payment is required for this tournament — player registration is free. Your team already covered the token amount for this age category.</span>
                         </div>
-                        <div class="payment-options">
-                            <label class="payment-option">
-                                <input type="radio" name="playerPayment" value="UPI" required>
-                                <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
-                                <div><strong>UPI Payment</strong><br><span>Pay via UPI ID — details sent after submission</span></div>
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="playerPayment" value="Bank Transfer">
-                                <span class="pay-icon"><i class="fas fa-university"></i></span>
-                                <div><strong>Bank Transfer / NEFT</strong><br><span>Bank details will be shared via email</span></div>
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="playerPayment" value="Online">
-                                <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
-                                <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
-                            </label>
-                        </div>
-                        <div class="payment-notice">
-                            <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
-                            <span>Payment gateway integration is being set up. Payment instructions will be sent to your email within 24 hours of submission.</span>
+                        <div id="playerPaymentSection" style="display:none;">
+                            <p class="form-section-label">Payment (Required for Individual Registration)</p>
+                            <div class="fee-box">
+                                <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
+                                <div class="fee-row"><span>Player Registration Fee</span><span>TBA</span></div>
+                                <div class="fee-row"><span>Digital ID Card</span><span>TBA</span></div>
+                                <div class="fee-row total"><span>Total</span><span>TBA</span></div>
+                            </div>
+                            <div class="payment-options">
+                                <label class="payment-option">
+                                    <input type="radio" name="playerPayment" value="UPI" id="playerPayUPI">
+                                    <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
+                                    <div><strong>UPI Payment</strong><br><span>Pay via UPI ID — details sent after submission</span></div>
+                                </label>
+                                <label class="payment-option">
+                                    <input type="radio" name="playerPayment" value="Bank Transfer">
+                                    <span class="pay-icon"><i class="fas fa-university"></i></span>
+                                    <div><strong>Bank Transfer / NEFT</strong><br><span>Bank details will be shared via email</span></div>
+                                </label>
+                                <label class="payment-option">
+                                    <input type="radio" name="playerPayment" value="Online">
+                                    <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
+                                    <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
+                                </label>
+                            </div>
+                            <div class="payment-notice">
+                                <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
+                                <span>Payment gateway integration is being set up. Payment instructions will be sent to your email within 24 hours of submission.</span>
+                            </div>
                         </div>
                         <br>
                         <button type="submit" class="btn btn-primary" style="width:100%; font-size:1rem; padding:16px;">
@@ -794,7 +808,7 @@
             preview.style.display = 'block';
             preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + file.name + '...';
             document.getElementById(boxId).style.borderColor = '#FFD700';
-            const folder = inputId === 'teamLogo' ? 'teamLogos' : 'ageDocs';
+            const folder = inputId === 'teamLogo' ? 'teamLogos' : inputId === 'playerPhoto' ? 'playerPhotos' : 'ageDocs';
             const path = folder + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const ref = _regStorage.ref(path);
             ref.put(file).then(snap => snap.ref.getDownloadURL()).then(url => {
@@ -835,6 +849,18 @@
         document.getElementById('playerTournament').addEventListener('change', renderTeamDropdown);
         document.getElementById('playerAgeCategory').addEventListener('change', renderTeamDropdown);
 
+        // --- Payment only required for individual-entry tournaments (e.g. IF5L) ---
+        const INDIVIDUAL_ENTRY_TOURNAMENTS = ['IF5L Season 2'];
+        function updatePlayerPaymentVisibility() {
+            const tournament = document.getElementById('playerTournament').value;
+            const isIndividual = INDIVIDUAL_ENTRY_TOURNAMENTS.includes(tournament);
+            document.getElementById('playerPaymentSection').style.display = isIndividual ? 'block' : 'none';
+            document.getElementById('playerNoPaymentNotice').style.display = (tournament && !isIndividual) ? 'flex' : 'none';
+            document.querySelectorAll('input[name="playerPayment"]').forEach(r => r.required = isIndividual);
+        }
+        document.getElementById('playerTournament').addEventListener('change', updatePlayerPaymentVisibility);
+        updatePlayerPaymentVisibility();
+
         // If player selects "Other", show a text input
         document.getElementById('playerTeam').addEventListener('change', function() {
             let existing = document.getElementById('playerTeamOther');
@@ -851,58 +877,6 @@
 
         const DEMO_OTP = '1234';
         let pendingTeamData = null, pendingPlayerData = null;
-
-        // --- Player rows ---
-        let playerRowCount = 0;
-        function addPlayerRow() {
-            playerRowCount++;
-            const n = playerRowCount;
-            const row = document.createElement('div');
-            row.className = 'player-row';
-            row.id = 'prow-' + n;
-            row.innerHTML = `
-                <div class="form-group">
-                    <label>Name *</label>
-                    <input type="text" placeholder="Full name" required>
-                </div>
-                <div class="form-group">
-                    <label>Age *</label>
-                    <input type="number" min="10" max="60" placeholder="Age" required>
-                </div>
-                <div class="form-group">
-                    <label>Position *</label>
-                    <select required>
-                        <option value="">Select</option>
-                        <option>Goalkeeper</option>
-                        <option>Defender</option>
-                        <option>Midfielder</option>
-                        <option>Forward</option>
-                    </select>
-                </div>
-                <button type="button" class="btn-remove-player" onclick="removePlayerRow(${n})" title="Remove"><i class="fas fa-times"></i></button>
-            `;
-            document.getElementById('playerRows').appendChild(row);
-            updatePlayerCount();
-        }
-        function removePlayerRow(n) {
-            const row = document.getElementById('prow-' + n);
-            if (row) row.remove();
-            updatePlayerCount();
-        }
-        function updatePlayerCount() {
-            const count = document.querySelectorAll('#playerRows .player-row').length;
-            const lbl = document.getElementById('playerCountLabel');
-            lbl.textContent = count ? count + ' player' + (count > 1 ? 's' : '') + ' added' : '';
-        }
-        function getPlayerListData() {
-            const rows = document.querySelectorAll('#playerRows .player-row');
-            return Array.from(rows).map(row => {
-                const inputs = row.querySelectorAll('input, select');
-                return inputs[0].value + ', ' + inputs[1].value + ', ' + inputs[2].value;
-            }).join('\n');
-        }
-        // Start with 1 row
-        addPlayerRow();
 
         // --- OTP digit auto-advance + backspace ---
         function setupOtpInputs(prefix) {
@@ -969,7 +943,6 @@
                 teamEmail: document.getElementById('teamEmail').value,
                 tournament: document.getElementById('tournament').value,
                 ageCategory: document.getElementById('ageCategory').value,
-                playerList: getPlayerListData(),
                 teamLogoFile: logoName,
                 teamLogoUrl: logoUrl,
                 consent: {
@@ -998,8 +971,14 @@
                 : teamSel.value;
             const ageDocFile = document.getElementById('ageDoc').files[0];
             const ageDocUrl = _uploadedFileUrls['ageDoc'] || '';
+            const photoFile = document.getElementById('playerPhoto').files[0];
+            const photoUrl = _uploadedFileUrls['playerPhoto'] || '';
             if (ageDocFile && !ageDocUrl) {
                 alert('Your age proof document is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            if (photoFile && !photoUrl) {
+                alert('Your photo is still uploading. Please wait a moment and try again.');
                 return;
             }
             const dob = document.getElementById('playerDOB').value;
@@ -1026,6 +1005,7 @@
                 guardianEmail: document.getElementById('guardianEmail').value,
                 ageDocFile: ageDocFile ? ageDocFile.name : '',
                 ageDocUrl: ageDocUrl,
+                playerPhotoUrl: photoUrl,
                 docVerified: false,
                 consent: {
                     accepted: true,
