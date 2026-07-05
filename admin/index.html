@@ -424,17 +424,22 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         </div>
         <div class="form-row">
           <div class="fg"><label>Date of Birth</label><input type="date" id="id-dob" oninput="updateIDPreview()"></div>
-          <div class="fg"><label>Season</label>
-            <select id="id-season" onchange="updateIDPreview()">
-              <option>IF5L Season 2</option><option>National Championship 2026</option>
+          <div class="fg"><label>Age Category</label>
+            <select id="id-agecat" onchange="updateIDPreview()">
+              <option value="">—</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option>
+              <option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
             </select>
           </div>
         </div>
+        <div class="fg"><label>Tournament (auto-fetched from registration)</label><input type="text" id="id-tournament" readonly style="background:#f8f9ff;"></div>
+        <div class="fg"><label>Player Email (for sending the ID card)</label><input type="email" id="id-email" readonly style="background:#f8f9ff;"></div>
         <div class="fg"><label>ID Number</label><input type="text" id="id-num" readonly></div>
-        <div style="display:flex;gap:10px;margin-top:6px;">
+        <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="printIDCard()"><i class="fas fa-print"></i> Print / Download</button>
+          <button class="btn btn-gold" onclick="emailIDCard()"><i class="fas fa-envelope"></i> Send to Player's Email</button>
           <button class="btn btn-ghost" onclick="resetIDCard()"><i class="fas fa-redo"></i> Reset</button>
         </div>
+        <div class="notice info" style="margin-top:14px;"><i class="fas fa-info-circle"></i> "Send to Player's Email" requires a one-time email service setup (EmailJS or similar) — see note in the Emailing ID Cards section below.</div>
       </div>
     </div>
     <div class="card">
@@ -442,8 +447,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:30px 16px;" id="id-preview-wrap">
         <div class="id-card" id="id-card-preview">
           <div class="id-card-head">
-            <img src="../Media (10).jpg" alt="">
-            <div class="id-org">Football 5 Association<span>Sportera Global</span></div>
+            <img src="../Media (25).jpg" alt="">
+            <div class="id-org">Sportera Global<span>Player Identification Card</span></div>
           </div>
           <div class="id-body">
             <div class="id-photo-row">
@@ -453,7 +458,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
                 <div class="id-f"><span class="id-f-lbl">Team</span><span class="id-f-val" id="prev-team">—</span></div>
                 <div class="id-f"><span class="id-f-lbl">Position</span><span class="id-f-val" id="prev-pos">—</span></div>
                 <div class="id-f"><span class="id-f-lbl">Date of Birth</span><span class="id-f-val" id="prev-dob">—</span></div>
-                <div class="id-f"><span class="id-f-lbl">Season</span><span class="id-f-val" id="prev-season">—</span></div>
+                <div class="id-f"><span class="id-f-lbl">Age Category</span><span class="id-f-val" id="prev-agecat">—</span></div>
+                <div class="id-f"><span class="id-f-lbl">Tournament</span><span class="id-f-val" id="prev-tournament">—</span></div>
               </div>
             </div>
           </div>
@@ -1155,19 +1161,24 @@ function deletePlayer(id){ if(!confirm('Delete this player?')) return; DB.set('s
 function clearPlayerForm(){ ['player-edit-id','p-name','p-dob','p-team','p-guard','p-gphone','p-email'].forEach(id=>document.getElementById(id).value=''); }
 
 // ── ID CARDS ──────────────────────────────────────────────────────────────
+// Pulls from real approved player registrations (Firebase), not a mock list —
+// so the ID card always reflects what the player actually registered with.
 function refreshIDCards(){
   const sel=document.getElementById('idPlayerSelect');
-  const players=DB.get('sg_players').filter(p=>p.status==='approved');
-  sel.innerHTML='<option value="">— Choose approved player —</option>'+players.map(p=>`<option value="${p.id}">${p.name} (${p.team})</option>`).join('');
+  const players=(_fbRegs||[]).filter(r=>r.type==='player' && r.status==='approved');
+  sel.innerHTML='<option value="">— Choose approved player —</option>'+players.map(p=>`<option value="${p._key}">${p.playerName} (${p.playerTeam||'—'})</option>`).join('');
 }
 function populateIDCard(){
-  const id=document.getElementById('idPlayerSelect').value; if(!id) return;
-  const p=DB.get('sg_players').find(x=>x.id===id); if(!p) return;
-  document.getElementById('id-name').value=p.name;
-  document.getElementById('id-team').value=p.team;
-  document.getElementById('id-pos').value=p.position||'Midfielder';
-  document.getElementById('id-dob').value=p.dob||'';
-  document.getElementById('id-num').value=p.id;
+  const key=document.getElementById('idPlayerSelect').value; if(!key) return;
+  const p=(_fbRegs||[]).find(x=>x._key===key); if(!p) return;
+  document.getElementById('id-name').value=p.playerName||'';
+  document.getElementById('id-team').value=p.playerTeam||'';
+  document.getElementById('id-pos').value=p.playerPosition||'Midfielder';
+  document.getElementById('id-dob').value=p.playerDob||'';
+  document.getElementById('id-agecat').value=p.playerAgeCategory||'';
+  document.getElementById('id-tournament').value=p.playerTournament||'';
+  document.getElementById('id-email').value=p.playerEmail||'';
+  document.getElementById('id-num').value='SG-PLAYER-'+new Date().getFullYear()+'-'+key.slice(-4).toUpperCase();
   updateIDPreview();
 }
 function updateIDPreview(){
@@ -1175,10 +1186,20 @@ function updateIDPreview(){
   document.getElementById('prev-team').textContent=document.getElementById('id-team').value||'—';
   document.getElementById('prev-pos').textContent=document.getElementById('id-pos').value;
   document.getElementById('prev-dob').textContent=document.getElementById('id-dob').value||'—';
-  document.getElementById('prev-season').textContent=document.getElementById('id-season').value;
+  document.getElementById('prev-agecat').textContent=document.getElementById('id-agecat').value||'—';
+  document.getElementById('prev-tournament').textContent=document.getElementById('id-tournament').value||'—';
   const idVal=document.getElementById('id-num').value||'SG-PLAYER-2026-0000';
   document.getElementById('prev-id').textContent=idVal;
   document.getElementById('qr-img').src='https://api.qrserver.com/v1/create-qr-code/?size=84x84&data='+encodeURIComponent(idVal)+'&bgcolor=ffffff&color=1a237e&margin=2';
+}
+function emailIDCard(){
+  const email=document.getElementById('id-email').value;
+  const name=document.getElementById('id-name').value;
+  if(!email){ alert('This player has no email on file. Select a player first.'); return; }
+  alert('Automated email delivery needs a one-time setup with an email service (EmailJS is free and takes 5 minutes to configure — sign up at emailjs.com, then share the Public Key, Service ID and Template ID with your developer to wire it in).\n\nFor now, opening your email client to send "'+name+'"\'s ID card manually to '+email+'.');
+  const subject = encodeURIComponent('Your Sportera Global Player ID Card');
+  const body = encodeURIComponent('Hi '+name+',\n\nPlease find your Player ID Card attached/printed below. Show this digitally or as a printout at the venue when asked.\n\nID Number: '+document.getElementById('id-num').value+'\nTeam: '+document.getElementById('id-team').value+'\nTournament: '+document.getElementById('id-tournament').value+'\n\n— Sportera Global');
+  window.open('mailto:'+email+'?subject='+subject+'&body='+body);
 }
 function printIDCard(){
   const card=document.getElementById('id-card-preview');
@@ -1216,7 +1237,7 @@ function printIDCard(){
   <body>${card.outerHTML}<script>setTimeout(()=>window.print(),900);<\/script></body></html>`);
   win.document.close();
 }
-function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-dob','id-num'].forEach(x=>document.getElementById(x).value=''); updateIDPreview(); }
+function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-dob','id-num','id-agecat','id-tournament','id-email'].forEach(x=>document.getElementById(x).value=''); updateIDPreview(); }
 
 // ── LINEUP ────────────────────────────────────────────────────────────────
 let _luEvents = [];
