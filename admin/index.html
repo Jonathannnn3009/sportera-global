@@ -247,6 +247,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -264,6 +265,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="nav-item" data-panel="approvals"><i class="fas fa-clipboard-check"></i> Approve Registrations <span class="badge-count" id="sb-pending">0</span></div>
   <div class="nav-item" data-panel="teams"><i class="fas fa-shield-alt"></i> Manage Teams</div>
   <div class="nav-item" data-panel="players"><i class="fas fa-user"></i> Manage Players</div>
+  <div class="nav-item" data-panel="agecats"><i class="fas fa-layer-group"></i> Age Categories</div>
   <div class="nav-item" data-panel="idcards"><i class="fas fa-id-badge"></i> Generate ID Cards</div>
   <div class="nav-item" data-panel="reports"><i class="fas fa-file-export"></i> Export Reports</div>
 
@@ -325,6 +327,31 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Status</th></tr></thead>
           <tbody id="dash-recent-body"><tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No registrations yet</td></tr></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AGE CATEGORIES ──────────────────────────────────── -->
+<div class="panel" id="panel-agecats">
+  <div class="card">
+    <div class="card-head"><h3><i class="fas fa-layer-group"></i> Manage Age Categories per Tournament</h3></div>
+    <div class="card-body">
+      <div class="notice info"><i class="fas fa-info-circle"></i> Set the exact age categories available for each tournament. The registration form on the website will show these automatically once a tournament is selected.</div>
+      <div class="fg" style="max-width:400px;">
+        <label>Select Tournament</label>
+        <select id="ac-tournament" onchange="renderAgeCatEditor()">
+          <option value="">Select tournament</option>
+          <option value="IF5L Season 2">IF5L Season 2</option>
+          <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
+        </select>
+      </div>
+      <div id="ac-editor" style="display:none; margin-top:16px;">
+        <div style="display:flex; gap:10px; max-width:400px; margin-bottom:14px;">
+          <input type="text" id="ac-new-label" placeholder="e.g. U10, U14, Open" style="flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
+          <button class="btn btn-primary btn-sm" onclick="addAgeCategory()"><i class="fas fa-plus"></i> Add</button>
+        </div>
+        <div id="ac-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       </div>
     </div>
   </div>
@@ -439,7 +466,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <button class="btn btn-gold" onclick="emailIDCard()"><i class="fas fa-envelope"></i> Send to Player's Email</button>
           <button class="btn btn-ghost" onclick="resetIDCard()"><i class="fas fa-redo"></i> Reset</button>
         </div>
-        <div class="notice info" style="margin-top:14px;"><i class="fas fa-info-circle"></i> "Send to Player's Email" requires a one-time email service setup (EmailJS or similar) — see note in the Emailing ID Cards section below.</div>
+        <div class="notice success" style="margin-top:14px;"><i class="fas fa-check-circle"></i> "Send to Player's Email" sends automatically from sporteraglobal@gmail.com.</div>
       </div>
     </div>
     <div class="card">
@@ -465,7 +492,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           </div>
           <div class="id-foot">
             <div><div class="id-num" id="prev-id">SG-PLAYER-2026-0000</div><div class="id-valid">Valid for 2026 Season</div></div>
-            <div class="qr-box" id="prev-qr"><img id="qr-img" src="" alt="QR" style="width:42px;height:42px;display:block;"></div>
+            <div class="qr-box" id="prev-qr"><img id="qr-img" src="" alt="QR" crossorigin="anonymous" style="width:42px;height:42px;display:block;"></div>
           </div>
         </div>
       </div>
@@ -948,7 +975,7 @@ const DB = {
 // ── PANEL NAVIGATION ──────────────────────────────────────────────────────
 const PANEL_TITLES = {
   dashboard:'Dashboard', approvals:'Approve Registrations', teams:'Manage Teams',
-  players:'Manage Players', idcards:'Generate ID Cards', reports:'Export Reports',
+  players:'Manage Players', agecats:'Age Categories', idcards:'Generate ID Cards', reports:'Export Reports',
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
   messages:'Contact Messages'
@@ -963,7 +990,7 @@ function switchPanel(id) {
   // refresh panel data
   const refresh = {
     dashboard: refreshDashboard, approvals: renderApprovals, teams: renderTeams,
-    players: renderPlayers, idcards: refreshIDCards, reports: renderReports,
+    players: renderPlayers, agecats: renderAgeCatEditor, idcards: refreshIDCards, reports: renderReports,
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
     messages: renderMessages
@@ -1191,6 +1218,8 @@ function populateIDCard(){
   document.getElementById('id-tournament').value=p.playerTournament||'';
   document.getElementById('id-email').value=p.playerEmail||'';
   document.getElementById('id-num').value='SG-PLAYER-'+new Date().getFullYear()+'-'+key.slice(-4).toUpperCase();
+  const photoBox = document.getElementById('id-prev-photo');
+  photoBox.innerHTML = p.playerPhotoUrl ? `<img src="${p.playerPhotoUrl}" alt="Player photo">` : '<i class="fas fa-user"></i>';
   updateIDPreview();
 }
 function updateIDPreview(){
@@ -1204,14 +1233,43 @@ function updateIDPreview(){
   document.getElementById('prev-id').textContent=idVal;
   document.getElementById('qr-img').src='https://api.qrserver.com/v1/create-qr-code/?size=84x84&data='+encodeURIComponent(idVal)+'&bgcolor=ffffff&color=1a237e&margin=2';
 }
-function emailIDCard(){
+const EMAIL_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxvHdn0WGZXe-iNBBESWBnlWMuHiUUD38BSzyuL_h8iAgZz2PjnzNkkKTkHBtOFh1fT/exec';
+
+async function emailIDCard(){
   const email=document.getElementById('id-email').value;
   const name=document.getElementById('id-name').value;
   if(!email){ alert('This player has no email on file. Select a player first.'); return; }
-  alert('Automated email delivery needs a one-time setup with an email service (EmailJS is free and takes 5 minutes to configure — sign up at emailjs.com, then share the Public Key, Service ID and Template ID with your developer to wire it in).\n\nFor now, opening your email client to send "'+name+'"\'s ID card manually to '+email+'.');
-  const subject = encodeURIComponent('Your Sportera Global Player ID Card');
-  const body = encodeURIComponent('Hi '+name+',\n\nPlease find your Player ID Card attached/printed below. Show this digitally or as a printout at the venue when asked.\n\nID Number: '+document.getElementById('id-num').value+'\nTeam: '+document.getElementById('id-team').value+'\nTournament: '+document.getElementById('id-tournament').value+'\n\n— Sportera Global');
-  window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+  const btn = event.target.closest('button');
+  const origLabel = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rendering card...';
+  try {
+    const cardEl = document.getElementById('id-card-preview');
+    const canvas = await html2canvas(cardEl, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+    const imageBase64 = canvas.toDataURL('image/png').split(',')[1]; // strip data:image/png;base64,
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    await fetch(EMAIL_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        to_email: email,
+        to_name: name,
+        id_number: document.getElementById('id-num').value,
+        team_name: document.getElementById('id-team').value,
+        tournament: document.getElementById('id-tournament').value,
+        id_card_image: imageBase64
+      })
+    });
+    alert('ID card email (with image attached) sent to '+name+' at '+email+'.');
+  } catch(e) {
+    alert('Could not send email automatically ('+e.message+'). Opening your email client instead.');
+    const subject = encodeURIComponent('Your Sportera Global Player ID Card');
+    const body = encodeURIComponent('Hi '+name+',\n\nYour Player ID Card is ready.\n\nID Number: '+document.getElementById('id-num').value+'\nTeam: '+document.getElementById('id-team').value+'\nTournament: '+document.getElementById('id-tournament').value+'\n\n— Sportera Global');
+    window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+  } finally {
+    btn.disabled = false; btn.innerHTML = origLabel;
+  }
 }
 function printIDCard(){
   const card=document.getElementById('id-card-preview');
@@ -1249,7 +1307,7 @@ function printIDCard(){
   <body>${card.outerHTML}<script>setTimeout(()=>window.print(),900);<\/script></body></html>`);
   win.document.close();
 }
-function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-dob','id-num','id-agecat','id-tournament','id-email'].forEach(x=>document.getElementById(x).value=''); updateIDPreview(); }
+function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-dob','id-num','id-agecat','id-tournament','id-email'].forEach(x=>document.getElementById(x).value=''); document.getElementById('id-prev-photo').innerHTML='<i class="fas fa-user"></i>'; updateIDPreview(); }
 
 // ── LINEUP ────────────────────────────────────────────────────────────────
 let _luEvents = [];
@@ -1483,6 +1541,42 @@ function exportCSV(type){
   const csv=[header,...rows].map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`sportera_${type}_registrations_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+// ── AGE CATEGORIES (per tournament, dynamic) ────────────────────────────────
+function tournamentSlug(t){ return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function renderAgeCatEditor(){
+  const t = document.getElementById('ac-tournament').value;
+  const editor = document.getElementById('ac-editor');
+  if(!t){ editor.style.display = 'none'; return; }
+  editor.style.display = 'block';
+  _fbDb.ref('ageCategories/'+tournamentSlug(t)).once('value', snap => {
+    const cats = snap.val() || [];
+    const list = document.getElementById('ac-list');
+    if(!cats.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No custom categories set yet — the registration form will fall back to the default list (U9-Senior).</p>'; return; }
+    list.innerHTML = cats.map((c,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c} <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
+  });
+}
+function addAgeCategory(){
+  const t = document.getElementById('ac-tournament').value;
+  const label = document.getElementById('ac-new-label').value.trim();
+  if(!t || !label) return;
+  const ref = _fbDb.ref('ageCategories/'+tournamentSlug(t));
+  ref.once('value', snap => {
+    const cats = snap.val() || [];
+    if(!cats.includes(label)) cats.push(label);
+    ref.set(cats).then(() => { document.getElementById('ac-new-label').value=''; renderAgeCatEditor(); });
+  });
+}
+function removeAgeCategory(index){
+  const t = document.getElementById('ac-tournament').value;
+  const ref = _fbDb.ref('ageCategories/'+tournamentSlug(t));
+  ref.once('value', snap => {
+    const cats = snap.val() || [];
+    cats.splice(index, 1);
+    ref.set(cats).then(renderAgeCatEditor);
+  });
 }
 
 // ── FIXTURES ──────────────────────────────────────────────────────────────
