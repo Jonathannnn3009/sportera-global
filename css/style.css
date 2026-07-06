@@ -219,6 +219,7 @@ header.scrolled .logo-text {
     font-size: 0.95rem;
     border-radius: 8px;
     transition: var(--transition);
+    white-space: nowrap;
 }
 
 .nav-link:hover,
