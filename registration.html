@@ -403,7 +403,7 @@
 
                         <p class="form-section-label">Team Logo</p>
                         <div class="upload-box" id="logoUploadBox">
-                            <input type="file" id="teamLogo" name="teamLogo" accept="image/*" onchange="handleFileUpload('teamLogo','logoPreview','logoUploadBox')">
+                            <input type="file" id="teamLogo" name="teamLogo" accept="image/*" onchange="handleFileUpload('teamLogo','logoPreview','logoUploadBox')" required>
                             <i class="fas fa-image"></i>
                             <div class="up-label"><strong>Click to upload team logo</strong><br>PNG, JPG up to 2MB</div>
                             <div class="upload-preview" id="logoPreview"></div>
@@ -562,8 +562,11 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="playerAgeCategory">Age Category (auto-filled)</label>
-                                <input type="text" id="playerAgeCategory" name="playerAgeCategory" readonly style="background:#f8f9ff;" placeholder="Select a team first">
+                                <label for="playerAgeCategory">Age Category *</label>
+                                <select id="playerAgeCategory" name="playerAgeCategory" required>
+                                    <option value="">Select a team first</option>
+                                </select>
+                                <p id="playerAgeCategoryHint" style="font-size:.78rem;color:var(--text-light);margin-top:6px;display:none;"></p>
                             </div>
                         </div>
 
@@ -817,7 +820,16 @@
             if (_allRegisteredTeams.length === 0) {
                 sel.innerHTML += '<option value="" disabled>No teams registered yet — team must register first</option>';
             } else {
-                _allRegisteredTeams.forEach(t => sel.innerHTML += '<option value="' + t.teamName + '">' + t.teamName + '</option>');
+                // A team can appear multiple times in the raw data if it registered
+                // for more than one age category — show its name only once here;
+                // the age category dropdown below lists every category it actually
+                // registered under.
+                const seenNames = new Set();
+                _allRegisteredTeams.forEach(t => {
+                    if (seenNames.has(t.teamName)) return;
+                    seenNames.add(t.teamName);
+                    sel.innerHTML += '<option value="' + t.teamName + '">' + t.teamName + '</option>';
+                });
             }
             sel.innerHTML += '<option value="__other__">Other / Not listed</option>';
         }
@@ -923,9 +935,13 @@
         }
         updatePlayerPaymentVisibility();
 
-        // Selecting a team auto-fills Tournament + Age Category from that team's own registration
+        // Selecting a team auto-fills Tournament, and populates Age Category with
+        // every category that team actually registered under (a team that entered
+        // multiple age groups shows up once in the dropdown above, but offers all
+        // of its categories here).
         document.getElementById('playerTeam').addEventListener('change', function() {
             let existing = document.getElementById('playerTeamOther');
+            const ageCatSel = document.getElementById('playerAgeCategory');
             if (this.value === '__other__') {
                 if (!existing) {
                     const inp = document.createElement('input');
@@ -935,15 +951,55 @@
                     this.parentNode.appendChild(inp);
                 }
                 document.getElementById('playerTournament').value = '';
-                document.getElementById('playerAgeCategory').value = '';
+                ageCatSel.innerHTML = '<option value="">Select a team first</option>';
             } else {
                 if (existing) existing.remove();
-                const team = _allRegisteredTeams.find(t => t.teamName === this.value);
-                document.getElementById('playerTournament').value = team ? team.tournament : '';
-                document.getElementById('playerAgeCategory').value = team ? team.ageCategory : '';
+                const matches = _allRegisteredTeams.filter(t => t.teamName === this.value);
+                const tournamentName = matches.length ? matches[0].tournament : '';
+                document.getElementById('playerTournament').value = tournamentName;
+                if (matches.length) {
+                    ageCatSel.innerHTML = '<option value="">Select age category</option>' +
+                        matches.map(t => `<option value="${t.ageCategory}">${t.ageCategory}</option>`).join('');
+                } else {
+                    ageCatSel.innerHTML = '<option value="">Select a team first</option>';
+                }
             }
             updatePlayerPaymentVisibility();
+            checkAgeCategoryEligibility();
         });
+
+        document.getElementById('playerAgeCategory').addEventListener('change', checkAgeCategoryEligibility);
+        document.getElementById('playerDOB').addEventListener('change', checkAgeCategoryEligibility);
+
+        // --- Validate the player's DOB actually falls under the selected age
+        // category's cutoff birth year (set by admin per tournament) ---
+        let _ageCategoryEligible = true;
+        function checkAgeCategoryEligibility() {
+            const hint = document.getElementById('playerAgeCategoryHint');
+            const tournamentName = document.getElementById('playerTournament').value;
+            const category = document.getElementById('playerAgeCategory').value;
+            const dob = document.getElementById('playerDOB').value;
+            _ageCategoryEligible = true;
+            hint.style.display = 'none';
+            if (!tournamentName || !category || !dob) return;
+            _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                const cats = snap.val() || [];
+                const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === category);
+                const cutoffYear = entry && typeof entry === 'object' ? entry.cutoffYear : null;
+                if (!cutoffYear) return;
+                const birthYear = new Date(dob).getFullYear();
+                if (birthYear < cutoffYear) {
+                    _ageCategoryEligible = false;
+                    hint.textContent = `This player's date of birth doesn't qualify for ${category} (must be born in ${cutoffYear} or later). Please choose a different age category, or check with the team.`;
+                    hint.style.color = '#c62828';
+                    hint.style.display = 'block';
+                } else {
+                    hint.textContent = `Eligible for ${category} ✓`;
+                    hint.style.color = '#2e7d32';
+                    hint.style.display = 'block';
+                }
+            });
+        }
 
         const DEMO_OTP = '1234';
         let pendingTeamData = null, pendingPlayerData = null;
@@ -1052,6 +1108,14 @@
             const logoFile = document.getElementById('teamLogo').files[0];
             const logoName = logoFile ? logoFile.name : '';
             const logoUrl = _uploadedFileUrls['teamLogo'] || '';
+            if (!logoFile) {
+                alert('Please upload your team logo before submitting.');
+                return;
+            }
+            if (!logoUrl) {
+                alert('Your team logo is still uploading. Please wait a moment and try again.');
+                return;
+            }
             const teamPaymentMethod = document.querySelector('input[name="teamPayment"]:checked')?.value || '';
             const teamProofFile = document.getElementById('teamPaymentProof');
             const teamProofUrl = _uploadedFileUrls['teamPaymentProof'] || '';
@@ -1094,11 +1158,24 @@
             document.getElementById('tOtp1').focus();
         });
 
-        document.getElementById('playerForm').addEventListener('submit', function(e) {
+        document.getElementById('playerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             if (!document.getElementById('playerConsent').checked) {
                 alert('Please read and accept the Parent/Guardian Consent Form to proceed.');
                 return;
+            }
+            const _tournamentForCheck = document.getElementById('playerTournament').value;
+            const _categoryForCheck = document.getElementById('playerAgeCategory').value;
+            const _dobForCheck = document.getElementById('playerDOB').value;
+            if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
+                const snap = await _regDb.ref('ageCategories/' + tournamentSlug(_tournamentForCheck)).once('value');
+                const cats = snap.val() || [];
+                const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === _categoryForCheck);
+                const cutoffYear = entry && typeof entry === 'object' ? entry.cutoffYear : null;
+                if (cutoffYear && new Date(_dobForCheck).getFullYear() < cutoffYear) {
+                    alert(`This player's date of birth doesn't qualify for ${_categoryForCheck} (must be born in ${cutoffYear} or later). Please choose a different age category before submitting.`);
+                    return;
+                }
             }
             const teamSel = document.getElementById('playerTeam');
             const teamVal = teamSel.value === '__other__'

@@ -343,20 +343,20 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="card">
     <div class="card-head"><h3><i class="fas fa-layer-group"></i> Manage Age Categories per Tournament</h3></div>
     <div class="card-body">
-      <div class="notice info"><i class="fas fa-info-circle"></i> Set the exact age categories available for each tournament. The registration form on the website will show these automatically once a tournament is selected.</div>
+      <div class="notice info"><i class="fas fa-info-circle"></i> Set the exact age categories available for each tournament, along with a cutoff birth year for each — a player only qualifies for a category if their date of birth falls on or after that year. The registration form validates this automatically before letting a player submit.</div>
       <div class="fg" style="max-width:400px;">
         <label>Select Tournament</label>
         <select id="ac-tournament" onchange="renderAgeCatEditor()">
           <option value="">Select tournament</option>
-          <option value="IF5L Season 2">IF5L Season 2</option>
-          <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
         </select>
       </div>
       <div id="ac-editor" style="display:none; margin-top:16px;">
-        <div style="display:flex; gap:10px; max-width:400px; margin-bottom:14px;">
+        <div style="display:flex; gap:10px; max-width:520px; margin-bottom:14px;">
           <input type="text" id="ac-new-label" placeholder="e.g. U10, U14, Open" style="flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
+          <input type="number" id="ac-new-cutoff" placeholder="Cutoff year e.g. 2015" style="width:170px; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
           <button class="btn btn-primary btn-sm" onclick="addAgeCategory()"><i class="fas fa-plus"></i> Add</button>
         </div>
+        <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">Cutoff year is optional — leave blank if you don't want DOB validation for that category.</p>
         <div id="ac-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       </div>
     </div>
@@ -454,15 +454,18 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="card">
     <div class="card-head">
       <h3><i class="fas fa-shield-alt"></i> Teams</h3>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="teamSearch" placeholder="Search teams…" oninput="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="teamSearch" placeholder="Search name / city / coach…" oninput="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+        <select id="teamsTournamentFilter" onchange="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Tournaments</option>
+        </select>
         <button class="btn btn-primary btn-sm" onclick="openAddTeamModal()"><i class="fas fa-plus"></i> Add Team</button>
       </div>
     </div>
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Team Name</th><th>City</th><th>Coach</th><th>Tournament</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Team Name</th><th>City</th><th>Coach</th><th>Tournament</th><th>Age Category</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="teams-body"></tbody>
         </table>
       </div>
@@ -476,7 +479,10 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-head">
       <h3><i class="fas fa-user"></i> Players</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input type="text" id="playerSearch" placeholder="Search players…" oninput="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+        <input type="text" id="playerSearch" placeholder="Search name / team / guardian…" oninput="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+        <select id="playersTournamentFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Tournaments</option>
+        </select>
         <select id="playerStatusFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
           <option value="">All Status</option><option value="approved">Approved</option><option value="pending">Pending</option>
         </select>
@@ -486,7 +492,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>Position</th><th>Guardian</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Guardian</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="players-body"></tbody>
         </table>
       </div>
@@ -616,18 +622,13 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <div class="notice info"><i class="fas fa-info-circle"></i> Select Tournament and Age Category first — the team dropdowns will only show teams registered under that exact tournament + age group.</div>
         <div class="form-row">
           <div class="fg"><label>Tournament *</label>
-            <select id="fx-tournament" onchange="onFixtureFilterChange()">
+            <select id="fx-tournament" onchange="onFixtureTournamentChange()">
               <option value="">Select tournament</option>
-              <option value="IF5L Season 2">IF5L Season 2</option>
-              <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
             </select>
           </div>
           <div class="fg"><label>Age Category *</label>
             <select id="fx-agecat" onchange="onFixtureFilterChange()">
-              <option value="">Select age category</option>
-              <option value="U9">Under 9</option><option value="U11">Under 11</option><option value="U13">Under 13</option>
-              <option value="U15">Under 15</option><option value="U17">Under 17</option><option value="U19">Under 19</option>
-              <option value="Senior">Senior / Open</option>
+              <option value="">Select tournament first</option>
             </select>
           </div>
         </div>
@@ -972,8 +973,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <div class="form-row"><div class="fg"><label>Team Name *</label><input type="text" id="t-name" placeholder="Team name"></div><div class="fg"><label>City *</label><input type="text" id="t-city" placeholder="City"></div></div>
       <div class="form-row"><div class="fg"><label>Coach Name *</label><input type="text" id="t-coach" placeholder="Head coach"></div><div class="fg"><label>Coach Phone</label><input type="tel" id="t-cphone" placeholder="Coach contact"></div></div>
       <div class="form-row"><div class="fg"><label>Manager Name</label><input type="text" id="t-mgr" placeholder="Manager name"></div><div class="fg"><label>Manager Phone</label><input type="tel" id="t-mphone" placeholder="Manager contact"></div></div>
-      <div class="form-row"><div class="fg"><label>Email</label><input type="email" id="t-email" placeholder="Team email"></div><div class="fg"><label>Tournament</label><select id="t-tourn"><option>IF5L Season 2</option><option>National Championship 2026</option></select></div></div>
-      <div class="fg"><label>Status</label><select id="t-status"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+      <div class="form-row"><div class="fg"><label>Email</label><input type="email" id="t-email" placeholder="Team email"></div><div class="fg"><label>Tournament</label><select id="t-tourn" onchange="onEditTeamTournamentChange()"><option value="">Select tournament</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Age Category</label><select id="t-agecat"><option value="">Select age category</option></select></div><div class="fg"><label>Status</label><select id="t-status"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div></div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-team')">Cancel</button><button class="btn btn-primary" onclick="saveTeam()">Save Team</button></div>
   </div>
@@ -987,8 +988,10 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <input type="hidden" id="player-edit-id">
       <div class="form-row"><div class="fg"><label>Full Name *</label><input type="text" id="p-name" placeholder="Player full name"></div><div class="fg"><label>Date of Birth *</label><input type="date" id="p-dob"></div></div>
       <div class="form-row"><div class="fg"><label>Team *</label><input type="text" id="p-team" placeholder="Team name"></div><div class="fg"><label>Position</label><select id="p-pos"><option>Goalkeeper</option><option>Defender</option><option>Midfielder</option><option>Forward</option></select></div></div>
-      <div class="form-row"><div class="fg"><label>Guardian Name *</label><input type="text" id="p-guard" placeholder="Parent / guardian"></div><div class="fg"><label>Guardian Phone *</label><input type="tel" id="p-gphone" placeholder="Contact number"></div></div>
-      <div class="form-row"><div class="fg"><label>Email</label><input type="email" id="p-email" placeholder="Email address"></div><div class="fg"><label>Status</label><select id="p-status"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>City</label><input type="text" id="p-city" placeholder="City"></div><div class="fg"><label>Tournament</label><select id="p-tourn" onchange="onEditPlayerTournamentChange()"><option value="">Select tournament</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Age Category</label><select id="p-agecat"><option value="">Select age category</option></select></div><div class="fg"><label>Status</label><select id="p-status"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Guardian Name</label><input type="text" id="p-guard" placeholder="Parent / guardian"></div><div class="fg"><label>Guardian Phone</label><input type="tel" id="p-gphone" placeholder="Contact number"></div></div>
+      <div class="fg"><label>Email</label><input type="email" id="p-email" placeholder="Email address"></div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-player')">Cancel</button><button class="btn btn-primary" onclick="savePlayer()">Save Player</button></div>
   </div>
@@ -1067,6 +1070,8 @@ _fbDb.ref('registrations').on('value', snap => {
   _fbRegs.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
   refreshDashboard();
   renderApprovals();
+  renderTeams();
+  renderPlayers();
 });
 
 // Live listener — contact form messages
@@ -1084,8 +1089,8 @@ _fbDb.ref('contactMessages').on('value', snap => {
 // categories, fixtures, lineup, results, league tables, team edit) reads
 // from this one live list instead of duplicating hardcoded <option> tags.
 let _fbTournaments = [];
-const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn'];
-const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true };
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter'];
+const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true };
 
 _fbDb.ref('tournaments').on('value', snap => {
   _fbTournaments = [];
@@ -1336,8 +1341,15 @@ function renderApprovals(){
       <button class="btn btn-ghost btn-xs" onclick="viewReg('${r.id}')"><i class="fas fa-eye"></i></button>
       ${r.status!=='approved'?`<button class="btn btn-success btn-xs" onclick="setStatus('${r.id}','approved')"><i class="fas fa-check"></i></button>`:''}
       ${r.status!=='rejected'?`<button class="btn btn-danger btn-xs" onclick="setStatus('${r.id}','rejected')"><i class="fas fa-times"></i></button>`:''}
+      ${r.status==='rejected'?`<button class="btn btn-danger btn-xs" onclick="deleteRegistration('${r._key}')" title="Delete permanently"><i class="fas fa-trash"></i></button>`:''}
     </td>
   </tr>`).join('');
+}
+
+function deleteRegistration(key){
+  if(!confirm('Permanently delete this rejected registration? This cannot be undone.')) return;
+  _fbDb.ref('registrations/'+key).remove();
+  closeModal('modal-reg');
 }
 
 function setStatus(id, status){
@@ -1486,7 +1498,7 @@ function viewReg(id){
   document.getElementById('modal-reg-title').textContent=(r.type==='team'?'Team':'Player')+' — '+name;
   const fields = r.type==='team'
     ? [['Team Name',r.teamName],['City',r.teamCity],['Coach',r.coachName],['Coach Phone',r.coachPhone],['Manager',r.managerName||'—'],['Manager Phone',r.managerPhone||'—'],['Email',r.teamEmail],['Tournament',r.tournament],['Age Category',r.ageCategory||'—'],['Payment Method',r.paymentMethod]]
-    : [['Player Name',r.playerName],['Date of Birth',r.playerDob],['Team',r.playerTeam],['Position',r.playerPosition||'—'],['Age Category',r.playerAgeCategory||'—'],['Guardian',r.guardianName],['Guardian Phone',r.guardianPhone],['Email',r.playerEmail||'—'],['Payment Method',r.paymentMethod]];
+    : [['Player Name',r.playerName],['Date of Birth',r.playerDOB],['Team',r.playerTeam],['Position',r.playerPosition||'—'],['Age Category',r.playerAgeCategory||'—'],['Guardian',r.guardianName],['Guardian Phone',r.guardianPhone],['Email',r.playerEmail||'—'],['Payment Method',r.paymentMethod]];
   const docUrl = r.ageDocUrl || r.teamLogoUrl;
   const docLabel = r.type==='team' ? 'Team Logo' : 'Age Verification Document';
   document.getElementById('modal-reg-body').innerHTML=`
@@ -1507,6 +1519,7 @@ function viewReg(id){
   document.getElementById('modal-reg-foot').innerHTML=`
     ${r.status!=='approved'?`<button class="btn btn-success" onclick="setStatus('${r.id}','approved');closeModal('modal-reg');"><i class="fas fa-check"></i> Approve</button>`:''}
     ${r.status!=='rejected'?`<button class="btn btn-danger" onclick="setStatus('${r.id}','rejected');closeModal('modal-reg');"><i class="fas fa-times"></i> Reject</button>`:''}
+    ${r.status==='rejected'?`<button class="btn btn-danger" onclick="deleteRegistration('${r._key}')"><i class="fas fa-trash"></i> Delete Permanently</button>`:''}
     <button class="btn btn-ghost" onclick="closeModal('modal-reg')">Close</button>`;
   openModal('modal-reg');
 }
@@ -1522,81 +1535,115 @@ function markPaymentVerified(id){
 }
 
 // ── TEAMS ─────────────────────────────────────────────────────────────────
+// Teams/Players panels read LIVE from approved registrations (_fbRegs) —
+// editing writes straight back to that same registration record in
+// Firebase, so there's no separate disconnected list to fall out of sync.
+function ageCatOptionsFor(tournamentName, currentValue) {
+  const t = _fbTournaments.find(x => x.name === tournamentName);
+  const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+  return '<option value="">Select age category</option>' +
+    cats.map(c => `<option value="${c}" ${c===currentValue?'selected':''}>${c}</option>`).join('');
+}
+function onEditTeamTournamentChange(keepValue) {
+  document.getElementById('t-agecat').innerHTML = ageCatOptionsFor(document.getElementById('t-tourn').value, keepValue||'');
+}
+function onEditPlayerTournamentChange(keepValue) {
+  document.getElementById('p-agecat').innerHTML = ageCatOptionsFor(document.getElementById('p-tourn').value, keepValue||'');
+}
+
 function renderTeams(){
   const q=(document.getElementById('teamSearch')||{}).value?.toLowerCase()||'';
-  let teams=DB.get('sg_teams');
-  if(q) teams=teams.filter(t=>(t.name+t.city+t.coach+t.tournament).toLowerCase().includes(q));
+  const tf=(document.getElementById('teamsTournamentFilter')||{}).value||'';
+  let teams=(_fbRegs||[]).filter(r=>r.type==='team' && r.status==='approved');
+  if(tf) teams=teams.filter(t=>t.tournament===tf);
+  if(q) teams=teams.filter(t=>(t.teamName+t.teamCity+t.coachName).toLowerCase().includes(q));
   const tbody=document.getElementById('teams-body');
-  if(!teams.length){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted);">No teams yet. Add one or approve a team registration.</td></tr>'; return; }
+  if(!teams.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
   tbody.innerHTML=teams.map(t=>`<tr>
     <td style="font-family:monospace;font-size:.75rem;">${t.id}</td>
-    <td><strong>${t.name}</strong></td><td>${t.city}</td><td>${t.coach}</td><td>${t.tournament}</td>
+    <td><strong>${t.teamName}</strong></td><td>${t.teamCity||'—'}</td><td>${t.coachName||'—'}</td><td>${t.tournament||'—'}</td><td>${t.ageCategory||'—'}</td>
     <td>${badge(t.status)}</td>
     <td class="actions">
-      <button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')"><i class="fas fa-edit"></i></button>
-      <button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')"><i class="fas fa-trash"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="editTeam('${t._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteTeamReg('${t._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
 }
 function openAddTeamModal(){ clearTeamForm(); document.getElementById('modal-team-title').textContent='Add Team'; openModal('modal-team'); }
-function editTeam(id){
-  const t=DB.get('sg_teams').find(x=>x.id===id); if(!t) return;
-  document.getElementById('team-edit-id').value=t.id;
-  document.getElementById('t-name').value=t.name;document.getElementById('t-city').value=t.city;
-  document.getElementById('t-coach').value=t.coach;document.getElementById('t-cphone').value=t.cphone||'';
-  document.getElementById('t-mgr').value=t.mgr||'';document.getElementById('t-mphone').value=t.mphone||'';
-  document.getElementById('t-email').value=t.email||'';document.getElementById('t-tourn').value=t.tournament;
+function editTeam(key){
+  const t=(_fbRegs||[]).find(x=>x._key===key); if(!t) return;
+  document.getElementById('team-edit-id').value=key;
+  document.getElementById('t-name').value=t.teamName||'';document.getElementById('t-city').value=t.teamCity||'';
+  document.getElementById('t-coach').value=t.coachName||'';document.getElementById('t-cphone').value=t.coachPhone||'';
+  document.getElementById('t-mgr').value=t.managerName||'';document.getElementById('t-mphone').value=t.managerPhone||'';
+  document.getElementById('t-email').value=t.teamEmail||'';document.getElementById('t-tourn').value=t.tournament||'';
+  onEditTeamTournamentChange(t.ageCategory);
   document.getElementById('t-status').value=t.status;
   document.getElementById('modal-team-title').textContent='Edit Team';openModal('modal-team');
 }
 function saveTeam(){
   const name=document.getElementById('t-name').value.trim(); if(!name){alert('Team name required');return;}
-  const editId=document.getElementById('team-edit-id').value;
-  let teams=DB.get('sg_teams');
-  const obj={id:editId||generateId('TEAM',teams),name,city:document.getElementById('t-city').value,coach:document.getElementById('t-coach').value,cphone:document.getElementById('t-cphone').value,mgr:document.getElementById('t-mgr').value,mphone:document.getElementById('t-mphone').value,email:document.getElementById('t-email').value,tournament:document.getElementById('t-tourn').value,status:document.getElementById('t-status').value};
-  if(editId){ const i=teams.findIndex(t=>t.id===editId); if(i>-1)teams[i]=obj; } else teams.push(obj);
-  DB.set('sg_teams',teams); closeModal('modal-team'); renderTeams(); refreshDashboard();
+  const editKey=document.getElementById('team-edit-id').value;
+  if(!editKey){ alert('Teams are created through registration, not this form — use Approve Registrations to approve a submitted team.'); return; }
+  const updates={
+    teamName:name, teamCity:document.getElementById('t-city').value,
+    coachName:document.getElementById('t-coach').value, coachPhone:document.getElementById('t-cphone').value,
+    managerName:document.getElementById('t-mgr').value, managerPhone:document.getElementById('t-mphone').value,
+    teamEmail:document.getElementById('t-email').value, tournament:document.getElementById('t-tourn').value,
+    ageCategory:document.getElementById('t-agecat').value, status:document.getElementById('t-status').value
+  };
+  _fbDb.ref('registrations/'+editKey).update(updates).then(()=>{ closeModal('modal-team'); renderTeams(); refreshDashboard(); });
 }
-function deleteTeam(id){ if(!confirm('Delete this team?')) return; DB.set('sg_teams',DB.get('sg_teams').filter(t=>t.id!==id)); renderTeams(); }
-function clearTeamForm(){ ['team-edit-id','t-name','t-city','t-coach','t-cphone','t-mgr','t-mphone','t-email'].forEach(id=>document.getElementById(id).value=''); }
+function deleteTeamReg(key){ if(!confirm('Permanently delete this team registration?')) return; _fbDb.ref('registrations/'+key).remove(); }
+function clearTeamForm(){ ['team-edit-id','t-name','t-city','t-coach','t-cphone','t-mgr','t-mphone','t-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('t-agecat').innerHTML='<option value="">Select age category</option>'; }
 
 // ── PLAYERS ───────────────────────────────────────────────────────────────
 function renderPlayers(){
   const q=(document.getElementById('playerSearch')||{}).value?.toLowerCase()||'';
   const sf=(document.getElementById('playerStatusFilter')||{}).value||'';
-  let players=DB.get('sg_players');
-  if(q) players=players.filter(p=>(p.name+p.team+p.guardian).toLowerCase().includes(q));
+  const tf=(document.getElementById('playersTournamentFilter')||{}).value||'';
+  let players=(_fbRegs||[]).filter(r=>r.type==='player');
+  if(tf) players=players.filter(p=>p.playerTournament===tf);
+  if(q) players=players.filter(p=>(p.playerName+(p.playerTeam||'')+(p.guardianName||'')).toLowerCase().includes(q));
   if(sf) players=players.filter(p=>p.status===sf);
   const tbody=document.getElementById('players-body');
-  if(!players.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">No players yet.</td></tr>'; return; }
+  if(!players.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
   tbody.innerHTML=players.map(p=>`<tr>
     <td style="font-family:monospace;font-size:.75rem;">${p.id}</td>
-    <td><strong>${p.name}</strong></td><td>${p.dob||'—'}</td><td>${p.team}</td><td>${p.position||'—'}</td><td>${p.guardian}</td>
+    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerTournament||'—'}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.guardianName||'—'}</td>
     <td>${badge(p.status)}</td>
     <td class="actions">
-      <button class="btn btn-ghost btn-xs" onclick="editPlayer('${p.id}')"><i class="fas fa-edit"></i></button>
-      <button class="btn btn-danger btn-xs" onclick="deletePlayer('${p.id}')"><i class="fas fa-trash"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="editPlayer('${p._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deletePlayerReg('${p._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
 }
 function openAddPlayerModal(){ clearPlayerForm(); document.getElementById('modal-player-title').textContent='Add Player'; openModal('modal-player'); }
-function editPlayer(id){
-  const p=DB.get('sg_players').find(x=>x.id===id); if(!p) return;
-  document.getElementById('player-edit-id').value=p.id;
-  document.getElementById('p-name').value=p.name;document.getElementById('p-dob').value=p.dob||'';
-  document.getElementById('p-team').value=p.team;document.getElementById('p-pos').value=p.position||'Midfielder';
-  document.getElementById('p-guard').value=p.guardian;document.getElementById('p-gphone').value=p.gphone||'';
-  document.getElementById('p-email').value=p.email||'';document.getElementById('p-status').value=p.status;
+function editPlayer(key){
+  const p=(_fbRegs||[]).find(x=>x._key===key); if(!p) return;
+  document.getElementById('player-edit-id').value=key;
+  document.getElementById('p-name').value=p.playerName||'';document.getElementById('p-dob').value=p.playerDOB||'';
+  document.getElementById('p-team').value=p.playerTeam||'';document.getElementById('p-pos').value=p.playerPosition||'Midfielder';
+  document.getElementById('p-city').value=p.playerCity||'';document.getElementById('p-tourn').value=p.playerTournament||'';
+  onEditPlayerTournamentChange(p.playerAgeCategory);
+  document.getElementById('p-guard').value=p.guardianName||'';document.getElementById('p-gphone').value=p.guardianPhone||'';
+  document.getElementById('p-email').value=p.playerEmail||'';document.getElementById('p-status').value=p.status;
   document.getElementById('modal-player-title').textContent='Edit Player';openModal('modal-player');
 }
 function savePlayer(){
   const name=document.getElementById('p-name').value.trim(); if(!name){alert('Name required');return;}
-  const editId=document.getElementById('player-edit-id').value;
-  let players=DB.get('sg_players');
-  const obj={id:editId||generateId('PLAYER',players),name,dob:document.getElementById('p-dob').value,team:document.getElementById('p-team').value,position:document.getElementById('p-pos').value,guardian:document.getElementById('p-guard').value,gphone:document.getElementById('p-gphone').value,email:document.getElementById('p-email').value,status:document.getElementById('p-status').value};
-  if(editId){ const i=players.findIndex(p=>p.id===editId); if(i>-1)players[i]=obj; } else players.push(obj);
-  DB.set('sg_players',players); closeModal('modal-player'); renderPlayers(); refreshDashboard();
+  const editKey=document.getElementById('player-edit-id').value;
+  if(!editKey){ alert('Players are created through registration, not this form — use Approve Registrations to approve a submitted player.'); return; }
+  const updates={
+    playerName:name, playerDOB:document.getElementById('p-dob').value,
+    playerTeam:document.getElementById('p-team').value, playerPosition:document.getElementById('p-pos').value,
+    playerCity:document.getElementById('p-city').value, playerTournament:document.getElementById('p-tourn').value,
+    playerAgeCategory:document.getElementById('p-agecat').value,
+    guardianName:document.getElementById('p-guard').value, guardianPhone:document.getElementById('p-gphone').value,
+    playerEmail:document.getElementById('p-email').value, status:document.getElementById('p-status').value
+  };
+  _fbDb.ref('registrations/'+editKey).update(updates).then(()=>{ closeModal('modal-player'); renderPlayers(); refreshDashboard(); });
 }
-function deletePlayer(id){ if(!confirm('Delete this player?')) return; DB.set('sg_players',DB.get('sg_players').filter(p=>p.id!==id)); renderPlayers(); }
-function clearPlayerForm(){ ['player-edit-id','p-name','p-dob','p-team','p-guard','p-gphone','p-email'].forEach(id=>document.getElementById(id).value=''); }
+function deletePlayerReg(key){ if(!confirm('Permanently delete this player registration?')) return; _fbDb.ref('registrations/'+key).remove(); }
+function clearPlayerForm(){ ['player-edit-id','p-name','p-dob','p-team','p-city','p-guard','p-gphone','p-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('p-agecat').innerHTML='<option value="">Select age category</option>'; }
 
 // ── ID CARDS ──────────────────────────────────────────────────────────────
 // Pulls from real approved player registrations (Firebase), not a mock list —
@@ -1612,7 +1659,7 @@ function populateIDCard(){
   document.getElementById('id-name').value=p.playerName||'';
   document.getElementById('id-team').value=p.playerTeam||'';
   document.getElementById('id-pos').value=p.playerPosition||'Midfielder';
-  document.getElementById('id-dob').value=p.playerDob||'';
+  document.getElementById('id-dob').value=p.playerDOB||'';
   document.getElementById('id-agecat').value=p.playerAgeCategory||'';
   document.getElementById('id-tournament').value=p.playerTournament||'';
   document.getElementById('id-email').value=p.playerEmail||'';
@@ -1753,7 +1800,7 @@ function loadLineupFixture(){
   } else {
     // Auto-fill roster from registered players matching this team + tournament + age category
     const roster = t => (_fbRegs||[]).filter(r => r.type==='player' && r.playerTeam===t && r.playerTournament===fx.tournament && r.playerAgeCategory===fx.ageCategory)
-      .map(r => ({num:'', name:r.playerName, dob:r.playerDob, pos:(r.playerPosition||'GK').toUpperCase().slice(0,3)}));
+      .map(r => ({num:'', name:r.playerName, dob:r.playerDOB, pos:(r.playerPosition||'GK').toUpperCase().slice(0,3)}));
     _luHomePlayers = roster(fx.home);
     _luAwayPlayers = roster(fx.away);
   }
@@ -1935,7 +1982,7 @@ function exportCSV(type){
     ? ['ID','Name','DOB','Team','Position','Age Category','Guardian','Guardian Phone','Email','Payment','Status','Submitted']
     : ['ID','Team Name','City','Coach','Coach Phone','Manager','Email','Tournament','Age Category','Payment','Status','Submitted'];
   const rows=regs.map(r=>type==='player'
-    ? [r.id,r.playerName,r.playerDob,r.playerTeam,r.playerPosition,r.playerAgeCategory,r.guardianName,r.guardianPhone,r.playerEmail,r.paymentMethod,r.status,fmtDate(r.submittedAt)]
+    ? [r.id,r.playerName,r.playerDOB,r.playerTeam,r.playerPosition,r.playerAgeCategory,r.guardianName,r.guardianPhone,r.playerEmail,r.paymentMethod,r.status,fmtDate(r.submittedAt)]
     : [r.id,r.teamName,r.teamCity,r.coachName,r.coachPhone,r.managerName,r.teamEmail,r.tournament,r.ageCategory,r.paymentMethod,r.status,fmtDate(r.submittedAt)]);
   const csv=[header,...rows].map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
@@ -1945,34 +1992,43 @@ function exportCSV(type){
 // ── AGE CATEGORIES (per tournament, dynamic) ────────────────────────────────
 function tournamentSlug(t){ return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
 
+// Age categories are stored per tournament as an array of either plain
+// strings (legacy / auto-seeded from the Tournaments panel) or
+// {label, cutoffYear} objects (once cutoff years are set here). This
+// normalizer lets every reader treat them the same way.
+function normalizeAgeCat(c) {
+  return typeof c === 'object' ? { label: c.label, cutoffYear: c.cutoffYear || null } : { label: c, cutoffYear: null };
+}
 function renderAgeCatEditor(){
   const t = document.getElementById('ac-tournament').value;
   const editor = document.getElementById('ac-editor');
   if(!t){ editor.style.display = 'none'; return; }
   editor.style.display = 'block';
   _fbDb.ref('ageCategories/'+tournamentSlug(t)).once('value', snap => {
-    const cats = snap.val() || [];
+    const cats = (snap.val() || []).map(normalizeAgeCat);
     const list = document.getElementById('ac-list');
-    if(!cats.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No custom categories set yet — the registration form will fall back to the default list (U9-Senior).</p>'; return; }
-    list.innerHTML = cats.map((c,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c} <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
+    if(!cats.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No custom categories set yet — the registration form will fall back to the default list (U9-Senior), with no DOB cutoff enforced.</p>'; return; }
+    list.innerHTML = cats.map((c,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c.label}${c.cutoffYear?` <span style="opacity:.7;">(${c.cutoffYear}+)</span>`:''} <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
   });
 }
 function addAgeCategory(){
   const t = document.getElementById('ac-tournament').value;
   const label = document.getElementById('ac-new-label').value.trim();
+  const cutoffYear = Number(document.getElementById('ac-new-cutoff').value) || null;
   if(!t || !label) return;
   const ref = _fbDb.ref('ageCategories/'+tournamentSlug(t));
   ref.once('value', snap => {
-    const cats = snap.val() || [];
-    if(!cats.includes(label)) cats.push(label);
-    ref.set(cats).then(() => { document.getElementById('ac-new-label').value=''; renderAgeCatEditor(); });
+    const cats = (snap.val() || []).map(normalizeAgeCat);
+    const existing = cats.find(c=>c.label===label);
+    if (existing) existing.cutoffYear = cutoffYear; else cats.push({ label, cutoffYear });
+    ref.set(cats).then(() => { document.getElementById('ac-new-label').value=''; document.getElementById('ac-new-cutoff').value=''; renderAgeCatEditor(); });
   });
 }
 function removeAgeCategory(index){
   const t = document.getElementById('ac-tournament').value;
   const ref = _fbDb.ref('ageCategories/'+tournamentSlug(t));
   ref.once('value', snap => {
-    const cats = snap.val() || [];
+    const cats = (snap.val() || []).map(normalizeAgeCat);
     cats.splice(index, 1);
     ref.set(cats).then(renderAgeCatEditor);
   });
@@ -1985,6 +2041,20 @@ _fbDb.ref('fixtures').on('value', snap => {
   snap.forEach(child => { _fbFixtures.push({ _key: child.key, ...child.val() }); });
   renderFixtures(); renderResultsFixtures();
 });
+
+// Age category options depend on which tournament is selected — pulled from
+// that tournament's own configured list instead of a fixed U9-Senior set,
+// so custom category names (or a different set per tournament) actually work.
+function onFixtureTournamentChange(){
+  const tournamentName = document.getElementById('fx-tournament').value;
+  const agecatSel = document.getElementById('fx-agecat');
+  const t = _fbTournaments.find(x => x.name === tournamentName);
+  const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+  agecatSel.innerHTML = tournamentName
+    ? '<option value="">Select age category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('')
+    : '<option value="">Select tournament first</option>';
+  onFixtureFilterChange();
+}
 
 function onFixtureFilterChange(){
   const tournament = document.getElementById('fx-tournament').value;
@@ -2229,18 +2299,6 @@ function deleteDownload(id){ if(!confirm('Remove document?')) return; DB.set('sg
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 refreshDashboard();
-// sync approved registrations to teams/players lists automatically
-(function syncApproved(){
-  const regs=DB.all();
-  const teams=DB.get('sg_teams'); const players=DB.get('sg_players');
-  regs.filter(r=>r.type==='team'&&r.status==='approved').forEach(r=>{
-    if(!teams.find(t=>t.id===r.id)) teams.push({id:r.id,name:r.teamName,city:r.teamCity,coach:r.coachName,cphone:r.coachPhone,mgr:r.managerName,mphone:r.managerPhone,email:r.teamEmail,tournament:r.tournament,status:'approved'});
-  });
-  regs.filter(r=>r.type==='player'&&r.status==='approved').forEach(r=>{
-    if(!players.find(p=>p.id===r.id)) players.push({id:r.id,name:r.playerName,dob:r.playerDob,team:r.playerTeam,position:r.playerPosition,guardian:r.guardianName,gphone:r.guardianPhone,email:r.playerEmail,status:'approved'});
-  });
-  DB.set('sg_teams',teams); DB.set('sg_players',players);
-})();
 </script>
 </body>
 </html>
