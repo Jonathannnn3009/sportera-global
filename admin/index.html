@@ -264,6 +264,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="nav-item active" data-panel="dashboard"><i class="fas fa-th-large"></i> Dashboard</div>
 
   <div class="nav-label">Registrations</div>
+  <div class="nav-item" data-panel="tournaments"><i class="fas fa-trophy"></i> Tournaments</div>
   <div class="nav-item" data-panel="approvals"><i class="fas fa-clipboard-check"></i> Approve Registrations <span class="badge-count" id="sb-pending">0</span></div>
   <div class="nav-item" data-panel="teams"><i class="fas fa-shield-alt"></i> Manage Teams</div>
   <div class="nav-item" data-panel="players"><i class="fas fa-user"></i> Manage Players</div>
@@ -363,6 +364,49 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 </div>
 
 <!-- ── APPROVALS ──────────────────────────────────────── -->
+<div class="panel" id="panel-tournaments">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3><i class="fas fa-plus-circle"></i> Create Tournament</h3></div>
+    <div class="card-body">
+      <input type="hidden" id="trn-edit-id">
+      <div class="form-row">
+        <div class="fg"><label>Tournament Name *</label><input type="text" id="trn-name" placeholder="e.g. IF5L Season 3"></div>
+        <div class="fg"><label>Entry Type *</label>
+          <select id="trn-entry-type">
+            <option value="team">Team-based (teams pay a token fee, players free)</option>
+            <option value="individual">Individual-entry (players pay directly)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Team Token Fee (₹)</label><input type="number" id="trn-team-fee" placeholder="10000" value="10000"></div>
+        <div class="fg"><label>Individual Player Fee (₹)</label><input type="number" id="trn-player-fee" placeholder="2999" value="2999"></div>
+      </div>
+      <div class="fg"><label>Age Categories</label><input type="text" id="trn-age-cats" placeholder="U9, U11, U13, U15, U17, U19, Senior"><p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Comma-separated. Leave blank to use the default U9–Senior list.</p></div>
+      <div class="fg"><label>Status</label>
+        <select id="trn-status">
+          <option value="draft">Draft — hidden from registration page</option>
+          <option value="open">Open — accepting registrations</option>
+          <option value="closed">Closed — registration ended</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="saveTournament()"><i class="fas fa-save"></i> <span id="trn-save-label">Create Tournament</span></button>
+      <button class="btn" style="display:none;margin-left:8px;" id="trn-cancel-edit" onclick="resetTournamentForm()">Cancel Edit</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3><i class="fas fa-trophy"></i> All Tournaments</h3></div>
+    <div class="card-body" style="padding:0;">
+      <div class="tbl-wrap">
+        <table class="dt">
+          <thead><tr><th>Name</th><th>Type</th><th>Fee</th><th>Age Categories</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="tournaments-body"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No tournaments yet — create one above.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="panel-approvals">
   <div class="card">
     <div class="card-head">
@@ -1018,6 +1062,120 @@ _fbDb.ref('contactMessages').on('value', snap => {
   renderMessages();
 });
 
+// ── TOURNAMENTS — single source of truth ───────────────────────────────────
+// Every tournament dropdown across the whole site (registration form, age
+// categories, fixtures, lineup, results, league tables, team edit) reads
+// from this one live list instead of duplicating hardcoded <option> tags.
+let _fbTournaments = [];
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn'];
+const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true };
+
+_fbDb.ref('tournaments').on('value', snap => {
+  _fbTournaments = [];
+  snap.forEach(child => { _fbTournaments.push({ _key: child.key, ...child.val() }); });
+  _fbTournaments.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  renderTournaments();
+  refreshAllTournamentSelects();
+});
+
+function refreshAllTournamentSelects() {
+  TOURNAMENT_SELECT_IDS.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prevValue = sel.value;
+    let html = TOURNAMENT_SELECT_ALL_OPTION[id]
+      ? '<option value="">All Tournaments</option>'
+      : '<option value="">Select tournament</option>';
+    html += _fbTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    sel.innerHTML = html;
+    if ([...sel.options].some(o => o.value === prevValue)) sel.value = prevValue;
+  });
+}
+
+function renderTournaments() {
+  const tbody = document.getElementById('tournaments-body');
+  if (!tbody) return;
+  if (!_fbTournaments.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No tournaments yet — create one above.</td></tr>';
+    return;
+  }
+  const statusBadge = { draft: 'b-draft', open: 'b-approved', closed: 'b-rejected' };
+  tbody.innerHTML = _fbTournaments.map(t => `<tr>
+    <td><strong>${t.name}</strong></td>
+    <td>${t.entryType === 'individual' ? 'Individual-entry' : 'Team-based'}</td>
+    <td>${t.entryType === 'individual' ? '₹'+(t.playerFee||0)+' / player' : '₹'+(t.teamFee||0)+' / team'}</td>
+    <td style="font-size:.82rem;color:var(--muted);">${(t.ageCategories||[]).join(', ')||'—'}</td>
+    <td><span class="badge ${statusBadge[t.status]||''}">${t.status||'draft'}</span></td>
+    <td class="actions">
+      <button class="btn btn-xs" onclick="editTournament('${t._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteTournament('${t._key}')"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+function resetTournamentForm() {
+  document.getElementById('trn-edit-id').value = '';
+  document.getElementById('trn-name').value = '';
+  document.getElementById('trn-entry-type').value = 'team';
+  document.getElementById('trn-team-fee').value = '10000';
+  document.getElementById('trn-player-fee').value = '2999';
+  document.getElementById('trn-age-cats').value = '';
+  document.getElementById('trn-status').value = 'draft';
+  document.getElementById('trn-save-label').textContent = 'Create Tournament';
+  document.getElementById('trn-cancel-edit').style.display = 'none';
+}
+
+function editTournament(key) {
+  const t = _fbTournaments.find(x => x._key === key);
+  if (!t) return;
+  document.getElementById('trn-edit-id').value = key;
+  document.getElementById('trn-name').value = t.name||'';
+  document.getElementById('trn-entry-type').value = t.entryType||'team';
+  document.getElementById('trn-team-fee').value = t.teamFee||10000;
+  document.getElementById('trn-player-fee').value = t.playerFee||2999;
+  document.getElementById('trn-age-cats').value = (t.ageCategories||[]).join(', ');
+  document.getElementById('trn-status').value = t.status||'draft';
+  document.getElementById('trn-save-label').textContent = 'Save Changes';
+  document.getElementById('trn-cancel-edit').style.display = 'inline-block';
+  switchPanel('tournaments');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function deleteTournament(key) {
+  if (!confirm('Delete this tournament? Existing registrations under it are not affected, but it will disappear from all dropdowns.')) return;
+  _fbDb.ref('tournaments/'+key).remove();
+}
+
+const DEFAULT_AGE_CATEGORY_LIST = ['U9','U11','U13','U15','U17','U19','Senior'];
+function tournamentSlugAdmin(name) { return (name||'').replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function saveTournament() {
+  const name = document.getElementById('trn-name').value.trim();
+  if (!name) { alert('Enter a tournament name.'); return; }
+  const editId = document.getElementById('trn-edit-id').value;
+  const ageCatsRaw = document.getElementById('trn-age-cats').value.trim();
+  const ageCategories = ageCatsRaw ? ageCatsRaw.split(',').map(s=>s.trim()).filter(Boolean) : DEFAULT_AGE_CATEGORY_LIST;
+
+  const data = {
+    name,
+    entryType: document.getElementById('trn-entry-type').value,
+    teamFee: Number(document.getElementById('trn-team-fee').value) || 0,
+    playerFee: Number(document.getElementById('trn-player-fee').value) || 0,
+    ageCategories,
+    status: document.getElementById('trn-status').value,
+    updatedAt: new Date().toISOString()
+  };
+  if (!editId) data.createdAt = new Date().toISOString();
+
+  const ref = editId ? _fbDb.ref('tournaments/'+editId) : _fbDb.ref('tournaments').push();
+  ref.update(data).then(() => {
+    // Keep the existing per-tournament age-category lookup (used by the
+    // public registration form) in sync automatically.
+    _fbDb.ref('ageCategories/'+tournamentSlugAdmin(name)).set(ageCategories);
+    resetTournamentForm();
+  });
+}
+
 // ── STORAGE HELPERS ───────────────────────────────────────────────────────
 const DB = {
   get: k => JSON.parse(localStorage.getItem(k)||'[]'),
@@ -1037,7 +1195,7 @@ const PANEL_TITLES = {
   players:'Manage Players', agecats:'Age Categories', idcards:'Generate ID Cards', reports:'Export Reports',
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
-  messages:'Contact Messages', admins:'Manage Admins'
+  messages:'Contact Messages', admins:'Manage Admins', tournaments:'Tournaments'
 };
 function switchPanel(id) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -1052,7 +1210,7 @@ function switchPanel(id) {
     players: renderPlayers, agecats: renderAgeCatEditor, idcards: refreshIDCards, reports: renderReports,
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
-    messages: renderMessages, admins: renderAdmins
+    messages: renderMessages, admins: renderAdmins, tournaments: renderTournaments
   };
   if(refresh[id]) refresh[id]();
 }

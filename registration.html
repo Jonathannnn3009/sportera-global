@@ -359,8 +359,6 @@
                             <label for="tournament">Tournament *</label>
                             <select id="tournament" name="tournament" required>
                                 <option value="">Select tournament</option>
-                                <option value="IF5L Season 2">IF5L Season 2 (August 2026)</option>
-                                <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
                             </select>
                         </div>
                         <div class="form-group" id="ageCategoryGroup" style="display:none;">
@@ -445,8 +443,8 @@
                         <p class="form-section-label">Token Registration Amount</p>
                         <div class="fee-box">
                             <h4><i class="fas fa-receipt"></i> Slot Reservation Fee</h4>
-                            <div class="fee-row"><span>Token Amount (per age category)</span><span>₹10,000</span></div>
-                            <div class="fee-row total"><span>Total Payable Now</span><span>₹10,000</span></div>
+                            <div class="fee-row"><span>Token Amount (per age category)</span><span id="teamFeeDisplay">₹10,000</span></div>
+                            <div class="fee-row total"><span>Total Payable Now</span><span id="teamFeeDisplayTotal">₹10,000</span></div>
                         </div>
                         <div class="payment-notice" style="margin-bottom:16px;">
                             <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
@@ -650,8 +648,8 @@
                             <p class="form-section-label">Payment (Required for Individual Registration)</p>
                             <div class="fee-box">
                                 <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
-                                <div class="fee-row"><span>Indian Football 5 League — Individual Registration Fee</span><span>₹2,999</span></div>
-                                <div class="fee-row total"><span>Total</span><span>₹2,999</span></div>
+                                <div class="fee-row"><span id="playerFeeLabel">Individual Registration Fee</span><span id="playerFeeDisplay">₹2,999</span></div>
+                                <div class="fee-row total"><span>Total</span><span id="playerFeeDisplayTotal">₹2,999</span></div>
                             </div>
                             <div class="payment-options">
                                 <label class="payment-option">
@@ -837,14 +835,47 @@
         }
         loadTeamsDropdown();
 
-        // --- Payment only required for individual-entry tournaments (e.g. IF5L) ---
-        const INDIVIDUAL_ENTRY_TOURNAMENTS = ['IF5L Season 2'];
+        // --- Tournaments — single live source (admin's Tournaments panel) ---
+        // Drives the tournament dropdown, each tournament's fee display, and
+        // whether individual player payment is required — nothing here is
+        // hardcoded per-tournament anymore.
+        let _liveTournaments = [];
+        function findTournament(name) { return _liveTournaments.find(t => t.name === name); }
+
+        _regDb.ref('tournaments').on('value', snap => {
+            _liveTournaments = [];
+            snap.forEach(child => _liveTournaments.push({ _key: child.key, ...child.val() }));
+            const sel = document.getElementById('tournament');
+            const prevValue = sel.value;
+            const openTournaments = _liveTournaments.filter(t => t.status === 'open');
+            sel.innerHTML = '<option value="">Select tournament</option>' +
+                openTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            if (openTournaments.some(t => t.name === prevValue)) sel.value = prevValue;
+            updateTeamFeeDisplay();
+            updatePlayerPaymentVisibility();
+        });
+
+        function updateTeamFeeDisplay() {
+            const t = findTournament(document.getElementById('tournament').value);
+            const fee = t ? t.teamFee : 10000;
+            document.getElementById('teamFeeDisplay').textContent = '₹' + Number(fee||0).toLocaleString('en-IN');
+            document.getElementById('teamFeeDisplayTotal').textContent = '₹' + Number(fee||0).toLocaleString('en-IN');
+        }
+
+        // --- Payment only required for individual-entry tournaments ---
         function updatePlayerPaymentVisibility() {
-            const tournament = document.getElementById('playerTournament').value;
-            const isIndividual = INDIVIDUAL_ENTRY_TOURNAMENTS.includes(tournament);
+            const tournamentName = document.getElementById('playerTournament').value;
+            const t = findTournament(tournamentName);
+            const isIndividual = !!(t && t.entryType === 'individual');
             document.getElementById('playerPaymentSection').style.display = isIndividual ? 'block' : 'none';
-            document.getElementById('playerNoPaymentNotice').style.display = (tournament && !isIndividual) ? 'flex' : 'none';
+            document.getElementById('playerNoPaymentNotice').style.display = (tournamentName && !isIndividual) ? 'flex' : 'none';
             document.querySelectorAll('input[name="playerPayment"]').forEach(r => r.required = isIndividual);
+            if (isIndividual) {
+                const fee = t.playerFee || 0;
+                document.getElementById('playerFeeLabel').textContent = tournamentName + ' — Individual Registration Fee';
+                document.getElementById('playerFeeDisplay').textContent = '₹' + Number(fee).toLocaleString('en-IN');
+                document.getElementById('playerFeeDisplayTotal').textContent = '₹' + Number(fee).toLocaleString('en-IN');
+            }
         }
         updatePlayerPaymentVisibility();
 
@@ -946,6 +977,7 @@
         ];
         function tournamentSlug(t) { return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
         document.getElementById('tournament').addEventListener('change', function() {
+            updateTeamFeeDisplay();
             const group = document.getElementById('ageCategoryGroup');
             const ageSel = document.getElementById('ageCategory');
             if (!this.value) {
