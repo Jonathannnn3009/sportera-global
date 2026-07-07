@@ -461,11 +461,6 @@
                                 <span class="pay-icon"><i class="fas fa-university"></i></span>
                                 <div><strong>Bank Transfer / NEFT</strong><br><span>Account details shown below</span></div>
                             </label>
-                            <label class="payment-option">
-                                <input type="radio" name="teamPayment" value="Online" onchange="updatePaymentPanel('team')">
-                                <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
-                                <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
-                            </label>
                         </div>
 
                         <div id="teamPaymentPanel" style="display:none; background:#f8f9ff; border:1px solid #dde3f5; border-radius:12px; padding:20px; margin-top:16px;"></div>
@@ -660,11 +655,6 @@
                                     <input type="radio" name="playerPayment" value="Bank Transfer" onchange="updatePaymentPanel('player')">
                                     <span class="pay-icon"><i class="fas fa-university"></i></span>
                                     <div><strong>Bank Transfer / NEFT</strong><br><span>Account details shown below</span></div>
-                                </label>
-                                <label class="payment-option">
-                                    <input type="radio" name="playerPayment" value="Online" onchange="updatePaymentPanel('player')">
-                                    <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
-                                    <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
                                 </label>
                             </div>
 
@@ -886,9 +876,6 @@
                         <div class="up-label"><strong>Click to upload proof of payment</strong><br>Bank receipt or screenshot showing the UTR number</div>
                         <div class="upload-preview" id="${proofPreviewId}"></div>
                     </div>`;
-            } else {
-                panel.innerHTML = `
-                    <p style="font-size:0.9rem; color:var(--text-light);"><i class="fas fa-info-circle" style="color:var(--gold);"></i> Card / Net Banking checkout is being set up. You can still submit your registration now — we'll follow up with a secure payment link once it's ready.</p>`;
             }
         }
 
