@@ -978,7 +978,18 @@
         document.getElementById('playerDOB').addEventListener('change', checkAgeCategoryEligibility);
 
         // --- Validate the player's DOB actually falls under the selected age
-        // category's cutoff birth year (set by admin per tournament) ---
+        // category's cutoff date (set by admin per tournament). Handles every
+        // format the admin panel may have written: a plain string (no
+        // cutoff), {label, cutoffDate} (current), or {label, cutoffYear}
+        // (legacy, treated as Jan 1 of that year). ---
+        function getCutoffDate(cats, category) {
+            const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === category);
+            if (!entry || typeof entry !== 'object') return null;
+            if (entry.cutoffDate) return entry.cutoffDate;
+            if (entry.cutoffYear) return entry.cutoffYear + '-01-01';
+            return null;
+        }
+
         let _ageCategoryEligible = true;
         function checkAgeCategoryEligibility() {
             const hint = document.getElementById('playerAgeCategoryHint');
@@ -990,13 +1001,11 @@
             if (!tournamentName || !category || !dob) return;
             _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
                 const cats = snap.val() || [];
-                const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === category);
-                const cutoffYear = entry && typeof entry === 'object' ? entry.cutoffYear : null;
-                if (!cutoffYear) return;
-                const birthYear = new Date(dob).getFullYear();
-                if (birthYear < cutoffYear) {
+                const cutoffDate = getCutoffDate(cats, category);
+                if (!cutoffDate) return;
+                if (new Date(dob) < new Date(cutoffDate)) {
                     _ageCategoryEligible = false;
-                    hint.textContent = `This player's date of birth doesn't qualify for ${category} (must be born in ${cutoffYear} or later). Please choose a different age category, or check with the team.`;
+                    hint.textContent = `This player is overage for ${category} — they must be born on or after ${cutoffDate} to qualify. Please choose a different age category, or check with the team.`;
                     hint.style.color = '#c62828';
                     hint.style.display = 'block';
                 } else {
@@ -1230,10 +1239,9 @@
             if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
                 const snap = await _regDb.ref('ageCategories/' + tournamentSlug(_tournamentForCheck)).once('value');
                 const cats = snap.val() || [];
-                const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === _categoryForCheck);
-                const cutoffYear = entry && typeof entry === 'object' ? entry.cutoffYear : null;
-                if (cutoffYear && new Date(_dobForCheck).getFullYear() < cutoffYear) {
-                    alert(`This player's date of birth doesn't qualify for ${_categoryForCheck} (must be born in ${cutoffYear} or later). Please choose a different age category before submitting.`);
+                const cutoffDate = getCutoffDate(cats, _categoryForCheck);
+                if (cutoffDate && new Date(_dobForCheck) < new Date(cutoffDate)) {
+                    alert(`This player is overage for ${_categoryForCheck} — they must be born on or after ${cutoffDate} to qualify. Please choose a different age category before submitting.`);
                     return;
                 }
             }

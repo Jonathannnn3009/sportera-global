@@ -343,7 +343,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   <div class="card">
     <div class="card-head"><h3><i class="fas fa-layer-group"></i> Manage Age Categories per Tournament</h3></div>
     <div class="card-body">
-      <div class="notice info"><i class="fas fa-info-circle"></i> Set the exact age categories available for each tournament, along with a cutoff birth year for each — a player only qualifies for a category if their date of birth falls on or after that year. The registration form validates this automatically before letting a player submit.</div>
+      <div class="notice info"><i class="fas fa-info-circle"></i> Set the exact age categories available for each tournament, along with a cutoff date for each — a player only qualifies for a category if they were born <strong>on or after</strong> that date (i.e. not overage). The registration form checks this automatically and blocks submission if the player doesn't qualify for the age category they'd fall under.</div>
       <div class="fg" style="max-width:400px;">
         <label>Select Tournament</label>
         <select id="ac-tournament" onchange="renderAgeCatEditor()">
@@ -351,12 +351,12 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         </select>
       </div>
       <div id="ac-editor" style="display:none; margin-top:16px;">
-        <div style="display:flex; gap:10px; max-width:520px; margin-bottom:14px;">
-          <input type="text" id="ac-new-label" placeholder="e.g. U10, U14, Open" style="flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
-          <input type="number" id="ac-new-cutoff" placeholder="Cutoff year e.g. 2015" style="width:170px; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
+        <div style="display:flex; gap:10px; max-width:560px; margin-bottom:14px; flex-wrap:wrap;">
+          <input type="text" id="ac-new-label" placeholder="e.g. U10, U14, Open" style="flex:1; min-width:140px; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
+          <input type="date" id="ac-new-cutoff" style="width:170px; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
           <button class="btn btn-primary btn-sm" onclick="addAgeCategory()"><i class="fas fa-plus"></i> Add</button>
         </div>
-        <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">Cutoff year is optional — leave blank if you don't want DOB validation for that category.</p>
+        <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">Cutoff date is optional — leave blank if you don't want DOB validation for that category. A player born <em>before</em> this date is overage and cannot register under it.</p>
         <div id="ac-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       </div>
     </div>
@@ -524,10 +524,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <div class="form-row">
           <div class="fg"><label>Date of Birth</label><input type="date" id="id-dob" oninput="updateIDPreview()"></div>
           <div class="fg"><label>Age Category</label>
-            <select id="id-agecat" onchange="updateIDPreview()">
-              <option value="">—</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option>
-              <option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
-            </select>
+            <input type="text" id="id-agecat" oninput="updateIDPreview()" placeholder="Age category">
           </div>
         </div>
         <div class="fg"><label>Tournament (auto-fetched from registration)</label><input type="text" id="id-tournament" readonly style="background:#f8f9ff;"></div>
@@ -1993,11 +1990,15 @@ function exportCSV(type){
 function tournamentSlug(t){ return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
 
 // Age categories are stored per tournament as an array of either plain
-// strings (legacy / auto-seeded from the Tournaments panel) or
-// {label, cutoffYear} objects (once cutoff years are set here). This
-// normalizer lets every reader treat them the same way.
+// strings (legacy / auto-seeded from the Tournaments panel), {label,
+// cutoffYear} objects (the first cutoff version), or {label, cutoffDate}
+// objects (current — a precise date instead of just a year). This
+// normalizer lets every reader treat them all the same way.
 function normalizeAgeCat(c) {
-  return typeof c === 'object' ? { label: c.label, cutoffYear: c.cutoffYear || null } : { label: c, cutoffYear: null };
+  if (typeof c !== 'object') return { label: c, cutoffDate: null };
+  if (c.cutoffDate) return { label: c.label, cutoffDate: c.cutoffDate };
+  if (c.cutoffYear) return { label: c.label, cutoffDate: c.cutoffYear + '-01-01' }; // legacy year-only data
+  return { label: c.label, cutoffDate: null };
 }
 function renderAgeCatEditor(){
   const t = document.getElementById('ac-tournament').value;
@@ -2008,19 +2009,19 @@ function renderAgeCatEditor(){
     const cats = (snap.val() || []).map(normalizeAgeCat);
     const list = document.getElementById('ac-list');
     if(!cats.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No custom categories set yet — the registration form will fall back to the default list (U9-Senior), with no DOB cutoff enforced.</p>'; return; }
-    list.innerHTML = cats.map((c,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c.label}${c.cutoffYear?` <span style="opacity:.7;">(${c.cutoffYear}+)</span>`:''} <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
+    list.innerHTML = cats.map((c,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c.label}${c.cutoffDate?` <span style="opacity:.7;">(born ${c.cutoffDate}+)</span>`:''} <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
   });
 }
 function addAgeCategory(){
   const t = document.getElementById('ac-tournament').value;
   const label = document.getElementById('ac-new-label').value.trim();
-  const cutoffYear = Number(document.getElementById('ac-new-cutoff').value) || null;
+  const cutoffDate = document.getElementById('ac-new-cutoff').value || null;
   if(!t || !label) return;
   const ref = _fbDb.ref('ageCategories/'+tournamentSlug(t));
   ref.once('value', snap => {
     const cats = (snap.val() || []).map(normalizeAgeCat);
     const existing = cats.find(c=>c.label===label);
-    if (existing) existing.cutoffYear = cutoffYear; else cats.push({ label, cutoffYear });
+    if (existing) existing.cutoffDate = cutoffDate; else cats.push({ label, cutoffDate });
     ref.set(cats).then(() => { document.getElementById('ac-new-label').value=''; document.getElementById('ac-new-cutoff').value=''; renderAgeCatEditor(); });
   });
 }
