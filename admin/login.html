@@ -8,6 +8,9 @@
     <meta name="robots" content="noindex, nofollow">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -199,10 +202,10 @@
 
         <form id="loginForm" autocomplete="off">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="username">Username or Email</label>
                 <div class="input-wrap">
                     <i class="fas fa-user icon-left"></i>
-                    <input type="text" id="username" placeholder="Enter admin username" required autocomplete="username">
+                    <input type="text" id="username" placeholder="Username or invited admin email" required autocomplete="username">
                 </div>
             </div>
             <div class="form-group">
@@ -251,8 +254,23 @@
     // ─── Hashed credentials (SHA-256) — plaintext never stored here ───────────
     // To change credentials, compute new SHA-256 hashes and update these values.
     // Username: sporteraadmin  Password: F5Admin@2026
+    // This legacy login is kept working as a fallback alongside the newer
+    // Firebase-based admin accounts (see "Manage Admins" in the dashboard).
     const H_USER = '8ef8b3c93b2577b0ffa6fc30caeb41ffb44b5e02e37416319a0f41c360c8df1a';
     const H_PASS = '3f1047f3f82a7838889cc7237125af025ffb256bbe121260dafc3b35b36311b4';
+
+    // ─── Firebase (for invited admin accounts) ────────────────────────────────
+    firebase.initializeApp({
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    });
+    const fbAuth = firebase.auth();
+    const fbFs = firebase.firestore();
 
     const MAX_ATTEMPTS = 5;
     const LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
@@ -369,7 +387,29 @@
         const enteredPass = document.getElementById('password').value;
         const [hU, hP] = await Promise.all([sha256(enteredUser), sha256(enteredPass)]);
 
+        let loginOk = false;
         if (hU === H_USER && hP === H_PASS) {
+            // Legacy hardcoded credentials
+            loginOk = true;
+        } else if (enteredUser.includes('@')) {
+            // Try it as an invited admin's Firebase account
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            try {
+                const cred = await fbAuth.signInWithEmailAndPassword(enteredUser, enteredPass);
+                const adminDoc = await fbFs.collection('admins').doc(cred.user.uid).get();
+                if (adminDoc.exists) {
+                    loginOk = true;
+                } else {
+                    await fbAuth.signOut();
+                }
+            } catch (e) {
+                // not a valid Firebase admin login either — falls through to failure below
+            }
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> &nbsp;Sign In';
+        }
+
+        if (loginOk) {
             // ✅ Success — clear lockout state, set session
             saveState({ attempts: 0, lockedUntil: 0 });
             sessionStorage.setItem('sg_admin', 'authenticated');

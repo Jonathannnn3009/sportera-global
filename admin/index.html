@@ -247,6 +247,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -282,6 +284,9 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 
   <div class="nav-label">Messages</div>
   <div class="nav-item" data-panel="messages"><i class="fas fa-envelope"></i> Contact Messages <span class="badge-count" id="sb-messages">0</span></div>
+
+  <div class="nav-label">Administration</div>
+  <div class="nav-item" data-panel="admins"><i class="fas fa-user-shield"></i> Manage Admins</div>
 
   <div class="sb-foot">
     <a href="../index.html" target="_blank" style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);font-size:.8rem;margin-bottom:10px;"><i class="fas fa-globe"></i> View Website</a>
@@ -859,6 +864,32 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   </div>
 </div>
 
+<!-- ── MANAGE ADMINS ─────────────────────────────────────── -->
+<div class="panel" id="panel-admins">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3><i class="fas fa-user-plus"></i> Invite New Admin</h3></div>
+    <div class="card-body">
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">Enter the email address of the person you want to give admin access to. A secure temporary password will be generated automatically and emailed to them along with a link to the admin login page.</p>
+      <div class="form-row">
+        <div class="fg"><label>Admin Email *</label><input type="email" id="new-admin-email" placeholder="name@example.com"></div>
+        <div class="fg" style="display:flex;align-items:flex-end;"><button class="btn btn-primary" style="width:100%;" onclick="inviteAdmin()" id="invite-admin-btn"><i class="fas fa-paper-plane"></i> Send Invite</button></div>
+      </div>
+      <div id="invite-admin-status" style="font-size:.85rem;margin-top:6px;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3><i class="fas fa-user-shield"></i> Current Admins</h3></div>
+    <div class="card-body" style="padding:0;">
+      <div class="tbl-wrap">
+        <table class="dt">
+          <thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="admins-body"><tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <!-- ══════════════ MODALS ══════════════ -->
@@ -938,7 +969,35 @@ const _fbConfig = {
 };
 firebase.initializeApp(_fbConfig);
 const _fbDb = firebase.database();
+const _fbFs = firebase.firestore();
 let _fbRegs = [];
+
+// ── SECONDARY FIREBASE APP ────────────────────────────────────────────────
+// Creating a new Auth user (player/team/admin) with the client SDK signs the
+// browser in AS that new user, which would hijack whatever admin session is
+// active. A throwaway secondary app instance creates the account in total
+// isolation, then gets deleted — the admin's own session is never touched.
+async function _createUserIsolated(email, password) {
+  const secondary = firebase.initializeApp(_fbConfig, 'Secondary_' + Date.now());
+  try {
+    const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
+    const uid = cred.user.uid;
+    await secondary.auth().signOut();
+    return uid;
+  } finally {
+    await secondary.delete();
+  }
+}
+
+function _generatePassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+// Note: EMAIL_WEBHOOK_URL is declared later in this file (near the ID card
+// section) but is referenced only inside functions below, which run long
+// after the whole script has parsed — so the later declaration is fine.
 
 // Live listener — auto-refreshes approvals + dashboard when a new registration arrives
 _fbDb.ref('registrations').on('value', snap => {
@@ -978,7 +1037,7 @@ const PANEL_TITLES = {
   players:'Manage Players', agecats:'Age Categories', idcards:'Generate ID Cards', reports:'Export Reports',
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
-  messages:'Contact Messages'
+  messages:'Contact Messages', admins:'Manage Admins'
 };
 function switchPanel(id) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -993,7 +1052,7 @@ function switchPanel(id) {
     players: renderPlayers, agecats: renderAgeCatEditor, idcards: refreshIDCards, reports: renderReports,
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
-    messages: renderMessages
+    messages: renderMessages, admins: renderAdmins
   };
   if(refresh[id]) refresh[id]();
 }
@@ -1087,7 +1146,126 @@ function renderApprovals(){
 
 function setStatus(id, status){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
-  if(i>-1){ regs[i].status=status; DB.save(regs); renderApprovals(); refreshDashboard(); }
+  if(i>-1){
+    regs[i].status=status; DB.save(regs); renderApprovals(); refreshDashboard();
+    if (status === 'approved' && !regs[i].portalAccountCreated) createPortalAccount(regs[i]);
+  }
+}
+
+// ── PLAYER/TEAM PORTAL ACCOUNT CREATION ────────────────────────────────────
+// Runs the moment a registration is approved: creates the Firebase Auth
+// login, writes their Firestore profile doc (what the portal dashboards
+// read), and emails them their credentials — all via the isolated secondary
+// app so it never disturbs the admin's own session.
+async function createPortalAccount(reg) {
+  const email = reg.type === 'team' ? reg.teamEmail : reg.playerEmail;
+  const name = reg.type === 'team' ? reg.teamName : reg.playerName;
+  if (!email) return;
+
+  const password = _generatePassword();
+  let uid;
+  try {
+    uid = await _createUserIsolated(email, password);
+  } catch (e) {
+    if (e.code === 'auth/email-already-in-use') {
+      console.warn('Portal account already exists for', email, '— skipping creation.');
+    } else {
+      console.error('Could not create portal account for', email, e);
+    }
+    return;
+  }
+
+  const collection = reg.type === 'team' ? 'teams' : 'players';
+  const profile = reg.type === 'team'
+    ? { teamName: reg.teamName, teamCity: reg.teamCity, teamEmail: reg.teamEmail, coachName: reg.coachName,
+        coachPhone: reg.coachPhone, managerName: reg.managerName||'', managerPhone: reg.managerPhone||'',
+        tournament: reg.tournament, ageCategory: reg.ageCategory||'', regId: reg.id,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        squad: [], stats: { goalsScored: 0, goalsConceded: 0, wins: 0, losses: 0 }, tournaments: [], matches: [] }
+    : { playerName: reg.playerName, playerCity: reg.playerCity, playerPosition: reg.playerPosition||'',
+        playerTeam: reg.playerTeam||'', playerDOB: reg.playerDOB||'', email: reg.playerEmail, regId: reg.id,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        stats: { matchesPlayed: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, cleanSheets: 0 },
+        tournaments: [], matches: [], awards: [] };
+
+  try {
+    await _fbFs.collection(collection).doc(uid).set(profile);
+  } catch (e) {
+    console.error('Could not write portal profile for', email, e);
+    return;
+  }
+
+  const regs = DB.all();
+  const i = regs.findIndex(r => r.id === reg.id);
+  if (i > -1) { regs[i].portalAccountCreated = true; DB.save(regs); }
+
+  fetch(EMAIL_WEBHOOK_URL, {
+    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      email_type: 'portal_credentials', to_email: email, to_name: name,
+      login_email: email, login_password: password, reg_type: reg.type
+    })
+  }).catch(() => {});
+}
+
+// ── MANAGE ADMINS ──────────────────────────────────────────────────────────
+let _admins = [];
+_fbFs.collection('admins').onSnapshot(snap => {
+  _admins = [];
+  snap.forEach(doc => _admins.push({ uid: doc.id, ...doc.data() }));
+  renderAdmins();
+});
+
+function renderAdmins() {
+  const tbody = document.getElementById('admins-body');
+  if (!tbody) return;
+  if (!_admins.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No admins yet — invite the first one above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _admins.map(a => `<tr>
+    <td>${a.email}</td>
+    <td><span class="badge b-approved">${a.role||'admin'}</span></td>
+    <td>${a.createdAt && a.createdAt.toDate ? fmtDate(a.createdAt.toDate().toISOString()) : '—'}</td>
+    <td class="actions"><button class="btn btn-danger btn-xs" onclick="removeAdmin('${a.uid}')" title="Remove admin access (does not delete their login)"><i class="fas fa-user-slash"></i></button></td>
+  </tr>`).join('');
+}
+
+function removeAdmin(uid) {
+  if (!confirm('Remove admin access for this account? Their login will stop working for the admin panel (their Firebase Auth account itself is not deleted).')) return;
+  _fbFs.collection('admins').doc(uid).delete();
+}
+
+async function inviteAdmin() {
+  const emailInput = document.getElementById('new-admin-email');
+  const email = emailInput.value.trim();
+  const statusEl = document.getElementById('invite-admin-status');
+  const btn = document.getElementById('invite-admin-btn');
+  if (!email) { statusEl.textContent = 'Enter an email address first.'; statusEl.style.color = '#c62828'; return; }
+
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+  statusEl.textContent = ''; statusEl.style.color = '';
+
+  const password = _generatePassword();
+  try {
+    const uid = await _createUserIsolated(email, password);
+    await _fbFs.collection('admins').doc(uid).set({
+      email, role: 'admin', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    fetch(EMAIL_WEBHOOK_URL, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ email_type: 'admin_invite', to_email: email, to_name: email, login_email: email, login_password: password })
+    }).catch(() => {});
+    statusEl.textContent = 'Invite sent to ' + email + '.';
+    statusEl.style.color = '#2e7d32';
+    emailInput.value = '';
+  } catch (e) {
+    statusEl.textContent = e.code === 'auth/email-already-in-use'
+      ? 'An account with this email already exists.'
+      : 'Could not create admin account: ' + e.message;
+    statusEl.style.color = '#c62828';
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Invite';
 }
 
 function viewReg(id){
