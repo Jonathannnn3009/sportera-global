@@ -1464,6 +1464,22 @@ async function inviteAdmin() {
   btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Invite';
 }
 
+// Chrome blocks directly navigating a new tab to a data: URL (shows a blank
+// page). Converting it to a short-lived blob: URL first works everywhere.
+function openRegFile(id, field) {
+  const r = DB.all().find(x => x.id === id);
+  const dataUrl = r && r[field];
+  if (!dataUrl) return;
+  fetch(dataUrl)
+    .then(res => res.blob())
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    })
+    .catch(() => alert('Could not open this file.'));
+}
+
 function viewReg(id){
   const r=DB.all().find(x=>x.id===id); if(!r) return;
   const name=r.teamName||r.playerName;
@@ -1476,14 +1492,14 @@ function viewReg(id){
   document.getElementById('modal-reg-body').innerHTML=`
     <div style="display:grid;gap:10px;">
       ${fields.map(([l,v])=>`<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">${l}</span><span style="font-size:.88rem;">${v}</span></div>`).join('')}
-      ${r.type==='player' ? `<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Photo</span><span style="font-size:.88rem;">${r.playerPhotoUrl?`<a href="${r.playerPhotoUrl}" target="_blank" style="color:var(--primary);font-weight:600;"><i class="fas fa-image"></i> View Photo</a>`:'<span style="color:var(--muted);">No photo uploaded</span>'}</span></div>` : ''}
+      ${r.type==='player' ? `<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Photo</span><span style="font-size:.88rem;">${r.playerPhotoUrl?`<a href="#" onclick="openRegFile('${r.id}','playerPhotoUrl');return false;" style="color:var(--primary);font-weight:600;"><i class="fas fa-image"></i> View Photo</a>`:'<span style="color:var(--muted);">No photo uploaded</span>'}</span></div>` : ''}
       <div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
         <span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">${docLabel}</span>
-        <span style="font-size:.88rem;">${docUrl ? `<a href="${docUrl}" target="_blank" style="color:var(--primary);font-weight:600;"><i class="fas fa-file-alt"></i> View Document</a> ${r.docVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markDocVerified('${r.id}')">Mark Verified</button>`}` : '<span style="color:var(--muted);">No document uploaded</span>'}</span>
+        <span style="font-size:.88rem;">${docUrl ? `<a href="#" onclick="openRegFile('${r.id}','${r.type==='team'?'teamLogoUrl':'ageDocUrl'}');return false;" style="color:var(--primary);font-weight:600;"><i class="fas fa-file-alt"></i> View Document</a> ${r.docVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markDocVerified('${r.id}')">Mark Verified</button>`}` : '<span style="color:var(--muted);">No document uploaded</span>'}</span>
       </div>
       <div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
         <span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Payment Proof</span>
-        <span style="font-size:.88rem;">${r.paymentProofUrl ? `<a href="${r.paymentProofUrl}" target="_blank" style="color:var(--primary);font-weight:600;"><i class="fas fa-receipt"></i> View Screenshot</a> ${r.paymentVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markPaymentVerified('${r.id}')">Mark Verified</button>`}` : (r.paymentMethod==='Online' ? '<span style="color:var(--muted);">Gateway payment — no manual proof needed</span>' : '<span style="color:var(--muted);">No payment proof uploaded</span>')}</span>
+        <span style="font-size:.88rem;">${r.paymentProofUrl ? `<a href="#" onclick="openRegFile('${r.id}','paymentProofUrl');return false;" style="color:var(--primary);font-weight:600;"><i class="fas fa-receipt"></i> View Screenshot</a> ${r.paymentVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markPaymentVerified('${r.id}')">Mark Verified</button>`}` : (r.paymentMethod==='Online' ? '<span style="color:var(--muted);">Gateway payment — no manual proof needed</span>' : '<span style="color:var(--muted);">No payment proof uploaded</span>')}</span>
       </div>
       <div style="display:flex;gap:12px;padding:8px 0;"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Status</span>${badge(r.status)}</div>
       <div style="display:flex;gap:12px;padding:8px 0;"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Submitted</span><span style="font-size:.88rem;">${fmtDateTime(r.submittedAt)}</span></div>
