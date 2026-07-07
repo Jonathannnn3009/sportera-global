@@ -1105,11 +1105,31 @@
             updateTeamFeeDisplay();
         });
 
-        document.getElementById('teamForm').addEventListener('submit', function(e) {
+        document.getElementById('teamForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             if (!document.getElementById('teamConsent').checked) {
                 alert('Please read and accept the Team Consent Form to proceed.');
                 return;
+            }
+            const teamNameEntered = document.getElementById('teamName').value.trim();
+            const tournamentEntered = document.getElementById('tournament').value;
+            const selectedCategoriesPreCheck = getSelectedAgeCategories();
+            if (teamNameEntered && tournamentEntered && selectedCategoriesPreCheck.length) {
+                const snap = await _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value');
+                const clash = [];
+                snap.forEach(child => {
+                    const d = child.val();
+                    if (d.status === 'rejected') return;
+                    if ((d.teamName||'').trim().toLowerCase() === teamNameEntered.toLowerCase()
+                        && d.tournament === tournamentEntered
+                        && selectedCategoriesPreCheck.includes(d.ageCategory)) {
+                        clash.push(d.ageCategory);
+                    }
+                });
+                if (clash.length) {
+                    alert('"' + teamNameEntered + '" is already registered for ' + tournamentEntered + ' in: ' + clash.join(', ') + '. Please uncheck ' + (clash.length > 1 ? 'those categories' : 'that category') + ' — a team can only register once per age group.');
+                    return;
+                }
             }
             const logoFile = document.getElementById('teamLogo').files[0];
             const logoName = logoFile ? logoFile.name : '';
