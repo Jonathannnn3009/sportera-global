@@ -893,6 +893,25 @@
             document.getElementById(prefix+'Otp1').focus();
         }
 
+        const CONFIRMATION_EMAIL_URL = 'https://script.google.com/macros/s/AKfycbxvHdn0WGZXe-iNBBESWBnlWMuHiUUD38BSzyuL_h8iAgZz2PjnzNkkKTkHBtOFh1fT/exec';
+
+        function sendConfirmationEmail(type, data) {
+            const email = type === 'team' ? data.teamEmail : data.playerEmail;
+            if (!email) return;
+            fetch(CONFIRMATION_EMAIL_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    email_type: 'confirmation',
+                    to_email: email,
+                    to_name: type === 'team' ? data.teamName : data.playerName,
+                    reg_type: type === 'team' ? 'team' : 'player',
+                    tournament: type === 'team' ? data.tournament : data.playerTournament
+                })
+            }).catch(() => {}); // best-effort, don't block the success flow
+        }
+
         function verifyOtp(type) {
             const prefix = type === 'team' ? 't' : 'p';
             const entered = getOtpValue(prefix);
@@ -900,6 +919,7 @@
             if (entered === DEMO_OTP) {
                 const data = type === 'team' ? pendingTeamData : pendingPlayerData;
                 _regDb.ref('registrations').push(data);
+                sendConfirmationEmail(type, data);
                 document.getElementById(type === 'team' ? 'teamOtp' : 'playerOtp').style.display = 'none';
                 document.getElementById(type === 'team' ? 'teamSuccess' : 'playerSuccess').style.display = 'block';
             } else {
