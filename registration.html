@@ -362,17 +362,11 @@
                             </select>
                         </div>
                         <div class="form-group" id="ageCategoryGroup" style="display:none;">
-                            <label for="ageCategory">Age Category *</label>
-                            <select id="ageCategory" name="ageCategory">
-                                <option value="">Select age category</option>
-                                <option value="U9">Under 9</option>
-                                <option value="U11">Under 11</option>
-                                <option value="U13">Under 13</option>
-                                <option value="U15">Under 15</option>
-                                <option value="U17">Under 17</option>
-                                <option value="U19">Under 19</option>
-                                <option value="Senior">Senior / Open</option>
-                            </select>
+                            <label>Age Category(s) *</label>
+                            <p style="font-size:.82rem;color:var(--text-light);margin:-2px 0 10px;">Select every age category your team is entering — the token fee is charged per category.</p>
+                            <div id="ageCategoryChecks" style="display:flex;flex-wrap:wrap;gap:10px;">
+                                <span style="color:var(--text-light);font-size:.88rem;">Loading age categories...</span>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="teamEmail">Team Email *</label>
@@ -914,8 +908,9 @@
         function updateTeamFeeDisplay() {
             const t = findTournament(document.getElementById('tournament').value);
             const fee = t ? t.teamFee : 10000;
-            document.getElementById('teamFeeDisplay').textContent = '₹' + Number(fee||0).toLocaleString('en-IN');
-            document.getElementById('teamFeeDisplayTotal').textContent = '₹' + Number(fee||0).toLocaleString('en-IN');
+            const count = Math.max(getSelectedAgeCategories().length, 1);
+            document.getElementById('teamFeeDisplay').textContent = '₹' + Number(fee||0).toLocaleString('en-IN') + (count > 1 ? ' × ' + count + ' categories' : '');
+            document.getElementById('teamFeeDisplayTotal').textContent = '₹' + Number((fee||0) * count).toLocaleString('en-IN');
         }
 
         // --- Payment only required for individual-entry tournaments ---
@@ -1002,7 +997,7 @@
         }
 
         const DEMO_OTP = '1234';
-        let pendingTeamData = null, pendingPlayerData = null;
+        let pendingTeamDataList = null, pendingPlayerData = null;
 
         // --- OTP digit auto-advance + backspace ---
         function setupOtpInputs(prefix) {
@@ -1056,9 +1051,13 @@
             const entered = getOtpValue(prefix);
             const errEl = document.getElementById(prefix + 'OtpError');
             if (entered === DEMO_OTP) {
-                const data = type === 'team' ? pendingTeamData : pendingPlayerData;
-                _regDb.ref('registrations').push(data);
-                sendConfirmationEmail(type, data);
+                if (type === 'team') {
+                    pendingTeamDataList.forEach(data => _regDb.ref('registrations').push(data));
+                    sendConfirmationEmail('team', pendingTeamDataList[0]);
+                } else {
+                    _regDb.ref('registrations').push(pendingPlayerData);
+                    sendConfirmationEmail('player', pendingPlayerData);
+                }
                 document.getElementById(type === 'team' ? 'teamOtp' : 'playerOtp').style.display = 'none';
                 document.getElementById(type === 'team' ? 'teamSuccess' : 'playerSuccess').style.display = 'block';
             } else {
@@ -1076,27 +1075,34 @@
             {value:'Senior', label:'Senior / Open'}
         ];
         function tournamentSlug(t) { return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
+
+        function getSelectedAgeCategories() {
+            return [...document.querySelectorAll('#ageCategoryChecks input[type="checkbox"]:checked')].map(c => c.value);
+        }
+
         document.getElementById('tournament').addEventListener('change', function() {
-            updateTeamFeeDisplay();
             const group = document.getElementById('ageCategoryGroup');
-            const ageSel = document.getElementById('ageCategory');
+            const checksBox = document.getElementById('ageCategoryChecks');
             if (!this.value) {
                 group.style.display = 'none';
-                ageSel.required = false;
-                ageSel.value = '';
+                checksBox.innerHTML = '';
+                updateTeamFeeDisplay();
                 return;
             }
             group.style.display = 'block';
-            ageSel.required = true;
-            ageSel.innerHTML = '<option value="">Loading age categories...</option>';
+            checksBox.innerHTML = '<span style="color:var(--text-light);font-size:.88rem;">Loading age categories...</span>';
             _regDb.ref('ageCategories/' + tournamentSlug(this.value)).once('value').then(snap => {
                 const custom = snap.val();
                 const options = (custom && custom.length)
-                    ? custom.map(c => ({value: c, label: c}))
+                    ? custom.map(c => ({ value: typeof c === 'object' ? c.label : c, label: typeof c === 'object' ? c.label : c }))
                     : DEFAULT_AGE_CATEGORIES;
-                ageSel.innerHTML = '<option value="">Select age category</option>' +
-                    options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+                checksBox.innerHTML = options.map((o, i) => `
+                    <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid #e0e4f0;border-radius:20px;cursor:pointer;font-size:.88rem;">
+                        <input type="checkbox" value="${o.value}" onchange="updateTeamFeeDisplay()" style="accent-color:var(--primary);">
+                        ${o.label}
+                    </label>`).join('');
             });
+            updateTeamFeeDisplay();
         });
 
         document.getElementById('teamForm').addEventListener('submit', function(e) {
@@ -1127,8 +1133,15 @@
                 alert('Your payment screenshot is still uploading. Please wait a moment and try again.');
                 return;
             }
-            pendingTeamData = {
-                id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
+            const selectedCategories = getSelectedAgeCategories();
+            if (!selectedCategories.length) {
+                alert('Please select at least one age category.');
+                return;
+            }
+            // One registration record per age category selected — everything
+            // else (logo, consent, payment proof) is shared across all of them.
+            pendingTeamDataList = selectedCategories.map((cat, i) => ({
+                id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000) + '-' + i,
                 type: 'team', status: 'pending',
                 submittedAt: new Date().toISOString(),
                 teamName: document.getElementById('teamName').value,
@@ -1139,7 +1152,7 @@
                 managerPhone: document.getElementById('managerPhone').value,
                 teamEmail: document.getElementById('teamEmail').value,
                 tournament: document.getElementById('tournament').value,
-                ageCategory: document.getElementById('ageCategory').value,
+                ageCategory: cat,
                 teamLogoFile: logoName,
                 teamLogoUrl: logoUrl,
                 consent: {
@@ -1151,7 +1164,7 @@
                 paymentMethod: teamPaymentMethod,
                 paymentProofUrl: teamProofUrl,
                 paymentVerified: false
-            };
+            }));
             this.style.display = 'none';
             resetOtpInputs('team');
             document.getElementById('teamOtp').style.display = 'block';
