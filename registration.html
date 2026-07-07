@@ -775,10 +775,20 @@
         // Realtime Database (no Firebase Storage / billing plan needed) ---
         const _uploadedFileUrls = {}; // inputId -> base64 data URL
         function handleFileUpload(inputId, previewId, boxId) {
-            const file = document.getElementById(inputId).files[0];
+            const input = document.getElementById(inputId);
+            const file = input.files[0];
             const preview = document.getElementById(previewId);
             if (!file) return;
             if (file.size > 2 * 1024 * 1024) {
+                // Clear the selection entirely — otherwise the file stays
+                // "selected" (input.files[0] still truthy) but never gets
+                // converted, so submit would loop forever on "still uploading"
+                // instead of correctly asking the user to choose a file again.
+                input.value = '';
+                delete _uploadedFileUrls[inputId];
+                preview.style.display = 'block';
+                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> "' + file.name + '" is ' + (file.size/1024/1024).toFixed(1) + 'MB — over the 2MB limit. Please choose a smaller file.';
+                document.getElementById(boxId).style.borderColor = '#c62828';
                 alert('File too large. Please upload a file under 2MB.');
                 return;
             }
