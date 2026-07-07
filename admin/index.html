@@ -676,18 +676,13 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body">
       <div class="form-row">
         <div class="fg"><label>Tournament *</label>
-          <select id="lu-tournament" onchange="onLineupFilterChange()">
+          <select id="lu-tournament" onchange="onLineupTournamentChange()">
             <option value="">Select tournament</option>
-            <option value="IF5L Season 2">IF5L Season 2</option>
-            <option value="National Championship 2026">Football 5 National Club Championship 2026</option>
           </select>
         </div>
         <div class="fg"><label>Age Category *</label>
           <select id="lu-agecat" onchange="onLineupFilterChange()">
-            <option value="">Select age category</option>
-            <option value="U9">Under 9</option><option value="U11">Under 11</option><option value="U13">Under 13</option>
-            <option value="U15">Under 15</option><option value="U17">Under 17</option><option value="U19">Under 19</option>
-            <option value="Senior">Senior / Open</option>
+            <option value="">Select tournament first</option>
           </select>
         </div>
       </div>
@@ -792,7 +787,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   </div>
   <div class="card">
     <div class="card-head"><h3><i class="fas fa-list-ol"></i> Results Log</h3></div>
-    <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Match</th><th>Score</th><th>MOTM</th><th>Top Scorer</th><th>Date</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
+    <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Match</th><th>Score</th><th>MOTM</th><th>Top Scorer</th><th>Date</th><th>Actions</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
   </div>
 </div>
 
@@ -991,6 +986,14 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <div class="fg"><label>Email</label><input type="email" id="p-email" placeholder="Email address"></div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-player')">Cancel</button><button class="btn btn-primary" onclick="savePlayer()">Save Player</button></div>
+  </div>
+</div>
+
+<!-- Correct an Already-Saved Match Result -->
+<div class="modal-bg" id="modal-edit-result">
+  <div class="modal">
+    <div class="modal-head"><h3>Correct Match Result</h3><button class="modal-close" onclick="closeModal('modal-edit-result')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" id="edit-result-body"></div>
   </div>
 </div>
 
@@ -1758,6 +1761,17 @@ let _luHomePlayers = [];
 let _luAwayPlayers = [];
 let _luFixtureId = null;
 
+function onLineupTournamentChange(){
+  const tournamentName = document.getElementById('lu-tournament').value;
+  const agecatSel = document.getElementById('lu-agecat');
+  const t = _fbTournaments.find(x => x.name === tournamentName);
+  const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+  agecatSel.innerHTML = tournamentName
+    ? '<option value="">Select age category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('')
+    : '<option value="">Select tournament first</option>';
+  onLineupFilterChange();
+}
+
 function onLineupFilterChange(){
   const tournament = document.getElementById('lu-tournament').value;
   const ageCategory = document.getElementById('lu-agecat').value;
@@ -2123,6 +2137,35 @@ _fbDb.ref('results').on('value', snap => {
   renderResultsLog(); renderLeagueTable();
 });
 
+function resultScoreForm(f, r, saveLabel){
+  // Shared form for both entering a new result (r is undefined) and
+  // correcting an already-saved one (r is that fixture's existing result) —
+  // same fields either way, just pre-filled when editing.
+  r = r || {};
+  return `
+    <div class="score-row">
+      <div class="score-team">${f.home}</div>
+      <input type="number" class="score-input" id="hs-${f._key}" min="0" value="${r.homeScore||0}">
+      <div class="score-vs">VS</div>
+      <input type="number" class="score-input" id="as-${f._key}" min="0" value="${r.awayScore||0}">
+      <div class="score-team away">${f.away}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
+      <input type="text" placeholder="Man of the Match" id="motm-${f._key}" value="${r.motm||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f._key}" value="${r.scorer||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
+      <input type="text" placeholder="Yellow cards (jersey #s, comma separated)" id="yellow-${f._key}" value="${r.yellowCards||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="text" placeholder="Red cards (jersey #s, comma separated)" id="red-${f._key}" value="${r.redCards||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:18px;padding:0 4px;">
+      <input type="number" placeholder="Home Fouls" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="number" placeholder="Away Fouls" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <div style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;">${f.tournament} · ${f.ageCategory} · Match ${f.matchNumber}</div>
+      <button class="btn btn-success btn-sm" onclick="saveResult('${f._key}')"><i class="fas fa-save"></i> ${saveLabel}</button>
+    </div>`;
+}
+
 function renderResultsFixtures(){
   const t=(document.getElementById('res-tournament')||{}).value||'';
   const a=(document.getElementById('res-agecat')||{}).value||'';
@@ -2130,30 +2173,21 @@ function renderResultsFixtures(){
   if(t) fx=fx.filter(f=>f.tournament===t);
   if(a) fx=fx.filter(f=>f.ageCategory===a);
   const container=document.getElementById('results-fixtures-list');
-  if(!fx.length){ container.innerHTML='<div class="empty"><i class="fas fa-calendar-check"></i><h4>No upcoming fixtures</h4><p>All fixtures are played, or none added yet.</p></div>'; renderResultsLog(); return; }
-  container.innerHTML=fx.map(f=>`
-    <div class="score-row">
-      <div class="score-team">${f.home}</div>
-      <input type="number" class="score-input" id="hs-${f._key}" min="0" value="0">
-      <div class="score-vs">VS</div>
-      <input type="number" class="score-input" id="as-${f._key}" min="0" value="0">
-      <div class="score-team away">${f.away}</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
-      <input type="text" placeholder="Man of the Match" id="motm-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
-      <input type="text" placeholder="Yellow cards (jersey #s, comma separated)" id="yellow-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="text" placeholder="Red cards (jersey #s, comma separated)" id="red-${f._key}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:18px;padding:0 4px;">
-      <input type="number" placeholder="Home Fouls" id="hfoul-${f._key}" min="0" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="number" placeholder="Away Fouls" id="afoul-${f._key}" min="0" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <div style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;">${f.tournament} · ${f.ageCategory} · Match ${f.matchNumber}</div>
-      <button class="btn btn-success btn-sm" onclick="saveResult('${f._key}')"><i class="fas fa-save"></i> Save</button>
-    </div>`).join('<hr style="border:none;border-top:1px solid var(--border);margin-bottom:18px;">');
+  if(!fx.length){ container.innerHTML='<div class="empty"><i class="fas fa-calendar-check"></i><h4>No upcoming fixtures</h4><p>All fixtures are played, or none added yet.</p></div>'; }
+  else {
+    container.innerHTML=fx.map(f=>resultScoreForm(f, null, 'Save')).join('<hr style="border:none;border-top:1px solid var(--border);margin-bottom:18px;">');
+  }
   renderResultsLog();
+}
+
+// Lets admin re-open an already-saved result and correct it — same form,
+// pre-filled with the existing score/stats, saving through the same
+// saveResult() so it just overwrites the previous entry.
+function editResult(fxKey){
+  const f=(_fbFixtures||[]).find(x=>x._key===fxKey); if(!f) return;
+  const r=(_fbResults||[]).find(x=>x._key===fxKey);
+  document.getElementById('edit-result-body').innerHTML = resultScoreForm(f, r, 'Update Result');
+  openModal('modal-edit-result');
 }
 function saveResult(fxKey){
   const hs=parseInt(document.getElementById('hs-'+fxKey).value)||0;
@@ -2172,16 +2206,18 @@ function saveResult(fxKey){
     tournament:fx.tournament, ageCategory:fx.ageCategory, matchNumber:fx.matchNumber,
     dt:new Date().toISOString()
   });
+  closeModal('modal-edit-result');
   renderResultsFixtures();
 }
 function renderResultsLog(){
   const results=[..._fbResults].reverse();
   const tbody=document.getElementById('results-log');
-  if(!results.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No results yet.</td></tr>'; return; }
+  if(!results.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No results yet.</td></tr>'; return; }
   tbody.innerHTML=results.map(r=>`<tr>
     <td>${r.home} vs ${r.away} <span style="color:var(--muted);font-size:.75rem;">(${r.ageCategory||''})</span></td>
     <td style="font-weight:800;font-size:1rem;color:var(--primary);">${r.homeScore} – ${r.awayScore}</td>
-    <td>${r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td></tr>`).join('');
+    <td>${r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td>
+    <td class="actions"><button class="btn btn-ghost btn-xs" onclick="editResult('${r._key}')" title="Correct this result"><i class="fas fa-edit"></i></button></td></tr>`).join('');
 }
 
 // ── LEAGUE TABLE ──────────────────────────────────────────────────────────

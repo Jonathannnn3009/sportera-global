@@ -998,18 +998,25 @@
             const dob = document.getElementById('playerDOB').value;
             _ageCategoryEligible = true;
             hint.style.display = 'none';
-            if (!tournamentName || !category || !dob) return;
+            if (!tournamentName || !category) return;
             _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
                 const cats = snap.val() || [];
                 const cutoffDate = getCutoffDate(cats, category);
                 if (!cutoffDate) return;
+                if (!dob) {
+                    // Category picked but no DOB yet — show the requirement upfront.
+                    hint.textContent = `${category} requires the player to be born on or after ${cutoffDate}.`;
+                    hint.style.color = '#5b6475';
+                    hint.style.display = 'block';
+                    return;
+                }
                 if (new Date(dob) < new Date(cutoffDate)) {
                     _ageCategoryEligible = false;
                     hint.textContent = `This player is overage for ${category} — they must be born on or after ${cutoffDate} to qualify. Please choose a different age category, or check with the team.`;
                     hint.style.color = '#c62828';
                     hint.style.display = 'block';
                 } else {
-                    hint.textContent = `Eligible for ${category} ✓`;
+                    hint.textContent = `Eligible for ${category} ✓ (requires born on or after ${cutoffDate})`;
                     hint.style.color = '#2e7d32';
                     hint.style.display = 'block';
                 }
