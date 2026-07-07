@@ -361,6 +361,25 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       </div>
     </div>
   </div>
+  <div class="card" style="margin-top:20px;">
+    <div class="card-head"><h3><i class="fas fa-layer-group"></i> Manage Pools per Tournament</h3></div>
+    <div class="card-body">
+      <div class="notice info"><i class="fas fa-info-circle"></i> If a tournament has enough teams, split them into pools (Pool A, Pool B, or any name you like). Add as many as you need, rename or remove them any time — Manage Teams, Add Fixture, and the League Table all follow whatever pools exist here.</div>
+      <div class="fg" style="max-width:400px;">
+        <label>Select Tournament</label>
+        <select id="pl-tournament" onchange="renderPoolEditor()">
+          <option value="">Select tournament</option>
+        </select>
+      </div>
+      <div id="pl-editor" style="display:none; margin-top:16px;">
+        <div style="display:flex; gap:10px; max-width:400px; margin-bottom:14px;">
+          <input type="text" id="pl-new-name" placeholder="e.g. A, B, Group 1" style="flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; outline:none;">
+          <button class="btn btn-primary btn-sm" onclick="addPool()"><i class="fas fa-plus"></i> Add Pool</button>
+        </div>
+        <div id="pl-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── APPROVALS ──────────────────────────────────────── -->
@@ -1101,7 +1120,7 @@ _fbDb.ref('contactMessages').on('value', snap => {
 // categories, fixtures, lineup, results, league tables, team edit) reads
 // from this one live list instead of duplicating hardcoded <option> tags.
 let _fbTournaments = [];
-const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter'];
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament'];
 const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true };
 
 _fbDb.ref('tournaments').on('value', snap => {
@@ -1110,6 +1129,14 @@ _fbDb.ref('tournaments').on('value', snap => {
   _fbTournaments.sort((a,b) => (a.name||'').localeCompare(b.name||''));
   renderTournaments();
   refreshAllTournamentSelects();
+});
+
+// Cached live so Manage Teams' pool picker can look up "what pools exist
+// for this team's tournament" synchronously while building the table.
+let _fbPoolsByTournament = {};
+_fbDb.ref('pools').on('value', snap => {
+  _fbPoolsByTournament = snap.val() || {};
+  renderTeams();
 });
 
 function refreshAllTournamentSelects() {
@@ -1577,18 +1604,21 @@ function renderTeams(){
   if(q) teams=teams.filter(t=>(t.teamName+t.teamCity+t.coachName).toLowerCase().includes(q));
   const tbody=document.getElementById('teams-body');
   if(!teams.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
-  const poolOptions=['','A','B','C','D'];
-  tbody.innerHTML=teams.map(t=>`<tr>
+  tbody.innerHTML=teams.map(t=>{
+    const pools=_fbPoolsByTournament[tournamentSlug(t.tournament)]||[];
+    const poolOptions=['',...pools];
+    return `<tr>
     <td style="font-family:monospace;font-size:.75rem;">${t.id}</td>
     <td><strong>${t.teamName}</strong></td><td>${t.teamCity||'—'}</td><td>${t.coachName||'—'}</td><td>${t.tournament||'—'}</td><td>${t.ageCategory||'—'}</td>
-    <td><select onchange="setTeamPool('${t._key}',this.value)" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;">
+    <td><select onchange="setTeamPool('${t._key}',this.value)" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;" ${!pools.length?'title="No pools set up for this tournament yet — see Age Categories & Pools panel"':''}>
       ${poolOptions.map(p=>`<option value="${p}" ${((t.pool||'')===p)?'selected':''}>${p?'Pool '+p:'— None —'}</option>`).join('')}
     </select></td>
     <td>${badge(t.status)}</td>
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editTeam('${t._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTeamReg('${t._key}')"><i class="fas fa-trash"></i></button>
-    </td></tr>`).join('');
+    </td></tr>`;
+  }).join('');
 }
 function setTeamPool(key, pool){
   _fbDb.ref('registrations/'+key).update({ pool: pool || null });
@@ -2071,6 +2101,44 @@ function removeAgeCategory(index){
     const cats = (snap.val() || []).map(normalizeAgeCat);
     cats.splice(index, 1);
     ref.set(cats).then(renderAgeCatEditor);
+  });
+}
+
+// ── POOLS ─────────────────────────────────────────────────────────────────
+// A tournament's pool list is just an array of names — add, rename (by
+// removing and re-adding), or delete any time. Manage Teams' pool picker,
+// Add Fixture's pool filter, and the League Table's per-pool split all
+// read from whatever's saved here, so nothing is hardcoded to A-D.
+function renderPoolEditor(){
+  const t = document.getElementById('pl-tournament').value;
+  const editor = document.getElementById('pl-editor');
+  if(!t){ editor.style.display = 'none'; return; }
+  editor.style.display = 'block';
+  _fbDb.ref('pools/'+tournamentSlug(t)).once('value', snap => {
+    const pools = snap.val() || [];
+    const list = document.getElementById('pl-list');
+    if(!pools.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No pools set yet — teams for this tournament won\'t be split into groups.</p>'; return; }
+    list.innerHTML = pools.map((p,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">Pool ${p} <i class="fas fa-times" style="cursor:pointer;" onclick="removePool(${i})"></i></span>`).join('');
+  });
+}
+function addPool(){
+  const t = document.getElementById('pl-tournament').value;
+  const name = document.getElementById('pl-new-name').value.trim();
+  if(!t || !name) return;
+  const ref = _fbDb.ref('pools/'+tournamentSlug(t));
+  ref.once('value', snap => {
+    const pools = snap.val() || [];
+    if(!pools.includes(name)) pools.push(name);
+    ref.set(pools).then(() => { document.getElementById('pl-new-name').value=''; renderPoolEditor(); });
+  });
+}
+function removePool(index){
+  const t = document.getElementById('pl-tournament').value;
+  const ref = _fbDb.ref('pools/'+tournamentSlug(t));
+  ref.once('value', snap => {
+    const pools = snap.val() || [];
+    pools.splice(index, 1);
+    ref.set(pools).then(renderPoolEditor);
   });
 }
 

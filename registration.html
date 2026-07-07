@@ -941,13 +941,70 @@
         }
         updatePlayerPaymentVisibility();
 
+        // --- Validate the player's DOB actually falls under an age category's
+        // cutoff date (set by admin per tournament). Handles every format the
+        // admin panel may have written: a plain string (no cutoff), {label,
+        // cutoffDate} (current), or {label, cutoffYear} (legacy, treated as
+        // Jan 1 of that year). ---
+        function getCutoffDate(cats, category) {
+            const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === category);
+            if (!entry || typeof entry !== 'object') return null;
+            if (entry.cutoffDate) return entry.cutoffDate;
+            if (entry.cutoffYear) return entry.cutoffYear + '-01-01';
+            return null;
+        }
+
         // Selecting a team auto-fills Tournament, and populates Age Category with
         // every category that team actually registered under (a team that entered
         // multiple age groups shows up once in the dropdown above, but offers all
-        // of its categories here).
+        // of its categories here). Once a DOB is entered, categories the player is
+        // overage for are removed from the list entirely — not just flagged —
+        // so there's no way to pick an ineligible one in the first place.
+        let _currentTeamMatches = [];
+        function refreshAgeCategoryOptions() {
+            const ageCatSel = document.getElementById('playerAgeCategory');
+            const hint = document.getElementById('playerAgeCategoryHint');
+            const tournamentName = document.getElementById('playerTournament').value;
+            const dob = document.getElementById('playerDOB').value;
+            if (!_currentTeamMatches.length) {
+                ageCatSel.innerHTML = '<option value="">Select a team first</option>';
+                return;
+            }
+            if (!dob) {
+                ageCatSel.innerHTML = '<option value="">Select age category</option>' +
+                    _currentTeamMatches.map(t => `<option value="${t.ageCategory}">${t.ageCategory}</option>`).join('');
+                return;
+            }
+            _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                const cats = snap.val() || [];
+                const eligible = [];
+                const excluded = [];
+                _currentTeamMatches.forEach(t => {
+                    const cutoffDate = getCutoffDate(cats, t.ageCategory);
+                    if (cutoffDate && new Date(dob) < new Date(cutoffDate)) excluded.push(t.ageCategory);
+                    else eligible.push(t.ageCategory);
+                });
+                if (!eligible.length) {
+                    ageCatSel.innerHTML = '<option value="">No eligible category</option>';
+                    hint.textContent = `Based on this date of birth, the player is overage for every category this team registered under (${excluded.join(', ')}). Registration cannot proceed for this team.`;
+                    hint.style.color = '#c62828';
+                    hint.style.display = 'block';
+                } else {
+                    ageCatSel.innerHTML = '<option value="">Select age category</option>' +
+                        eligible.map(c => `<option value="${c}">${c}</option>`).join('');
+                    if (excluded.length) {
+                        hint.textContent = `${excluded.join(', ')} not shown — this player is overage for ${excluded.length > 1 ? 'those categories' : 'that category'} based on their date of birth.`;
+                        hint.style.color = '#5b6475';
+                        hint.style.display = 'block';
+                    } else {
+                        hint.style.display = 'none';
+                    }
+                }
+            });
+        }
+
         document.getElementById('playerTeam').addEventListener('change', function() {
             let existing = document.getElementById('playerTeamOther');
-            const ageCatSel = document.getElementById('playerAgeCategory');
             if (this.value === '__other__') {
                 if (!existing) {
                     const inp = document.createElement('input');
@@ -957,38 +1014,22 @@
                     this.parentNode.appendChild(inp);
                 }
                 document.getElementById('playerTournament').value = '';
-                ageCatSel.innerHTML = '<option value="">Select a team first</option>';
+                _currentTeamMatches = [];
             } else {
                 if (existing) existing.remove();
-                const matches = _allRegisteredTeams.filter(t => t.teamName === this.value);
-                const tournamentName = matches.length ? matches[0].tournament : '';
-                document.getElementById('playerTournament').value = tournamentName;
-                if (matches.length) {
-                    ageCatSel.innerHTML = '<option value="">Select age category</option>' +
-                        matches.map(t => `<option value="${t.ageCategory}">${t.ageCategory}</option>`).join('');
-                } else {
-                    ageCatSel.innerHTML = '<option value="">Select a team first</option>';
-                }
+                _currentTeamMatches = _allRegisteredTeams.filter(t => t.teamName === this.value);
+                document.getElementById('playerTournament').value = _currentTeamMatches.length ? _currentTeamMatches[0].tournament : '';
             }
+            refreshAgeCategoryOptions();
             updatePlayerPaymentVisibility();
             checkAgeCategoryEligibility();
         });
 
         document.getElementById('playerAgeCategory').addEventListener('change', checkAgeCategoryEligibility);
-        document.getElementById('playerDOB').addEventListener('change', checkAgeCategoryEligibility);
-
-        // --- Validate the player's DOB actually falls under the selected age
-        // category's cutoff date (set by admin per tournament). Handles every
-        // format the admin panel may have written: a plain string (no
-        // cutoff), {label, cutoffDate} (current), or {label, cutoffYear}
-        // (legacy, treated as Jan 1 of that year). ---
-        function getCutoffDate(cats, category) {
-            const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === category);
-            if (!entry || typeof entry !== 'object') return null;
-            if (entry.cutoffDate) return entry.cutoffDate;
-            if (entry.cutoffYear) return entry.cutoffYear + '-01-01';
-            return null;
-        }
+        document.getElementById('playerDOB').addEventListener('change', function() {
+            refreshAgeCategoryOptions();
+            checkAgeCategoryEligibility();
+        });
 
         let _ageCategoryEligible = true;
         function checkAgeCategoryEligibility() {
