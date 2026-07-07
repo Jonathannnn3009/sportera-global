@@ -343,7 +343,7 @@
                         <a href="index.html" class="btn btn-primary" style="margin-top:20px;">Back to Home</a>
                     </div>
 
-                    <form id="teamForm">
+                    <form id="teamForm" onsubmit="return false;">
                         <p class="form-section-label">Team Information</p>
                         <div class="form-row">
                             <div class="form-group">
@@ -502,7 +502,7 @@
                         <a href="index.html" class="btn btn-primary" style="margin-top:20px;">Back to Home</a>
                     </div>
 
-                    <form id="playerForm">
+                    <form id="playerForm" onsubmit="return false;">
                         <p class="form-section-label">Personal Details</p>
                         <div class="form-row">
                             <div class="form-group">
@@ -1116,8 +1116,16 @@
             updateTeamFeeDisplay();
         });
 
-        document.getElementById('teamForm').addEventListener('submit', async function(e) {
+        let _teamSubmitInProgress = false;
+        document.getElementById('teamForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            e.stopImmediatePropagation();
+            if (_teamSubmitInProgress) return;
+            _teamSubmitInProgress = true;
+            handleTeamSubmit().finally(() => { _teamSubmitInProgress = false; });
+        });
+
+        async function handleTeamSubmit() {
             if (!document.getElementById('teamConsent').checked) {
                 alert('Please read and accept the Team Consent Form to proceed.');
                 return;
@@ -1196,14 +1204,22 @@
                 paymentProofUrl: teamProofUrl,
                 paymentVerified: false
             }));
-            this.style.display = 'none';
+            document.getElementById('teamForm').style.display = 'none';
             resetOtpInputs('team');
             document.getElementById('teamOtp').style.display = 'block';
             document.getElementById('tOtp1').focus();
+        }
+
+        let _playerSubmitInProgress = false;
+        document.getElementById('playerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (_playerSubmitInProgress) return;
+            _playerSubmitInProgress = true;
+            handlePlayerSubmit().finally(() => { _playerSubmitInProgress = false; });
         });
 
-        document.getElementById('playerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        async function handlePlayerSubmit() {
             if (!document.getElementById('playerConsent').checked) {
                 alert('Please read and accept the Parent/Guardian Consent Form to proceed.');
                 return;
@@ -1284,11 +1300,11 @@
                 paymentProofUrl: playerProofUrl,
                 paymentVerified: false
             };
-            this.style.display = 'none';
+            document.getElementById('playerForm').style.display = 'none';
             resetOtpInputs('player');
             document.getElementById('playerOtp').style.display = 'block';
             document.getElementById('pOtp1').focus();
-        });
+        }
     </script>
 </body>
 </html>

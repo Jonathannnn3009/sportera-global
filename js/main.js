@@ -99,96 +99,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ── TEAM REGISTRATION FORM ──────────────────────────────────────────────
-    const teamForm = document.getElementById('teamForm');
-    if (teamForm) {
-        teamForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const data = {
-                id: generateId('TEAM'),
-                type: 'team',
-                status: 'pending',
-                submittedAt: new Date().toISOString(),
-                teamName: v('teamName'),
-                teamCity: v('teamCity'),
-                coachName: v('coachName'),
-                coachPhone: v('coachPhone'),
-                managerName: v('managerName'),
-                managerPhone: v('managerPhone'),
-                teamEmail: v('teamEmail'),
-                tournament: v('tournament'),
-                playerList: v('playerList'),
-                paymentMethod: document.querySelector('input[name="paymentMethod"]:checked')?.value || 'not selected'
-            };
-            saveRegistration(data);
-            showSuccessMessage(teamForm, 'Team registration submitted! You will receive payment instructions at ' + data.teamEmail + ' within 24 hours.');
-            teamForm.reset();
-        });
-    }
-
-    // ── PLAYER REGISTRATION FORM ────────────────────────────────────────────
-    const playerForm = document.getElementById('playerForm');
-    if (playerForm) {
-        playerForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const data = {
-                id: generateId('PLAYER'),
-                type: 'player',
-                status: 'pending',
-                submittedAt: new Date().toISOString(),
-                playerName: v('playerName'),
-                playerDob: v('playerDob'),
-                playerTeam: v('playerTeam'),
-                playerPosition: v('playerPosition'),
-                guardianName: v('guardianName'),
-                guardianPhone: v('guardianPhone'),
-                playerEmail: v('playerEmail'),
-                paymentMethod: document.querySelector('input[name="playerPaymentMethod"]:checked')?.value || 'not selected'
-            };
-            saveRegistration(data);
-            showSuccessMessage(playerForm, 'Player registration submitted! You will receive payment instructions and your Digital ID Card once approved.');
-            playerForm.reset();
-        });
-    }
-
-    // ── CONTACT FORM ────────────────────────────────────────────────────────
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        contactForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            showSuccessMessage(contactForm, 'Message sent! We will get back to you within 48 hours.');
-            contactForm.reset();
-        });
-    }
-
-    // Helpers
-    function v(id) {
-        const el = document.getElementById(id);
-        return el ? el.value.trim() : '';
-    }
-
-    function generateId(prefix) {
-        const regs = JSON.parse(localStorage.getItem('sg_registrations') || '[]');
-        const count = regs.filter(r => r.type === prefix.toLowerCase()).length + 1;
-        return 'SG-' + prefix + '-' + new Date().getFullYear() + '-' + String(count).padStart(4, '0');
-    }
-
-    function saveRegistration(data) {
-        const regs = JSON.parse(localStorage.getItem('sg_registrations') || '[]');
-        regs.push(data);
-        localStorage.setItem('sg_registrations', JSON.stringify(regs));
-    }
-
-    function showSuccessMessage(form, msg) {
-        const existing = form.parentElement.querySelector('.form-success');
-        if (existing) existing.remove();
-        const div = document.createElement('div');
-        div.className = 'form-success';
-        div.style.cssText = 'background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:18px 22px;margin-top:20px;color:#1b5e20;display:flex;gap:12px;align-items:flex-start;';
-        div.innerHTML = '<i class="fas fa-check-circle" style="color:#2e7d32;font-size:1.3rem;flex-shrink:0;"></i><p style="margin:0;">' + msg + '</p>';
-        form.after(div);
-        div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    // Team registration, player registration, and the contact form each have
+    // their own real submit handlers with live Firebase validation, defined
+    // inline in registration.html and contact.html — this file must not
+    // attach a second listener to those same forms, since an earlier version
+    // did exactly that and its unconditional .reset() call was silently
+    // wiping the form (including "uploaded" files) after every submit
+    // attempt, regardless of whether the real handler's validation passed.
 
     // News page — load articles from localStorage
     if (document.getElementById('newsArticlesFeed')) {
