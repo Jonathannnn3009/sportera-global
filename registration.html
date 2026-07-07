@@ -399,7 +399,7 @@
                         <div class="upload-box" id="logoUploadBox">
                             <input type="file" id="teamLogo" name="teamLogo" accept="image/*" onchange="handleFileUpload('teamLogo','logoPreview','logoUploadBox')" required>
                             <i class="fas fa-image"></i>
-                            <div class="up-label"><strong>Click to upload team logo</strong><br>PNG, JPG up to 2MB</div>
+                            <div class="up-label"><strong>Click to upload team logo</strong><br>PNG, JPG up to 5MB</div>
                             <div class="upload-preview" id="logoPreview"></div>
                         </div>
 
@@ -568,7 +568,7 @@
                         <div class="upload-box" id="playerPhotoBox">
                             <input type="file" id="playerPhoto" name="playerPhoto" accept="image/*" onchange="handleFileUpload('playerPhoto','playerPhotoPreview','playerPhotoBox')" required>
                             <i class="fas fa-user-circle"></i>
-                            <div class="up-label"><strong>Upload passport-size photo</strong><br>JPG, PNG up to 2MB</div>
+                            <div class="up-label"><strong>Upload passport-size photo</strong><br>JPG, PNG up to 5MB</div>
                             <div class="upload-preview" id="playerPhotoPreview"></div>
                         </div>
 
@@ -576,7 +576,7 @@
                         <div class="upload-box" id="ageDocBox">
                             <input type="file" id="ageDoc" name="ageDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload('ageDoc','ageDocPreview','ageDocBox')" required>
                             <i class="fas fa-file-alt"></i>
-                            <div class="up-label"><strong>Upload age proof document</strong><br>Aadhar Card, Birth Certificate or Passport — PDF/JPG/PNG</div>
+                            <div class="up-label"><strong>Upload age proof document</strong><br>Aadhar Card, Birth Certificate or Passport — PDF/JPG/PNG, up to 5MB</div>
                             <div class="upload-preview" id="ageDocPreview"></div>
                         </div>
 
@@ -779,7 +779,8 @@
             const file = input.files[0];
             const preview = document.getElementById(previewId);
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
+            const MAX_UPLOAD_MB = 5;
+            if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
                 // Clear the selection entirely — otherwise the file stays
                 // "selected" (input.files[0] still truthy) but never gets
                 // converted, so submit would loop forever on "still uploading"
@@ -787,9 +788,9 @@
                 input.value = '';
                 delete _uploadedFileUrls[inputId];
                 preview.style.display = 'block';
-                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> "' + file.name + '" is ' + (file.size/1024/1024).toFixed(1) + 'MB — over the 2MB limit. Please choose a smaller file.';
+                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> "' + file.name + '" is ' + (file.size/1024/1024).toFixed(1) + 'MB — over the ' + MAX_UPLOAD_MB + 'MB limit. Try a smaller photo, or compress/resize it (e.g. TinyPNG, or your phone\'s "reduce file size" option when sharing) and upload again.';
                 document.getElementById(boxId).style.borderColor = '#c62828';
-                alert('File too large. Please upload a file under 2MB.');
+                alert('"' + file.name + '" is ' + (file.size/1024/1024).toFixed(1) + 'MB — over the ' + MAX_UPLOAD_MB + 'MB limit. Please compress or resize the image and try again.');
                 return;
             }
             delete _uploadedFileUrls[inputId];
