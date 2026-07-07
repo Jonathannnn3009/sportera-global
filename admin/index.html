@@ -366,6 +366,23 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 <!-- ── APPROVALS ──────────────────────────────────────── -->
 <div class="panel" id="panel-tournaments">
   <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3><i class="fas fa-wallet"></i> Payment Details Shown to Registrants</h3></div>
+    <div class="card-body">
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">Shown live on the public registration form when someone selects UPI or Bank Transfer. Save once, applies everywhere immediately.</p>
+      <div class="form-row">
+        <div class="fg"><label>UPI ID</label><input type="text" id="pay-upi" placeholder="sporteraglobal@upi"></div>
+        <div class="fg"><label>Account Name</label><input type="text" id="pay-acc-name" placeholder="Sportera Global"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Account Number</label><input type="text" id="pay-acc-num" placeholder="000000000000"></div>
+        <div class="fg"><label>IFSC Code</label><input type="text" id="pay-ifsc" placeholder="ABCD0123456"></div>
+      </div>
+      <div class="fg"><label>Bank Name</label><input type="text" id="pay-bank-name" placeholder="e.g. HDFC Bank"></div>
+      <button class="btn btn-primary" onclick="savePaymentSettings()"><i class="fas fa-save"></i> Save Payment Details</button>
+      <span id="pay-settings-status" style="font-size:.85rem;margin-left:12px;color:var(--good, #2e7d32);"></span>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:20px;">
     <div class="card-head"><h3><i class="fas fa-plus-circle"></i> Create Tournament</h3></div>
     <div class="card-body">
       <input type="hidden" id="trn-edit-id">
@@ -1092,6 +1109,27 @@ function refreshAllTournamentSelects() {
   });
 }
 
+// ── PAYMENT SETTINGS ────────────────────────────────────────────────────────
+_fbDb.ref('settings/payment').on('value', snap => {
+  const s = snap.val() || {};
+  const ids = { upiId: 'pay-upi', accountName: 'pay-acc-name', accountNumber: 'pay-acc-num', ifsc: 'pay-ifsc', bankName: 'pay-bank-name' };
+  Object.keys(ids).forEach(k => { const el = document.getElementById(ids[k]); if (el && document.activeElement !== el) el.value = s[k] || ''; });
+});
+function savePaymentSettings() {
+  const data = {
+    upiId: document.getElementById('pay-upi').value.trim(),
+    accountName: document.getElementById('pay-acc-name').value.trim(),
+    accountNumber: document.getElementById('pay-acc-num').value.trim(),
+    ifsc: document.getElementById('pay-ifsc').value.trim(),
+    bankName: document.getElementById('pay-bank-name').value.trim()
+  };
+  _fbDb.ref('settings/payment').set(data).then(() => {
+    const s = document.getElementById('pay-settings-status');
+    s.textContent = 'Saved ✓';
+    setTimeout(() => s.textContent = '', 2500);
+  });
+}
+
 function renderTournaments() {
   const tbody = document.getElementById('tournaments-body');
   if (!tbody) return;
@@ -1443,6 +1481,10 @@ function viewReg(id){
         <span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">${docLabel}</span>
         <span style="font-size:.88rem;">${docUrl ? `<a href="${docUrl}" target="_blank" style="color:var(--primary);font-weight:600;"><i class="fas fa-file-alt"></i> View Document</a> ${r.docVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markDocVerified('${r.id}')">Mark Verified</button>`}` : '<span style="color:var(--muted);">No document uploaded</span>'}</span>
       </div>
+      <div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Payment Proof</span>
+        <span style="font-size:.88rem;">${r.paymentProofUrl ? `<a href="${r.paymentProofUrl}" target="_blank" style="color:var(--primary);font-weight:600;"><i class="fas fa-receipt"></i> View Screenshot</a> ${r.paymentVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markPaymentVerified('${r.id}')">Mark Verified</button>`}` : (r.paymentMethod==='Online' ? '<span style="color:var(--muted);">Gateway payment — no manual proof needed</span>' : '<span style="color:var(--muted);">No payment proof uploaded</span>')}</span>
+      </div>
       <div style="display:flex;gap:12px;padding:8px 0;"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Status</span>${badge(r.status)}</div>
       <div style="display:flex;gap:12px;padding:8px 0;"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Submitted</span><span style="font-size:.88rem;">${fmtDateTime(r.submittedAt)}</span></div>
     </div>`;
@@ -1456,6 +1498,11 @@ function viewReg(id){
 function markDocVerified(id){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
   if(i>-1){ regs[i].docVerified=true; DB.save(regs); viewReg(id); }
+}
+
+function markPaymentVerified(id){
+  const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
+  if(i>-1){ regs[i].paymentVerified=true; DB.save(regs); viewReg(id); }
 }
 
 // ── TEAMS ─────────────────────────────────────────────────────────────────

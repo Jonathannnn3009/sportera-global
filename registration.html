@@ -452,26 +452,25 @@
                         </div>
                         <div class="payment-options">
                             <label class="payment-option">
-                                <input type="radio" name="teamPayment" value="UPI" required>
+                                <input type="radio" name="teamPayment" value="UPI" required onchange="updatePaymentPanel('team')">
                                 <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
-                                <div><strong>UPI Payment</strong><br><span>Pay via UPI ID — details sent after submission</span></div>
+                                <div><strong>UPI Payment</strong><br><span>Pay instantly via UPI ID / QR code</span></div>
                             </label>
                             <label class="payment-option">
-                                <input type="radio" name="teamPayment" value="Bank Transfer">
+                                <input type="radio" name="teamPayment" value="Bank Transfer" onchange="updatePaymentPanel('team')">
                                 <span class="pay-icon"><i class="fas fa-university"></i></span>
-                                <div><strong>Bank Transfer / NEFT</strong><br><span>Bank details will be shared via email</span></div>
+                                <div><strong>Bank Transfer / NEFT</strong><br><span>Account details shown below</span></div>
                             </label>
                             <label class="payment-option">
-                                <input type="radio" name="teamPayment" value="Online">
+                                <input type="radio" name="teamPayment" value="Online" onchange="updatePaymentPanel('team')">
                                 <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
                                 <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
                             </label>
                         </div>
-                        <div class="payment-notice">
-                            <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
-                            <span>Payment gateway integration is being set up. Payment instructions will be sent to your email within 24 hours of submission.</span>
-                        </div>
-                        <div class="payment-notice" style="margin-top:10px;">
+
+                        <div id="teamPaymentPanel" style="display:none; background:#f8f9ff; border:1px solid #dde3f5; border-radius:12px; padding:20px; margin-top:16px;"></div>
+
+                        <div class="payment-notice" style="margin-top:16px;">
                             <i class="fas fa-exclamation-circle" style="color: var(--gold); margin-top:2px;"></i>
                             <span><strong>All payments once made are final and non-refundable under any circumstances.</strong></span>
                         </div>
@@ -653,26 +652,25 @@
                             </div>
                             <div class="payment-options">
                                 <label class="payment-option">
-                                    <input type="radio" name="playerPayment" value="UPI" id="playerPayUPI">
+                                    <input type="radio" name="playerPayment" value="UPI" id="playerPayUPI" onchange="updatePaymentPanel('player')">
                                     <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
-                                    <div><strong>UPI Payment</strong><br><span>Pay via UPI ID — details sent after submission</span></div>
+                                    <div><strong>UPI Payment</strong><br><span>Pay instantly via UPI ID / QR code</span></div>
                                 </label>
                                 <label class="payment-option">
-                                    <input type="radio" name="playerPayment" value="Bank Transfer">
+                                    <input type="radio" name="playerPayment" value="Bank Transfer" onchange="updatePaymentPanel('player')">
                                     <span class="pay-icon"><i class="fas fa-university"></i></span>
-                                    <div><strong>Bank Transfer / NEFT</strong><br><span>Bank details will be shared via email</span></div>
+                                    <div><strong>Bank Transfer / NEFT</strong><br><span>Account details shown below</span></div>
                                 </label>
                                 <label class="payment-option">
-                                    <input type="radio" name="playerPayment" value="Online">
+                                    <input type="radio" name="playerPayment" value="Online" onchange="updatePaymentPanel('player')">
                                     <span class="pay-icon"><i class="fas fa-credit-card"></i></span>
                                     <div><strong>Online (Card / Net Banking)</strong><br><span>Secure payment link sent after registration</span></div>
                                 </label>
                             </div>
-                            <div class="payment-notice">
-                                <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
-                                <span>Payment gateway integration is being set up. Payment instructions will be sent to your email within 24 hours of submission.</span>
-                            </div>
-                            <div class="payment-notice" style="margin-top:10px;">
+
+                            <div id="playerPaymentPanel" style="display:none; background:#f8f9ff; border:1px solid #dde3f5; border-radius:12px; padding:20px; margin-top:16px;"></div>
+
+                            <div class="payment-notice" style="margin-top:16px;">
                                 <i class="fas fa-exclamation-circle" style="color: var(--gold); margin-top:2px;"></i>
                                 <span><strong>All payments once made are final and non-refundable under any circumstances.</strong></span>
                             </div>
@@ -834,6 +832,65 @@
             sel.innerHTML += '<option value="__other__">Other / Not listed</option>';
         }
         loadTeamsDropdown();
+
+        // --- Payment details (set once by admin, read live here) ---
+        let _paymentSettings = { upiId: '', bankName: '', accountName: '', accountNumber: '', ifsc: '' };
+        _regDb.ref('settings/payment').once('value').then(snap => { if (snap.val()) _paymentSettings = snap.val(); });
+
+        function currentFee(type) {
+            const text = document.getElementById(type === 'team' ? 'teamFeeDisplayTotal' : 'playerFeeDisplayTotal').textContent;
+            return text.replace(/[^0-9]/g, '') || '0';
+        }
+
+        function updatePaymentPanel(type) {
+            const selected = document.querySelector(`input[name="${type}Payment"]:checked`);
+            const panel = document.getElementById(type + 'PaymentPanel');
+            if (!selected) { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+            const proofInputId = type + 'PaymentProof';
+            const proofBoxId = type + 'PaymentProofBox';
+            const proofPreviewId = type + 'PaymentProofPreview';
+
+            if (selected.value === 'UPI') {
+                const upiId = _paymentSettings.upiId || 'Not set up yet — contact us';
+                const amount = currentFee(type);
+                const qrData = _paymentSettings.upiId
+                    ? `upi://pay?pa=${encodeURIComponent(_paymentSettings.upiId)}&pn=Sportera%20Global&am=${amount}&cu=INR`
+                    : '';
+                panel.innerHTML = `
+                    <p style="font-weight:700; color:var(--primary); margin-bottom:12px;"><i class="fas fa-mobile-alt"></i> Pay via UPI</p>
+                    ${qrData ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrData)}" alt="UPI QR Code" style="display:block; margin-bottom:12px; border-radius:8px; border:1px solid #dde3f5;">` : ''}
+                    <p style="font-size:0.9rem; margin-bottom:14px;">UPI ID: <strong>${upiId}</strong> &nbsp;|&nbsp; Amount: <strong>₹${Number(amount).toLocaleString('en-IN')}</strong></p>
+                    <p class="form-section-label" style="margin-top:0;">Upload Payment Screenshot *</p>
+                    <div class="upload-box" id="${proofBoxId}">
+                        <input type="file" id="${proofInputId}" accept="image/*" onchange="handleFileUpload('${proofInputId}','${proofPreviewId}','${proofBoxId}')" required>
+                        <i class="fas fa-receipt"></i>
+                        <div class="up-label"><strong>Click to upload proof of payment</strong><br>Screenshot of the completed UPI transaction</div>
+                        <div class="upload-preview" id="${proofPreviewId}"></div>
+                    </div>`;
+            } else if (selected.value === 'Bank Transfer') {
+                const amount = currentFee(type);
+                panel.innerHTML = `
+                    <p style="font-weight:700; color:var(--primary); margin-bottom:12px;"><i class="fas fa-university"></i> Bank Transfer / NEFT Details</p>
+                    <table style="width:100%; font-size:0.88rem; margin-bottom:14px;">
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Account Name</td><td style="font-weight:700; text-align:right;">${_paymentSettings.accountName || 'Not set up yet — contact us'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Account Number</td><td style="font-weight:700; text-align:right;">${_paymentSettings.accountNumber || '—'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Bank Name</td><td style="font-weight:700; text-align:right;">${_paymentSettings.bankName || '—'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">IFSC Code</td><td style="font-weight:700; text-align:right;">${_paymentSettings.ifsc || '—'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Amount</td><td style="font-weight:700; text-align:right;">₹${Number(amount).toLocaleString('en-IN')}</td></tr>
+                    </table>
+                    <p class="form-section-label" style="margin-top:0;">Upload Transfer Receipt / UTR Screenshot *</p>
+                    <div class="upload-box" id="${proofBoxId}">
+                        <input type="file" id="${proofInputId}" accept="image/*,.pdf" onchange="handleFileUpload('${proofInputId}','${proofPreviewId}','${proofBoxId}')" required>
+                        <i class="fas fa-receipt"></i>
+                        <div class="up-label"><strong>Click to upload proof of payment</strong><br>Bank receipt or screenshot showing the UTR number</div>
+                        <div class="upload-preview" id="${proofPreviewId}"></div>
+                    </div>`;
+            } else {
+                panel.innerHTML = `
+                    <p style="font-size:0.9rem; color:var(--text-light);"><i class="fas fa-info-circle" style="color:var(--gold);"></i> Card / Net Banking checkout is being set up. You can still submit your registration now — we'll follow up with a secure payment link once it's ready.</p>`;
+            }
+        }
 
         // --- Tournaments — single live source (admin's Tournaments panel) ---
         // Drives the tournament dropdown, each tournament's fee display, and
@@ -1008,6 +1065,17 @@
             const logoFile = document.getElementById('teamLogo').files[0];
             const logoName = logoFile ? logoFile.name : '';
             const logoUrl = _uploadedFileUrls['teamLogo'] || '';
+            const teamPaymentMethod = document.querySelector('input[name="teamPayment"]:checked')?.value || '';
+            const teamProofFile = document.getElementById('teamPaymentProof');
+            const teamProofUrl = _uploadedFileUrls['teamPaymentProof'] || '';
+            if ((teamPaymentMethod === 'UPI' || teamPaymentMethod === 'Bank Transfer') && (!teamProofFile || !teamProofFile.files[0])) {
+                alert('Please upload your payment screenshot before submitting.');
+                return;
+            }
+            if ((teamPaymentMethod === 'UPI' || teamPaymentMethod === 'Bank Transfer') && !teamProofUrl) {
+                alert('Your payment screenshot is still uploading. Please wait a moment and try again.');
+                return;
+            }
             pendingTeamData = {
                 id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
                 type: 'team', status: 'pending',
@@ -1029,7 +1097,9 @@
                     signedAt: new Date().toISOString(),
                     formVersion: 'Team Consent Form - F5A 2025'
                 },
-                paymentMethod: document.querySelector('input[name="teamPayment"]:checked')?.value || ''
+                paymentMethod: teamPaymentMethod,
+                paymentProofUrl: teamProofUrl,
+                paymentVerified: false
             };
             this.style.display = 'none';
             resetOtpInputs('team');
@@ -1057,6 +1127,17 @@
             }
             if (photoFile && !photoUrl) {
                 alert('Your photo is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            const playerPaymentMethod = document.querySelector('input[name="playerPayment"]:checked')?.value || '';
+            const playerProofFile = document.getElementById('playerPaymentProof');
+            const playerProofUrl = _uploadedFileUrls['playerPaymentProof'] || '';
+            if ((playerPaymentMethod === 'UPI' || playerPaymentMethod === 'Bank Transfer') && (!playerProofFile || !playerProofFile.files[0])) {
+                alert('Please upload your payment screenshot before submitting.');
+                return;
+            }
+            if ((playerPaymentMethod === 'UPI' || playerPaymentMethod === 'Bank Transfer') && !playerProofUrl) {
+                alert('Your payment screenshot is still uploading. Please wait a moment and try again.');
                 return;
             }
             const dob = document.getElementById('playerDOB').value;
@@ -1091,7 +1172,9 @@
                     signedAt: new Date().toISOString(),
                     formVersion: 'Parent/Guardian Consent Form - F5A 2025'
                 },
-                paymentMethod: document.querySelector('input[name="playerPayment"]:checked')?.value || ''
+                paymentMethod: playerPaymentMethod,
+                paymentProofUrl: playerProofUrl,
+                paymentVerified: false
             };
             this.style.display = 'none';
             resetOtpInputs('player');
