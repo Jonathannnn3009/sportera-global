@@ -400,6 +400,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <div class="fg"><label>Individual Player Fee (₹)</label><input type="number" id="trn-player-fee" placeholder="2999" value="2999"></div>
       </div>
       <div class="fg"><label>Age Categories</label><input type="text" id="trn-age-cats" placeholder="U9, U11, U13, U15, U17, U19, Senior"><p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Comma-separated. Leave blank to use the default U9–Senior list.</p></div>
+      <div class="form-row">
+        <div class="fg"><label>Start Date</label><input type="date" id="trn-start-date"></div>
+        <div class="fg"><label>Location</label><input type="text" id="trn-location" placeholder="e.g. Goa, Multiple Cities"></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">Date and location appear on the public Tournament Calendar once this tournament is Open or Closed (Draft stays hidden).</p>
       <div class="fg"><label>Status</label>
         <select id="trn-status">
           <option value="draft">Draft — hidden from registration page</option>
@@ -465,7 +470,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Team Name</th><th>City</th><th>Coach</th><th>Tournament</th><th>Age Category</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Team Name</th><th>City</th><th>Coach</th><th>Tournament</th><th>Age Category</th><th>Pool</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="teams-body"></tbody>
         </table>
       </div>
@@ -626,6 +631,13 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <div class="fg"><label>Age Category *</label>
             <select id="fx-agecat" onchange="onFixtureFilterChange()">
               <option value="">Select tournament first</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" id="fx-pool-row" style="display:none;">
+          <div class="fg"><label>Pool</label>
+            <select id="fx-pool" onchange="onFixturePoolChange()">
+              <option value="">All Pools</option>
             </select>
           </div>
         </div>
@@ -797,17 +809,17 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-head">
       <h3><i class="fas fa-table"></i> League Table</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <select id="lt-tournament" onchange="renderLeagueTable()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-          <option value="IF5L Season 2">IF5L Season 2</option><option value="National Championship 2026">National Championship 2026</option>
+        <select id="lt-tournament" onchange="onLeagueTableTournamentChange()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">Select tournament</option>
         </select>
         <select id="lt-agecat" onchange="renderLeagueTable()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-          <option value="">Select Age Category</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option><option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
+          <option value="">Select Age Category</option>
         </select>
       </div>
     </div>
     <div class="card-body">
-      <div class="notice"><i class="fas fa-info-circle"></i> Table is auto-calculated from match results. Win = 3 pts, Draw = 1 pt, Loss = 0 pts.</div>
-      <div class="tbl-wrap"><table class="ltbl"><thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody id="lt-body"></tbody></table></div>
+      <div class="notice"><i class="fas fa-info-circle"></i> Table is auto-calculated from match results. Win = 3 pts, Draw = 1 pt, Loss = 0 pts. If teams have been split into pools (Manage Teams), each pool gets its own table automatically.</div>
+      <div id="lt-tables-container"></div>
       <div id="lt-empty" class="empty" style="display:none;"><i class="fas fa-table"></i><h4>No data yet</h4><p>Enter match results to populate the table.</p></div>
     </div>
   </div>
@@ -1163,6 +1175,8 @@ function resetTournamentForm() {
   document.getElementById('trn-team-fee').value = '10000';
   document.getElementById('trn-player-fee').value = '2999';
   document.getElementById('trn-age-cats').value = '';
+  document.getElementById('trn-start-date').value = '';
+  document.getElementById('trn-location').value = '';
   document.getElementById('trn-status').value = 'draft';
   document.getElementById('trn-save-label').textContent = 'Create Tournament';
   document.getElementById('trn-cancel-edit').style.display = 'none';
@@ -1177,6 +1191,8 @@ function editTournament(key) {
   document.getElementById('trn-team-fee').value = t.teamFee||10000;
   document.getElementById('trn-player-fee').value = t.playerFee||2999;
   document.getElementById('trn-age-cats').value = (t.ageCategories||[]).join(', ');
+  document.getElementById('trn-start-date').value = t.startDate||'';
+  document.getElementById('trn-location').value = t.location||'';
   document.getElementById('trn-status').value = t.status||'draft';
   document.getElementById('trn-save-label').textContent = 'Save Changes';
   document.getElementById('trn-cancel-edit').style.display = 'inline-block';
@@ -1205,6 +1221,8 @@ function saveTournament() {
     teamFee: Number(document.getElementById('trn-team-fee').value) || 0,
     playerFee: Number(document.getElementById('trn-player-fee').value) || 0,
     ageCategories,
+    startDate: document.getElementById('trn-start-date').value || null,
+    location: document.getElementById('trn-location').value.trim() || null,
     status: document.getElementById('trn-status').value,
     updatedAt: new Date().toISOString()
   };
@@ -1558,15 +1576,22 @@ function renderTeams(){
   if(tf) teams=teams.filter(t=>t.tournament===tf);
   if(q) teams=teams.filter(t=>(t.teamName+t.teamCity+t.coachName).toLowerCase().includes(q));
   const tbody=document.getElementById('teams-body');
-  if(!teams.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
+  if(!teams.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
+  const poolOptions=['','A','B','C','D'];
   tbody.innerHTML=teams.map(t=>`<tr>
     <td style="font-family:monospace;font-size:.75rem;">${t.id}</td>
     <td><strong>${t.teamName}</strong></td><td>${t.teamCity||'—'}</td><td>${t.coachName||'—'}</td><td>${t.tournament||'—'}</td><td>${t.ageCategory||'—'}</td>
+    <td><select onchange="setTeamPool('${t._key}',this.value)" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;">
+      ${poolOptions.map(p=>`<option value="${p}" ${((t.pool||'')===p)?'selected':''}>${p?'Pool '+p:'— None —'}</option>`).join('')}
+    </select></td>
     <td>${badge(t.status)}</td>
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editTeam('${t._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTeamReg('${t._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
+}
+function setTeamPool(key, pool){
+  _fbDb.ref('registrations/'+key).update({ pool: pool || null });
 }
 function openAddTeamModal(){ clearTeamForm(); document.getElementById('modal-team-title').textContent='Add Team'; openModal('modal-team'); }
 function editTeam(key){
@@ -2071,39 +2096,68 @@ function onFixtureTournamentChange(){
   onFixtureFilterChange();
 }
 
+// Pools are optional — most tournaments have none, in which case the pool
+// row stays hidden and everything behaves exactly as before. If any team
+// in this tournament + age category has been assigned a pool (via Manage
+// Teams), the pool selector appears so fixtures/table can be split by pool.
 function onFixtureFilterChange(){
   const tournament = document.getElementById('fx-tournament').value;
   const ageCategory = document.getElementById('fx-agecat').value;
   const homeSel = document.getElementById('fx-home');
   const awaySel = document.getElementById('fx-away');
+  const poolRow = document.getElementById('fx-pool-row');
+  const poolSel = document.getElementById('fx-pool');
   if(!tournament || !ageCategory){
     homeSel.innerHTML = '<option value="">Select tournament + age category first</option>';
     awaySel.innerHTML = '<option value="">Select tournament + age category first</option>';
     document.getElementById('fx-matchnum').value = '';
+    poolRow.style.display = 'none';
     return;
   }
-  const teams = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory);
+  const teamsAll = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory);
+  const pools = [...new Set(teamsAll.map(t=>t.pool).filter(Boolean))].sort();
+  if (pools.length) {
+    poolRow.style.display = 'flex';
+    const prevPool = poolSel.value;
+    poolSel.innerHTML = '<option value="">All Pools</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('');
+    if (pools.includes(prevPool)) poolSel.value = prevPool;
+  } else {
+    poolRow.style.display = 'none';
+    poolSel.value = '';
+  }
+  onFixturePoolChange();
+}
+
+function onFixturePoolChange(){
+  const tournament = document.getElementById('fx-tournament').value;
+  const ageCategory = document.getElementById('fx-agecat').value;
+  const pool = document.getElementById('fx-pool').value;
+  const homeSel = document.getElementById('fx-home');
+  const awaySel = document.getElementById('fx-away');
+  let teams = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory);
+  if (pool) teams = teams.filter(t => t.pool === pool);
   const opts = '<option value="">Select team</option>' + (teams.length
     ? teams.map(t => `<option value="${t.teamName}">${t.teamName}</option>`).join('')
-    : '<option value="" disabled>No teams registered for this tournament/age category</option>');
+    : '<option value="" disabled>No teams registered for this tournament/age category' + (pool ? '/pool' : '') + '</option>');
   homeSel.innerHTML = opts;
   awaySel.innerHTML = opts;
-  const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory).length;
+  const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!pool || f.pool===pool)).length;
   document.getElementById('fx-matchnum').value = 'Match ' + (count+1);
 }
 
 function addFixture(){
   const tournament = document.getElementById('fx-tournament').value;
   const ageCategory = document.getElementById('fx-agecat').value;
+  const pool = document.getElementById('fx-pool').value || null;
   const home=document.getElementById('fx-home').value;
   const away=document.getElementById('fx-away').value;
   const dt=document.getElementById('fx-dt').value;
   if(!tournament||!ageCategory){ alert('Please select tournament and age category.'); return; }
   if(!home||!away||!dt){ alert('Home team, away team, and date are required.'); return; }
   if(home===away){ alert('Home and away team cannot be the same.'); return; }
-  const matchNumber = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory).length + 1;
+  const matchNumber = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!pool || f.pool===pool)).length + 1;
   _fbDb.ref('fixtures').push({
-    tournament, ageCategory, matchNumber, home, away, dt,
+    tournament, ageCategory, pool, matchNumber, home, away, dt,
     venue: document.getElementById('fx-venue').value,
     round: document.getElementById('fx-round').value,
     status: 'upcoming'
@@ -2221,12 +2275,18 @@ function renderResultsLog(){
 }
 
 // ── LEAGUE TABLE ──────────────────────────────────────────────────────────
-function renderLeagueTable(){
-  const tourn=(document.getElementById('lt-tournament')||{}).value||'IF5L Season 2';
-  const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
-  // build from fixtures of this tournament + age category
-  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
-  if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
+function onLeagueTableTournamentChange(){
+  const tournamentName = document.getElementById('lt-tournament').value;
+  const agecatSel = document.getElementById('lt-agecat');
+  const t = _fbTournaments.find(x => x.name === tournamentName);
+  const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+  agecatSel.innerHTML = tournamentName
+    ? '<option value="">Select age category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('')
+    : '<option value="">Select tournament first</option>';
+  renderLeagueTable();
+}
+
+function computeTableRows(fx){
   const table={};
   fx.forEach(f=>{
     [f.home,f.away].forEach(t=>{ if(!table[t]) table[t]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
@@ -2236,14 +2296,46 @@ function renderLeagueTable(){
     else if(f.homeScore<f.awayScore){ a.w++;a.pts+=3;h.l++; }
     else{ h.d++;a.d++;h.pts++;a.pts++; }
   });
-  const rows=Object.entries(table).map(([name,d])=>({name,...d,gd:d.gf-d.ga})).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
-  const tbody=document.getElementById('lt-body');
+  return Object.entries(table).map(([name,d])=>({name,...d,gd:d.gf-d.ga})).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
+}
+
+function tableHtml(rows, poolLabel){
+  return `
+    ${poolLabel ? `<h4 style="margin:18px 0 10px;color:var(--primary);">${poolLabel}</h4>` : ''}
+    <div class="tbl-wrap"><table class="ltbl"><thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr>
+      <td>${i+1}</td><td>${r.name}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+      <td>${r.gf}</td><td>${r.ga}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// If any team in this tournament + age category has a pool assigned
+// (Manage Teams), the table splits into one mini-table per pool
+// automatically — otherwise it's the single combined table as before.
+function renderLeagueTable(){
+  const tourn=(document.getElementById('lt-tournament')||{}).value||'';
+  const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
+  const container=document.getElementById('lt-tables-container');
   const empty=document.getElementById('lt-empty');
-  if(!rows.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  if(!tourn){ container.innerHTML=''; empty.style.display='block'; return; }
+
+  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
+  if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
+
+  const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&(!ageCat||r.ageCategory===ageCat));
+  const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
+
+  if(!fx.length){ container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-  tbody.innerHTML=rows.map((r,i)=>`<tr>
-    <td>${i+1}</td><td>${r.name}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
-    <td>${r.gf}</td><td>${r.ga}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td></tr>`).join('');
+
+  if(pools.length){
+    container.innerHTML = pools.map(p=>{
+      const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
+      const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
+      return tableHtml(computeTableRows(poolFx), 'Pool ' + p);
+    }).join('');
+  } else {
+    container.innerHTML = tableHtml(computeTableRows(fx), null);
+  }
 }
 
 // ── NEWS ──────────────────────────────────────────────────────────────────

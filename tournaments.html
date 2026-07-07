@@ -66,6 +66,7 @@
                             <th>Status</th>
                         </tr>
                     </thead>
+                    <tbody id="calendar-live-rows"></tbody>
                     <tbody>
                         <tr>
                             <td><strong>Indian Football 5 League 2026 (Season 1)</strong></td>
@@ -249,5 +250,45 @@
     </footer>
 
     <script src="js/main.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+    // Tournaments the admin creates show up here automatically — Open/Closed
+    // ones only (Draft stays hidden until the admin publishes it) — added
+    // above the existing historical archive rows, which stay untouched.
+    firebase.initializeApp({
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    });
+    function fmtCalendarDate(iso) {
+      if (!iso) return 'Date TBA';
+      const d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    }
+    firebase.database().ref('tournaments').on('value', snap => {
+      const rows = [];
+      snap.forEach(child => {
+        const t = child.val();
+        if (t.status !== 'open' && t.status !== 'closed') return; // hide drafts
+        rows.push(t);
+      });
+      rows.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+      const statusHtml = t => t.status === 'open'
+        ? '<span class="status-upcoming">Coming Soon</span>'
+        : '<span class="status-completed">Completed</span>';
+      document.getElementById('calendar-live-rows').innerHTML = rows.map(t => `
+        <tr>
+          <td><strong>${t.name}</strong></td>
+          <td>${fmtCalendarDate(t.startDate)}</td>
+          <td>${t.location || 'TBA'}</td>
+          <td>${statusHtml(t)}</td>
+        </tr>`).join('');
+    });
+    </script>
 </body>
 </html>
