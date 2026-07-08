@@ -357,6 +357,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <button class="btn btn-primary btn-sm" onclick="addAgeCategory()"><i class="fas fa-plus"></i> Add</button>
         </div>
         <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">Cutoff date is optional — leave blank if you don't want DOB validation for that category. A player born <em>before</em> this date is overage and cannot register under it.</p>
+        <div id="ac-missing-cutoff-warning" class="notice" style="display:none;margin-bottom:14px;background:#fff3e0;border-color:#f0b429;color:#8a5a00;"><i class="fas fa-triangle-exclamation"></i> <span></span></div>
         <div id="ac-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       </div>
     </div>
@@ -2267,7 +2268,17 @@ function renderAgeCatEditor(){
     const cats = (snap.val() || []).map(normalizeAgeCat);
     const list = document.getElementById('ac-list');
     if(!cats.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No custom categories set yet — the registration form will fall back to the default list (U9-Senior), with no DOB cutoff enforced.</p>'; return; }
-    list.innerHTML = cats.map((c,i) => `<span class="badge b-upcoming" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c.label}${c.cutoffDate?` <span style="opacity:.7;">(born ${c.cutoffDate}+)</span>`:''} <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
+    list.innerHTML = cats.map((c,i) => `<span class="badge ${c.cutoffDate?'b-upcoming':'b-rejected'}" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c.label} <span style="opacity:.85;">${c.cutoffDate?`(born ${c.cutoffDate}+)`:'<i class="fas fa-triangle-exclamation"></i> no cutoff — any DOB accepted'}</span> <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
+    const missingCutoff = cats.filter(c=>!c.cutoffDate);
+    const warning = document.getElementById('ac-missing-cutoff-warning');
+    if (warning) {
+      if (missingCutoff.length) {
+        warning.style.display = 'block';
+        warning.querySelector('span').textContent = `${missingCutoff.map(c=>c.label).join(', ')} ${missingCutoff.length>1?'have':'has'} no cutoff date set — players of any age can register under ${missingCutoff.length>1?'these categories':'this category'}. Add a cutoff below (same label) to fix.`;
+      } else {
+        warning.style.display = 'none';
+      }
+    }
   });
 }
 function addAgeCategory(){
