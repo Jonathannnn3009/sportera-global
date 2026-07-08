@@ -1052,6 +1052,19 @@
                 ageCatSel.innerHTML = '<option value="">Select a team first</option>';
                 return;
             }
+            // A team's own registration doesn't disappear when the admin closes
+            // its tournament — the team dropdown above is populated from every
+            // team that ever registered, not just ones under still-open
+            // tournaments. Without this check, a closed tournament would keep
+            // silently accepting new players indefinitely through this team.
+            const t = findTournament(tournamentName);
+            if (t && t.status !== 'open') {
+                ageCatSel.innerHTML = '<option value="">Registration closed</option>';
+                hint.textContent = `${tournamentName} is no longer accepting registrations.`;
+                hint.style.color = '#c62828';
+                hint.style.display = 'block';
+                return;
+            }
             if (!dob) {
                 ageCatSel.innerHTML = '<option value="">Select age category</option>' +
                     _currentTeamMatches.map(t => `<option value="${ageCategoryOptionValue(t.ageCategory, t.cityGroup)}">${ageCategoryOptionLabel(t.ageCategory, t.cityGroup)}</option>`).join('');
@@ -1417,6 +1430,19 @@
             const teamNameEntered = document.getElementById('teamName').value.trim();
             const tournamentEntered = document.getElementById('tournament').value;
             const cityGroupEntered = document.getElementById('teamCityGroup').value;
+            // The tournament dropdown only lists open tournaments at the moment
+            // it's populated — if the admin closes it while this form is still
+            // sitting open in someone's browser, re-check status right before
+            // writing to Firebase so a stale page can't sneak a registration in.
+            if (tournamentEntered) {
+                const statusSnap = await _regDb.ref('tournaments').orderByChild('name').equalTo(tournamentEntered).once('value');
+                let liveStatus = null;
+                statusSnap.forEach(child => { liveStatus = child.val().status; });
+                if (liveStatus !== 'open') {
+                    alert(tournamentEntered + ' is no longer accepting registrations. Please refresh the page and choose another tournament.');
+                    return;
+                }
+            }
             if (_teamCityRequired && !cityGroupEntered) {
                 alert('Please select which city your team is entering — this tournament runs in multiple cities.');
                 return;
@@ -1529,6 +1555,15 @@
                 ? (_indivCityRequired ? document.getElementById('playerIndivCity').value : null)
                 : parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value).cityGroup;
             const _dobForCheck = document.getElementById('playerDOB').value;
+            if (_tournamentForCheck) {
+                const statusSnap = await _regDb.ref('tournaments').orderByChild('name').equalTo(_tournamentForCheck).once('value');
+                let liveStatus = null;
+                statusSnap.forEach(child => { liveStatus = child.val().status; });
+                if (liveStatus !== 'open') {
+                    alert(_tournamentForCheck + ' is no longer accepting registrations. Please refresh the page and choose another tournament.');
+                    return;
+                }
+            }
             if (_noTeam && !_tournamentForCheck) {
                 alert('Please select a tournament.');
                 return;
