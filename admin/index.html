@@ -2459,11 +2459,16 @@ function onFixturePoolChange(){
   const pool = document.getElementById('fx-pool').value;
   const homeSel = document.getElementById('fx-home');
   const awaySel = document.getElementById('fx-away');
-  let teams = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory);
-  if (pool) teams = teams.filter(t => t.pool === pool);
+  // The pool picked here only tags which pool this fixture belongs to — it
+  // does NOT filter which teams can be selected. Requiring a team to already
+  // have that same pool pre-assigned in Manage Teams was the bug: most teams
+  // never get a pool set there, so picking any pool emptied the team list
+  // entirely. Every team registered for this tournament + age category stays
+  // selectable regardless of pool.
+  const teams = (_fbRegs||[]).filter(r => r.type==='team' && r.status==='approved' && r.tournament===tournament && r.ageCategory===ageCategory);
   const opts = '<option value="">Select team</option>' + (teams.length
     ? teams.map(t => `<option value="${t.teamName}">${t.teamName}</option>`).join('')
-    : '<option value="" disabled>No teams registered for this tournament/age category' + (pool ? '/pool' : '') + '</option>');
+    : '<option value="" disabled>No teams registered for this tournament/age category</option>');
   homeSel.innerHTML = opts;
   awaySel.innerHTML = opts;
   const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!pool || f.pool===pool)).length;
