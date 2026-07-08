@@ -99,6 +99,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── TABLE ── */
 .tbl-wrap{overflow-x:auto;}
+.capturable.capturing .no-capture{display:none !important;}
 table.dt{width:100%;border-collapse:collapse;font-size:.855rem;}
 table.dt th{background:#f4f6fb;color:var(--primary);font-weight:700;padding:10px 13px;text-align:left;border-bottom:2px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
 table.dt td{padding:11px 13px;border-bottom:1px solid var(--border);vertical-align:middle;}
@@ -756,9 +757,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <select id="fx-filter-age" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
             <option value="">All Ages</option>
           </select>
+          <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
+          <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
         </div>
       </div>
-      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>#</th><th>Age</th><th>City</th><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th>Actions</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap capturable" id="fixtures-capture"><table class="dt"><thead><tr><th>#</th><th>Age</th><th>City</th><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th class="no-capture">Actions</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
     </div>
   </div>
 </div>
@@ -2726,12 +2729,16 @@ function renderFixtures(){
   if(fa) fx=fx.filter(f=>f.ageCategory===fa);
   const tbody=document.getElementById('fixtures-body');
   if(!fx.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
-  tbody.innerHTML=fx.sort((a,b)=>new Date(a.dt)-new Date(b.dt)).map(f=>`<tr>
+  // Shown in the order they were added (Firebase push keys sort
+  // chronologically by creation, matching matchNumber) — previously
+  // re-sorted by date/time, which scrambled the sequence admins actually
+  // entered fixtures in whenever match dates weren't added in order.
+  tbody.innerHTML=fx.map(f=>`<tr>
     <td>${f.matchNumber||'—'}</td><td>${f.ageCategory||'—'}</td><td>${f.cityGroup||'—'}</td>
     <td><strong>${f.home}</strong></td><td><strong>${f.away}</strong></td>
     <td>${fmtDateTime(f.dt)}</td><td>${f.venue||'—'}</td><td>${f.round}</td>
     <td>${badge(f.status)}</td>
-    <td class="actions">
+    <td class="actions no-capture">
       <button class="btn btn-ghost btn-xs" onclick="openEditFixtureModal('${f._key}')" title="Edit fixture"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteFixture('${f._key}')" title="Delete fixture"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
@@ -2743,6 +2750,28 @@ function deleteFixture(key){
   if(!confirm('Delete fixture? Its result (if any) will be deleted too.')) return;
   _fbDb.ref('fixtures/'+key).remove();
   _fbDb.ref('results/'+key).remove();
+}
+
+// Exports the currently-filtered fixtures table as an image — the Actions
+// column (edit/delete buttons) is hidden for the capture only, via the
+// .capturing class, since it's meaningless in a downloaded image.
+async function downloadFixturesImage(format){
+  const el = document.getElementById('fixtures-capture');
+  if (!document.getElementById('fixtures-body').children.length || document.querySelector('#fixtures-body td[colspan]')) {
+    alert('No fixtures to download for the current filters.');
+    return;
+  }
+  el.classList.add('capturing');
+  try {
+    const canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL(mime, 0.95);
+    a.download = `fixtures_${new Date().toISOString().slice(0,10)}.${format === 'jpeg' ? 'jpg' : 'png'}`;
+    a.click();
+  } finally {
+    el.classList.remove('capturing');
+  }
 }
 
 // ── RESULTS ───────────────────────────────────────────────────────────────
