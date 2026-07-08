@@ -790,8 +790,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <select id="fx-filter-city" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
             <option value="">All Cities</option>
           </select>
-          <select id="fx-filter-age" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <select id="fx-filter-age" onchange="onFxFilterAgeChange()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
             <option value="">All Ages</option>
+          </select>
+          <select id="fx-filter-pool" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+            <option value="">All Pools</option>
           </select>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
@@ -2843,8 +2846,12 @@ function onFxFilterTournamentChange(){
   const citySel = document.getElementById('fx-filter-city');
   const cities = _fbCitiesByTournament[tournamentSlug(tournamentName)] || [];
   citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const poolSel = document.getElementById('fx-filter-pool');
+  const pools = _fbPoolsByTournament[tournamentSlug(tournamentName)] || [];
+  poolSel.innerHTML = '<option value="">All Pools</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('');
   renderFixtures();
 }
+function onFxFilterAgeChange(){ renderFixtures(); }
 
 // Age categories sort numerically (U8 before U10 before U12), not
 // alphabetically (which would put U10/U12 before U8) — non-U<N> labels
@@ -2882,10 +2889,12 @@ function renderFixtures(){
   const ft=(document.getElementById('fx-filter')||{}).value||'';
   const fc=(document.getElementById('fx-filter-city')||{}).value||'';
   const fa=(document.getElementById('fx-filter-age')||{}).value||'';
+  const fp=(document.getElementById('fx-filter-pool')||{}).value||'';
   let fx=_fbFixtures;
   if(ft) fx=fx.filter(f=>f.tournament===ft);
   if(fc) fx=fx.filter(f=>f.cityGroup===fc);
   if(fa) fx=fx.filter(f=>f.ageCategory===fa);
+  if(fp) fx=fx.filter(f=>f.pool===fp);
   fx=[...fx].sort((a,b)=>fixturesCompare(a,b,_fxSortCol)*_fxSortDir);
   document.querySelectorAll('#fixtures-head-row th[data-sort]').forEach(th=>{
     th.querySelector('.sort-ind').textContent = th.dataset.sort===_fxSortCol ? (_fxSortDir===1?'▲':'▼') : '';
@@ -2973,11 +2982,13 @@ async function exportFixturePoster(){
   const tournament = (document.getElementById('fx-filter')||{}).value||'';
   const ageCategory = (document.getElementById('fx-filter-age')||{}).value||'';
   const city = (document.getElementById('fx-filter-city')||{}).value||'';
+  const pool = (document.getElementById('fx-filter-pool')||{}).value||'';
   if(!tournament){ alert('Select a Tournament in the filters above first.'); return; }
   if(!ageCategory){ alert('Select an Age Category in the filters above first — the poster covers one age category at a time.'); return; }
 
   let fx = _fbFixtures.filter(f=>f.tournament===tournament && f.ageCategory===ageCategory);
   if (city) fx = fx.filter(f=>f.cityGroup===city);
+  if (pool) fx = fx.filter(f=>f.pool===pool);
   if(!fx.length){ alert('No fixtures found for this selection.'); return; }
   fx = [...fx].sort((a,b)=>(a.matchNumber||0)-(b.matchNumber||0));
 
@@ -2999,7 +3010,7 @@ async function exportFixturePoster(){
     <div style="font-size:1.15rem;margin-bottom:34px;"><strong>Venue:</strong> ${t.location||'TBA'}</div>
     <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:20px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:#FFD700;">Fixtures</div>
-      <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCategory}</strong>${city?' &bull; '+city:''}</div>
+      <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCategory}</strong>${city?' &bull; '+city:''}${pool?' &bull; Pool '+pool:''}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:1rem;">
       <thead><tr style="background:rgba(255,255,255,.12);">
@@ -3030,7 +3041,7 @@ async function exportFixturePoster(){
     const canvas = await html2canvas(poster, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
-    a.download = `fixture_poster_${tournamentSlug(tournament)}_${ageCategory}${city?'_'+tournamentSlug(city):''}.png`;
+    a.download = `fixture_poster_${tournamentSlug(tournament)}_${ageCategory}${city?'_'+tournamentSlug(city):''}${pool?'_Pool'+pool:''}.png`;
     a.click();
   } finally {
     poster.remove();
