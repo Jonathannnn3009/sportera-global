@@ -565,14 +565,22 @@
                         <div id="playerTeamFields">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="playerTeam">Team Name *</label>
-                                    <select id="playerTeam" name="playerTeam">
-                                        <option value="">Loading registered teams...</option>
+                                    <label for="playerTournament">Tournament *</label>
+                                    <select id="playerTournament" name="playerTournament" onchange="onPlayerTournamentSelectChange()">
+                                        <option value="">Select tournament</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="playerTournament">Tournament (auto-filled)</label>
-                                    <input type="text" id="playerTournament" name="playerTournament" readonly style="background:#f8f9ff;" placeholder="Select a team first">
+                                    <label for="playerTeamSearch">Search Team</label>
+                                    <input type="text" id="playerTeamSearch" placeholder="Type to filter teams..." oninput="filterPlayerTeamOptions()" disabled>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerTeam">Team Name *</label>
+                                    <select id="playerTeam" name="playerTeam">
+                                        <option value="">Select tournament first</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -856,34 +864,70 @@
         }
 
         // --- Load registered teams from Firebase into player dropdown ---
+        // A tournament can end up with a lot of registered teams, so the Team
+        // Name list is scoped to whichever tournament is picked above (not
+        // every team ever registered, across every tournament), and can be
+        // narrowed further with the search box.
         let _allRegisteredTeams = [];
+        let _currentTournamentTeams = [];
         function loadTeamsDropdown() {
             _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value', snap => {
                 _allRegisteredTeams = [];
                 snap.forEach(child => { const d = child.val(); if (d.teamName) _allRegisteredTeams.push(d); });
-                renderTeamDropdown();
             });
         }
-        function renderTeamDropdown() {
-            const sel = document.getElementById('playerTeam');
-            sel.innerHTML = '<option value="">Select your team</option>';
-            if (_allRegisteredTeams.length === 0) {
-                sel.innerHTML += '<option value="" disabled>No teams registered yet — team must register first</option>';
-            } else {
-                // A team can appear multiple times in the raw data if it registered
-                // for more than one age category — show its name only once here;
-                // the age category dropdown below lists every category it actually
-                // registered under.
-                const seenNames = new Set();
-                _allRegisteredTeams.forEach(t => {
-                    if (seenNames.has(t.teamName)) return;
-                    seenNames.add(t.teamName);
-                    sel.innerHTML += '<option value="' + t.teamName + '">' + t.teamName + '</option>';
-                });
-            }
-            sel.innerHTML += '<option value="__other__">Other / Not listed</option>';
-        }
         loadTeamsDropdown();
+
+        function onPlayerTournamentSelectChange() {
+            const tournamentName = document.getElementById('playerTournament').value;
+            const searchBox = document.getElementById('playerTeamSearch');
+            searchBox.value = '';
+            searchBox.disabled = !tournamentName;
+            // A team name can repeat within the same tournament if it
+            // registered under more than one city (IF5L Mumbai vs IF5L
+            // Ambernath) — dedupe by name+city, not just name.
+            const seen = new Set();
+            _currentTournamentTeams = _allRegisteredTeams.filter(t => {
+                if (t.tournament !== tournamentName) return false;
+                const key = t.teamName + '|' + (t.cityGroup||'');
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            renderPlayerTeamOptions('');
+            _currentTeamMatches = [];
+            refreshAgeCategoryOptions();
+            updatePlayerPaymentVisibility();
+        }
+
+        function filterPlayerTeamOptions() {
+            renderPlayerTeamOptions(document.getElementById('playerTeamSearch').value.trim().toLowerCase());
+        }
+
+        // A team name can repeat within the same tournament across different
+        // cities (IF5L Mumbai vs IF5L Ambernath) — the option value encodes
+        // both so selecting one can't be confused with the other.
+        function teamOptionValue(name, city) { return city ? name + '|||' + city : name; }
+        function parseTeamOptionValue(value) {
+            const idx = (value||'').indexOf('|||');
+            return idx === -1 ? { name: value, city: null } : { name: value.slice(0, idx), city: value.slice(idx + 3) };
+        }
+        function renderPlayerTeamOptions(query) {
+            const sel = document.getElementById('playerTeam');
+            const tournamentName = document.getElementById('playerTournament').value;
+            if (!tournamentName) {
+                sel.innerHTML = '<option value="">Select tournament first</option>';
+                return;
+            }
+            const matches = query
+                ? _currentTournamentTeams.filter(t => t.teamName.toLowerCase().includes(query))
+                : _currentTournamentTeams;
+            sel.innerHTML = '<option value="">Select your team</option>' +
+                (matches.length
+                    ? matches.map(t => `<option value="${teamOptionValue(t.teamName, t.cityGroup)}">${t.teamName}${t.cityGroup?' ('+t.cityGroup+')':''}</option>`).join('')
+                    : '<option value="" disabled>No teams match</option>') +
+                '<option value="__other__">Other / Not listed</option>';
+        }
 
         // --- Payment details (set once by admin, read live here) ---
         let _paymentSettings = { upiId: '', bankName: '', accountName: '', accountNumber: '', ifsc: '' };
@@ -962,8 +1006,24 @@
             if (openTournaments.some(t => t.name === prevValue)) sel.value = prevValue;
             updateTeamFeeDisplay();
             populatePlayerIndivTournamentOptions();
+            populatePlayerTeamTournamentOptions();
             updatePlayerPaymentVisibility();
         });
+
+        // Player Registration's team-flow Tournament dropdown — same "team or
+        // both" tournaments as Team Registration (individual-only tournaments
+        // have no teams to pick from), and since only currently-open
+        // tournaments are listed at all, a team under one that later closes
+        // simply stops being selectable — no separate "is it closed" check
+        // needed once this is the entry point.
+        function populatePlayerTeamTournamentOptions() {
+            const sel = document.getElementById('playerTournament');
+            const prevValue = sel.value;
+            const openTournaments = _liveTournaments.filter(t => t.status === 'open' && t.entryType !== 'individual');
+            sel.innerHTML = '<option value="">Select tournament</option>' +
+                openTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            if (openTournaments.some(t => t.name === prevValue)) sel.value = prevValue;
+        }
 
         // Individual-entry registration (no team) is only offered for
         // tournaments the admin has explicitly opened up to it — entryType
@@ -1109,12 +1169,11 @@
                     inp.required = true;
                     this.parentNode.appendChild(inp);
                 }
-                document.getElementById('playerTournament').value = '';
                 _currentTeamMatches = [];
             } else {
                 if (existing) existing.remove();
-                _currentTeamMatches = _allRegisteredTeams.filter(t => t.teamName === this.value);
-                document.getElementById('playerTournament').value = _currentTeamMatches.length ? _currentTeamMatches[0].tournament : '';
+                const { name, city } = parseTeamOptionValue(this.value);
+                _currentTeamMatches = _currentTournamentTeams.filter(t => t.teamName === name && (t.cityGroup||null) === city);
             }
             // refreshAgeCategoryOptions() already fully recomputes and displays
             // eligibility for every category this team offers, based on

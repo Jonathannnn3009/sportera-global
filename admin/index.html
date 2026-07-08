@@ -761,12 +761,14 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           </select>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
+          <button class="btn btn-gold btn-sm" onclick="exportFixturePoster()"><i class="fas fa-share-nodes"></i> Fixture Poster</button>
         </div>
       </div>
       <div class="card-body" style="padding:0;"><div class="tbl-wrap capturable" id="fixtures-capture"><table class="dt"><thead><tr id="fixtures-head-row">
         <th data-sort="matchNumber" onclick="onFixturesSortClick('matchNumber')" style="cursor:pointer;">#<span class="sort-ind"></span></th>
         <th data-sort="ageCategory" onclick="onFixturesSortClick('ageCategory')" style="cursor:pointer;">Age<span class="sort-ind"></span></th>
         <th data-sort="cityGroup" onclick="onFixturesSortClick('cityGroup')" style="cursor:pointer;">City<span class="sort-ind"></span></th>
+        <th data-sort="pool" onclick="onFixturesSortClick('pool')" style="cursor:pointer;">Pool<span class="sort-ind"></span></th>
         <th data-sort="home" onclick="onFixturesSortClick('home')" style="cursor:pointer;">Home<span class="sort-ind"></span></th>
         <th data-sort="away" onclick="onFixturesSortClick('away')" style="cursor:pointer;">Away<span class="sort-ind"></span></th>
         <th data-sort="dt" onclick="onFixturesSortClick('dt')" style="cursor:pointer;">Date<span class="sort-ind"></span></th>
@@ -2811,9 +2813,9 @@ function renderFixtures(){
     th.querySelector('.sort-ind').textContent = th.dataset.sort===_fxSortCol ? (_fxSortDir===1?'▲':'▼') : '';
   });
   const tbody=document.getElementById('fixtures-body');
-  if(!fx.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
+  if(!fx.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
   tbody.innerHTML=fx.map(f=>`<tr>
-    <td>${f.matchNumber||'—'}</td><td>${f.ageCategory||'—'}</td><td>${f.cityGroup||'—'}</td>
+    <td>${f.matchNumber||'—'}</td><td>${f.ageCategory||'—'}</td><td>${f.cityGroup||'—'}</td><td>${f.pool||'—'}</td>
     <td><strong>${f.home}</strong></td><td><strong>${f.away}</strong></td>
     <td>${fmtDateTime(f.dt)}</td><td>${f.venue||'—'}</td><td>${f.round}</td>
     <td>${badge(f.status)}</td>
@@ -2882,6 +2884,80 @@ function downloadFixturesTemplate(){
 // auto-pool-assignment for any team that doesn't have that pool yet. Rows
 // that fail validation are skipped and reported, not silently dropped.
 const FIXTURES_VALID_ROUNDS = ['League Stage','Quarter-Final','Semi-Final','Third Place','Grand Final'];
+// Builds a shareable, portrait-format fixture poster (for Instagram/WhatsApp)
+// for whichever Tournament + Age Category is currently selected in the
+// fixtures filters — one age category at a time, since that's how the
+// requested layout is structured (Tournament/Dates/Venue header, then a
+// single Fixtures table for that age group). Rendered off-screen and
+// captured with html2canvas, same technique as the ID cards.
+async function exportFixturePoster(){
+  const tournament = (document.getElementById('fx-filter')||{}).value||'';
+  const ageCategory = (document.getElementById('fx-filter-age')||{}).value||'';
+  const city = (document.getElementById('fx-filter-city')||{}).value||'';
+  if(!tournament){ alert('Select a Tournament in the filters above first.'); return; }
+  if(!ageCategory){ alert('Select an Age Category in the filters above first — the poster covers one age category at a time.'); return; }
+
+  let fx = _fbFixtures.filter(f=>f.tournament===tournament && f.ageCategory===ageCategory);
+  if (city) fx = fx.filter(f=>f.cityGroup===city);
+  if(!fx.length){ alert('No fixtures found for this selection.'); return; }
+  fx = [...fx].sort((a,b)=>(a.matchNumber||0)-(b.matchNumber||0));
+
+  const t = _fbTournaments.find(x=>x.name===tournament) || {};
+  const teamLogo = (name) => {
+    const reg = (_fbRegs||[]).find(r=>r.type==='team' && r.teamName===name && r.tournament===tournament);
+    return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
+  };
+
+  const poster = document.createElement('div');
+  poster.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;background:linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%);color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;';
+  poster.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
+      <img src="../Media (51).png" style="width:64px;height:64px;border-radius:12px;">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
+    </div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:#FFD700;margin-bottom:14px;line-height:1.15;">${tournament}</div>
+    <div style="font-size:1.15rem;margin-bottom:6px;"><strong>Dates of Tournament:</strong> ${t.startDate?fmtDate(t.startDate):'TBA'}</div>
+    <div style="font-size:1.15rem;margin-bottom:34px;"><strong>Venue:</strong> ${t.location||'TBA'}</div>
+    <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:20px;">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:#FFD700;">Fixtures</div>
+      <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCategory}</strong>${city?' &bull; '+city:''}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:1rem;">
+      <thead><tr style="background:rgba(255,255,255,.12);">
+        <th style="padding:12px 10px;text-align:left;">Match#</th>
+        <th style="padding:12px 10px;text-align:left;">Age</th>
+        <th style="padding:12px 10px;text-align:left;">Home</th>
+        <th style="padding:12px 10px;text-align:left;">Away</th>
+        <th style="padding:12px 10px;text-align:left;">Date &amp; Time</th>
+        <th style="padding:12px 10px;text-align:left;">Venue</th>
+        <th style="padding:12px 10px;text-align:left;">Round</th>
+      </tr></thead>
+      <tbody>
+        ${fx.map((f,i)=>`<tr style="background:${i%2?'rgba(255,255,255,.04)':'transparent'};border-bottom:1px solid rgba(255,255,255,.15);">
+          <td style="padding:12px 10px;font-weight:700;">${f.matchNumber||'—'}</td>
+          <td style="padding:12px 10px;">${f.ageCategory||'—'}</td>
+          <td style="padding:12px 10px;font-weight:700;">${teamLogo(f.home)?`<img src="${teamLogo(f.home)}" style="width:22px;height:22px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:6px;">`:''}${f.home}</td>
+          <td style="padding:12px 10px;font-weight:700;">${teamLogo(f.away)?`<img src="${teamLogo(f.away)}" style="width:22px;height:22px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:6px;">`:''}${f.away}</td>
+          <td style="padding:12px 10px;">${fmtDateTime(f.dt)}</td>
+          <td style="padding:12px 10px;">${f.venue||'—'}</td>
+          <td style="padding:12px 10px;">${f.round||'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="text-align:center;margin-top:34px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
+  `;
+  document.body.appendChild(poster);
+  try {
+    const canvas = await html2canvas(poster, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `fixture_poster_${tournamentSlug(tournament)}_${ageCategory}${city?'_'+tournamentSlug(city):''}.png`;
+    a.click();
+  } finally {
+    poster.remove();
+  }
+}
+
 async function bulkUploadFixtures(){
   const fileInput = document.getElementById('fx-bulk-file');
   const resultEl = document.getElementById('fx-bulk-result');
