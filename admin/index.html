@@ -660,10 +660,16 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           </div>
         </div>
         <div class="form-row" id="fx-pool-row" style="display:none;">
-          <div class="fg"><label>Pool</label>
+          <div class="fg"><label>Pool / Group</label>
             <select id="fx-pool" onchange="onFixturePoolChange()">
               <option value="">All Pools</option>
             </select>
+          </div>
+          <div class="fg"><label>New Pool Name</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="fx-new-pool-name" placeholder="e.g. A, B, Group 1" style="flex:1;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="addPoolFromFixtureForm()"><i class="fas fa-plus"></i> Add</button>
+            </div>
           </div>
         </div>
         <div class="form-row">
@@ -2209,18 +2215,42 @@ function onFixtureFilterChange(){
     poolRow.style.display = 'none';
     return;
   }
-  const teamsAll = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory);
-  const pools = [...new Set(teamsAll.map(t=>t.pool).filter(Boolean))].sort();
-  if (pools.length) {
-    poolRow.style.display = 'flex';
-    const prevPool = poolSel.value;
-    poolSel.innerHTML = '<option value="">All Pools</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('');
-    if (pools.includes(prevPool)) poolSel.value = prevPool;
-  } else {
-    poolRow.style.display = 'none';
-    poolSel.value = '';
-  }
+  // Always show the pool field once tournament + age category are picked —
+  // pulls from the tournament's managed pool list (Age Categories & Pools
+  // panel), not from whether a team happens to already have one assigned,
+  // so admin can pick a pool while creating the fixture itself.
+  poolRow.style.display = 'flex';
+  const pools = _fbPoolsByTournament[tournamentSlug(tournament)] || [];
+  const prevPool = poolSel.value;
+  poolSel.innerHTML = (pools.length
+    ? '<option value="">All / No Pool</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('')
+    : '<option value="">No pools set up for this tournament yet</option>');
+  if (pools.includes(prevPool)) poolSel.value = prevPool;
   onFixturePoolChange();
+}
+
+// Lets admin define a new pool right from the Add Fixture form, instead of
+// having to switch to the Age Categories & Pools panel first — writes to
+// the same pools/{tournamentSlug} list either way.
+function addPoolFromFixtureForm(){
+  const tournament = document.getElementById('fx-tournament').value;
+  const name = document.getElementById('fx-new-pool-name').value.trim();
+  if (!tournament) { alert('Select a tournament first.'); return; }
+  if (!name) return;
+  const ref = _fbDb.ref('pools/'+tournamentSlug(tournament));
+  ref.once('value', snap => {
+    const pools = snap.val() || [];
+    if (!pools.includes(name)) pools.push(name);
+    ref.set(pools).then(() => {
+      document.getElementById('fx-new-pool-name').value = '';
+      // _fbPoolsByTournament updates via its own live listener; refresh
+      // the dropdown directly too so it doesn't wait on that round-trip.
+      _fbPoolsByTournament[tournamentSlug(tournament)] = pools;
+      onFixtureFilterChange();
+      document.getElementById('fx-pool').value = name;
+      onFixturePoolChange();
+    });
+  });
 }
 
 function onFixturePoolChange(){
