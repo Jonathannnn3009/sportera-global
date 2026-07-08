@@ -480,8 +480,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <h3><i class="fas fa-shield-alt"></i> Teams</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input type="text" id="teamSearch" placeholder="Search name / city / coach…" oninput="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
-        <select id="teamsTournamentFilter" onchange="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+        <select id="teamsTournamentFilter" onchange="onTeamsTournamentFilterChange()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
           <option value="">All Tournaments</option>
+        </select>
+        <select id="teamsAgeCatFilter" onchange="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Age Categories</option>
         </select>
         <button class="btn btn-primary btn-sm" onclick="openAddTeamModal()"><i class="fas fa-plus"></i> Add Team</button>
       </div>
@@ -504,8 +507,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <h3><i class="fas fa-user"></i> Players</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input type="text" id="playerSearch" placeholder="Search name / team / guardian…" oninput="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
-        <select id="playersTournamentFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+        <select id="playersTournamentFilter" onchange="onPlayersTournamentFilterChange()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
           <option value="">All Tournaments</option>
+        </select>
+        <select id="playersAgeCatFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Age Categories</option>
         </select>
         <select id="playerStatusFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
           <option value="">All Status</option><option value="approved">Approved</option><option value="pending">Pending</option>
@@ -1589,6 +1595,23 @@ function ageCatOptionsFor(tournamentName, currentValue) {
   return '<option value="">Select age category</option>' +
     cats.map(c => `<option value="${c}" ${c===currentValue?'selected':''}>${c}</option>`).join('');
 }
+function ageCatFilterOptionsFor(tournamentName) {
+  const t = _fbTournaments.find(x => x.name === tournamentName);
+  const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+  return '<option value="">All Age Categories</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+function onTeamsTournamentFilterChange(){
+  const sel = document.getElementById('teamsAgeCatFilter');
+  const tournamentName = document.getElementById('teamsTournamentFilter').value;
+  sel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Age Categories</option>';
+  renderTeams();
+}
+function onPlayersTournamentFilterChange(){
+  const sel = document.getElementById('playersAgeCatFilter');
+  const tournamentName = document.getElementById('playersTournamentFilter').value;
+  sel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Age Categories</option>';
+  renderPlayers();
+}
 function onEditTeamTournamentChange(keepValue) {
   document.getElementById('t-agecat').innerHTML = ageCatOptionsFor(document.getElementById('t-tourn').value, keepValue||'');
 }
@@ -1599,8 +1622,10 @@ function onEditPlayerTournamentChange(keepValue) {
 function renderTeams(){
   const q=(document.getElementById('teamSearch')||{}).value?.toLowerCase()||'';
   const tf=(document.getElementById('teamsTournamentFilter')||{}).value||'';
+  const af=(document.getElementById('teamsAgeCatFilter')||{}).value||'';
   let teams=(_fbRegs||[]).filter(r=>r.type==='team' && r.status==='approved');
   if(tf) teams=teams.filter(t=>t.tournament===tf);
+  if(af) teams=teams.filter(t=>t.ageCategory===af);
   if(q) teams=teams.filter(t=>(t.teamName+t.teamCity+t.coachName).toLowerCase().includes(q));
   const tbody=document.getElementById('teams-body');
   if(!teams.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
@@ -1656,8 +1681,10 @@ function renderPlayers(){
   const q=(document.getElementById('playerSearch')||{}).value?.toLowerCase()||'';
   const sf=(document.getElementById('playerStatusFilter')||{}).value||'';
   const tf=(document.getElementById('playersTournamentFilter')||{}).value||'';
+  const af=(document.getElementById('playersAgeCatFilter')||{}).value||'';
   let players=(_fbRegs||[]).filter(r=>r.type==='player');
   if(tf) players=players.filter(p=>p.playerTournament===tf);
+  if(af) players=players.filter(p=>p.playerAgeCategory===af);
   if(q) players=players.filter(p=>(p.playerName+(p.playerTeam||'')+(p.guardianName||'')).toLowerCase().includes(q));
   if(sf) players=players.filter(p=>p.status===sf);
   const tbody=document.getElementById('players-body');
