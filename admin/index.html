@@ -2492,6 +2492,16 @@ function addFixture(){
     round: document.getElementById('fx-round').value,
     status: 'upcoming'
   });
+  // A team doesn't need a pool pre-assigned in Manage Teams to be picked
+  // here — but if this fixture does have a pool, and one of its teams isn't
+  // in that pool yet, assign it now. So pool assignment can happen simply by
+  // scheduling fixtures, instead of requiring a separate trip to Manage Teams.
+  if (pool) {
+    [home, away].forEach(teamName => {
+      const teamReg = (_fbRegs||[]).find(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory && r.teamName===teamName);
+      if (teamReg && teamReg.pool !== pool) _fbDb.ref('registrations/'+teamReg._key).update({ pool });
+    });
+  }
   ['fx-dt','fx-venue'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('fx-home').value=''; document.getElementById('fx-away').value='';
   onFixtureFilterChange();
