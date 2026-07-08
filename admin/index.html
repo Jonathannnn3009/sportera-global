@@ -460,6 +460,12 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <select id="appStatus" onchange="renderApprovals()">
           <option value="">All Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
         </select>
+        <select id="appTournamentFilter" onchange="onAppTournamentFilterChange()">
+          <option value="">All Tournaments</option>
+        </select>
+        <select id="appAgeCatFilter" onchange="renderApprovals()">
+          <option value="">All Age Categories</option>
+        </select>
       </div>
     </div>
     <div class="card-body" style="padding:0;">
@@ -566,6 +572,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <button class="btn btn-ghost" onclick="resetIDCard()"><i class="fas fa-redo"></i> Reset</button>
         </div>
         <div class="notice success" style="margin-top:14px;"><i class="fas fa-check-circle"></i> "Send to Player's Email" sends automatically from sporteraglobal@gmail.com.</div>
+        <div class="notice success" style="margin-top:8px;"><i class="fas fa-magic"></i> ID cards are now auto-generated and emailed the moment a player is approved in Approve Registrations — this manual form is for reprints/resends.</div>
       </div>
     </div>
     <div class="card">
@@ -594,6 +601,35 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
             <div class="qr-box" id="prev-qr"><img id="qr-img" src="" alt="QR" crossorigin="anonymous" style="width:42px;height:42px;display:block;"></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px;">
+    <div class="card-head">
+      <h3><i class="fas fa-layer-group"></i> Bulk ID Card Generation</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="idcTeamTournamentFilter" onchange="onIdcTournamentFilterChange()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Tournaments</option>
+        </select>
+        <select id="idcTeamFilter" onchange="renderIdcBulkList()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Teams</option>
+        </select>
+        <select id="idcAgeCatFilter" onchange="renderIdcBulkList()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Age Categories</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <div class="tbl-wrap">
+        <table class="dt">
+          <thead><tr><th><input type="checkbox" id="idcSelectAll" onchange="toggleIdcSelectAll(this)"></th><th>Name</th><th>Team</th><th>Age Category</th><th>Tournament</th><th>Email</th></tr></thead>
+          <tbody id="idc-bulk-body"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:10px;padding:14px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-gold" onclick="bulkEmailIDCards()"><i class="fas fa-envelope"></i> Email Selected</button>
+        <button class="btn btn-primary" onclick="bulkDownloadIDCards()"><i class="fas fa-download"></i> Download Selected</button>
+        <span id="idc-bulk-status" style="font-size:.82rem;color:var(--muted);"></span>
       </div>
     </div>
   </div>
@@ -1132,8 +1168,8 @@ _fbDb.ref('contactMessages').on('value', snap => {
 // categories, fixtures, lineup, results, league tables, team edit) reads
 // from this one live list instead of duplicating hardcoded <option> tags.
 let _fbTournaments = [];
-const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament'];
-const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true };
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter'];
+const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true, 'appTournamentFilter': true, 'idcTeamTournamentFilter': true };
 
 _fbDb.ref('tournaments').on('value', snap => {
   _fbTournaments = [];
@@ -1380,9 +1416,13 @@ function renderApprovals(){
   const q=(document.getElementById('appSearch')||{}).value?.toLowerCase()||'';
   const tf=(document.getElementById('appFilter')||{}).value||'';
   const sf=(document.getElementById('appStatus')||{}).value||'';
+  const tourF=(document.getElementById('appTournamentFilter')||{}).value||'';
+  const ageF=(document.getElementById('appAgeCatFilter')||{}).value||'';
   let regs = DB.all();
   if(tf) regs=regs.filter(r=>r.type===tf);
   if(sf) regs=regs.filter(r=>r.status===sf);
+  if(tourF) regs=regs.filter(r=>(r.type==='team'?r.tournament:r.playerTournament)===tourF);
+  if(ageF) regs=regs.filter(r=>(r.type==='team'?r.ageCategory:r.playerAgeCategory)===ageF);
   if(q) regs=regs.filter(r=>(r.id+r.teamName+r.playerName+r.teamEmail+r.playerEmail).toLowerCase().includes(q));
   const tbody=document.getElementById('approvals-body');
   if(!regs.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">No registrations found</td></tr>'; return; }
@@ -1412,8 +1452,15 @@ function deleteRegistration(key){
 function setStatus(id, status){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
   if(i>-1){
+    const reg=regs[i];
     regs[i].status=status; DB.save(regs); renderApprovals(); refreshDashboard();
-    if (status === 'approved' && !regs[i].portalAccountCreated) createPortalAccount(regs[i]);
+    if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg);
+    if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
+      emailIDCardToPlayer(reg).then(() => {
+        const regs2 = DB.all(); const j = regs2.findIndex(r => r.id === id);
+        if (j > -1) { regs2[j].idCardSent = true; DB.save(regs2); }
+      }).catch(e => console.warn('Auto ID card send skipped for', reg.playerName, '—', e.message));
+    }
   }
 }
 
@@ -1618,6 +1665,12 @@ function onPlayersTournamentFilterChange(){
   sel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Age Categories</option>';
   renderPlayers();
 }
+function onAppTournamentFilterChange(){
+  const sel = document.getElementById('appAgeCatFilter');
+  const tournamentName = document.getElementById('appTournamentFilter').value;
+  sel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Age Categories</option>';
+  renderApprovals();
+}
 function onEditTeamTournamentChange(keepValue) {
   document.getElementById('t-agecat').innerHTML = ageCatOptionsFor(document.getElementById('t-tourn').value, keepValue||'');
 }
@@ -1740,10 +1793,9 @@ function refreshIDCards(){
   const sel=document.getElementById('idPlayerSelect');
   const players=(_fbRegs||[]).filter(r=>r.type==='player' && r.status==='approved');
   sel.innerHTML='<option value="">— Choose approved player —</option>'+players.map(p=>`<option value="${p._key}">${p.playerName} (${p.playerTeam||'—'})</option>`).join('');
+  renderIdcBulkList();
 }
-function populateIDCard(){
-  const key=document.getElementById('idPlayerSelect').value; if(!key) return;
-  const p=(_fbRegs||[]).find(x=>x._key===key); if(!p) return;
+function fillIDCardFields(p){
   document.getElementById('id-name').value=p.playerName||'';
   document.getElementById('id-team').value=p.playerTeam||'';
   document.getElementById('id-pos').value=p.playerPosition||'Midfielder';
@@ -1751,10 +1803,114 @@ function populateIDCard(){
   document.getElementById('id-agecat').value=p.playerAgeCategory||'';
   document.getElementById('id-tournament').value=p.playerTournament||'';
   document.getElementById('id-email').value=p.playerEmail||'';
-  document.getElementById('id-num').value='SG-PLAYER-'+new Date().getFullYear()+'-'+key.slice(-4).toUpperCase();
+  document.getElementById('id-num').value='SG-PLAYER-'+new Date().getFullYear()+'-'+p._key.slice(-4).toUpperCase();
   const photoBox = document.getElementById('id-prev-photo');
   photoBox.innerHTML = p.playerPhotoUrl ? `<img src="${p.playerPhotoUrl}" alt="Player photo">` : '<i class="fas fa-user"></i>';
+}
+function populateIDCard(){
+  const key=document.getElementById('idPlayerSelect').value; if(!key) return;
+  const p=(_fbRegs||[]).find(x=>x._key===key); if(!p) return;
+  fillIDCardFields(p);
   updateIDPreview();
+}
+
+// ── BULK ID CARD GENERATION ─────────────────────────────────────────────────
+function onIdcTournamentFilterChange(){
+  const tournamentName = document.getElementById('idcTeamTournamentFilter').value;
+  const teamSel = document.getElementById('idcTeamFilter');
+  const teams = (_fbRegs||[]).filter(r=>r.type==='team' && r.status==='approved' && (!tournamentName || r.tournament===tournamentName));
+  const teamNames = [...new Set(teams.map(t=>t.teamName))].sort();
+  const prevTeam = teamSel.value;
+  teamSel.innerHTML = '<option value="">All Teams</option>' + teamNames.map(name=>`<option value="${name}">${name}</option>`).join('');
+  if ([...teamSel.options].some(o=>o.value===prevTeam)) teamSel.value = prevTeam;
+  const ageSel = document.getElementById('idcAgeCatFilter');
+  ageSel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Age Categories</option>';
+  renderIdcBulkList();
+}
+function renderIdcBulkList(){
+  const tournamentName = (document.getElementById('idcTeamTournamentFilter')||{}).value||'';
+  const teamName = (document.getElementById('idcTeamFilter')||{}).value||'';
+  const ageCat = (document.getElementById('idcAgeCatFilter')||{}).value||'';
+  let players = (_fbRegs||[]).filter(r=>r.type==='player' && r.status==='approved');
+  if(tournamentName) players = players.filter(p=>p.playerTournament===tournamentName);
+  if(teamName) players = players.filter(p=>p.playerTeam===teamName);
+  if(ageCat) players = players.filter(p=>p.playerAgeCategory===ageCat);
+  const tbody = document.getElementById('idc-bulk-body');
+  if(!tbody) return;
+  if(!players.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No approved players match this filter.</td></tr>'; return; }
+  tbody.innerHTML = players.map(p=>`<tr>
+    <td><input type="checkbox" class="idc-bulk-check" value="${p._key}"></td>
+    <td>${p.playerName}</td><td>${p.playerTeam||'—'}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerTournament||'—'}</td><td>${p.playerEmail||'—'}</td>
+  </tr>`).join('');
+}
+function toggleIdcSelectAll(cb){
+  document.querySelectorAll('.idc-bulk-check').forEach(c=>c.checked=cb.checked);
+}
+function getSelectedIdcPlayers(){
+  const keys = [...document.querySelectorAll('.idc-bulk-check:checked')].map(c=>c.value);
+  return (_fbRegs||[]).filter(p=>keys.includes(p._key));
+}
+function waitForImageLoad(img){
+  return new Promise(resolve=>{
+    if(img.complete && img.naturalWidth>0){ resolve(); return; }
+    const done=()=>{ img.removeEventListener('load',done); img.removeEventListener('error',done); resolve(); };
+    img.addEventListener('load',done); img.addEventListener('error',done);
+    setTimeout(done, 3000);
+  });
+}
+async function generateIDCardImageForPlayer(p){
+  fillIDCardFields(p);
+  updateIDPreview();
+  const panel = document.getElementById('panel-idcards');
+  const wasVisible = getComputedStyle(panel).display !== 'none';
+  const prevStyle = panel.getAttribute('style') || '';
+  if(!wasVisible) panel.setAttribute('style', prevStyle+';display:block !important;position:fixed;left:-9999px;top:0;');
+  await waitForImageLoad(document.getElementById('qr-img'));
+  const cardEl = document.getElementById('id-card-preview');
+  const canvas = await html2canvas(cardEl, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+  const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
+  if(!wasVisible) panel.setAttribute('style', prevStyle);
+  return imageBase64;
+}
+async function emailIDCardToPlayer(p){
+  if(!p.playerEmail) throw new Error('No email on file for '+(p.playerName||'player'));
+  const imageBase64 = await generateIDCardImageForPlayer(p);
+  await fetch(EMAIL_WEBHOOK_URL, {
+    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      to_email: p.playerEmail, to_name: p.playerName,
+      id_number: document.getElementById('id-num').value,
+      team_name: p.playerTeam||'', tournament: p.playerTournament||'',
+      id_card_image: imageBase64
+    })
+  });
+}
+async function bulkEmailIDCards(){
+  const players = getSelectedIdcPlayers();
+  if(!players.length){ alert('Select at least one player.'); return; }
+  const statusEl = document.getElementById('idc-bulk-status');
+  let sent=0, failed=0;
+  for(const p of players){
+    statusEl.textContent = `Sending ${sent+failed+1} of ${players.length}...`;
+    try { await emailIDCardToPlayer(p); sent++; } catch(e){ failed++; console.error('Bulk email failed for', p.playerName, e); }
+  }
+  statusEl.textContent = `Done: ${sent} sent${failed?`, ${failed} failed (no email on file)`:''}.`;
+}
+async function bulkDownloadIDCards(){
+  const players = getSelectedIdcPlayers();
+  if(!players.length){ alert('Select at least one player.'); return; }
+  const statusEl = document.getElementById('idc-bulk-status');
+  for(let i=0;i<players.length;i++){
+    const p = players[i];
+    statusEl.textContent = `Generating ${i+1} of ${players.length}...`;
+    const base64 = await generateIDCardImageForPlayer(p);
+    const a = document.createElement('a');
+    a.href = 'data:image/png;base64,'+base64;
+    a.download = (p.playerName||'player').replace(/\s+/g,'_')+'_ID_Card.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    await new Promise(r=>setTimeout(r,300));
+  }
+  statusEl.textContent = `Downloaded ${players.length} ID card(s).`;
 }
 function updateIDPreview(){
   document.getElementById('prev-name').textContent=document.getElementById('id-name').value||'—';
