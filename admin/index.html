@@ -531,7 +531,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Guardian</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>#</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Guardian</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="players-body"></tbody>
         </table>
       </div>
@@ -560,6 +560,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
             </select>
           </div>
         </div>
+        <div class="fg"><label>Jersey Number</label><input type="text" id="id-jersey" oninput="updateIDPreview()" placeholder="e.g. 7"></div>
         <div class="form-row">
           <div class="fg"><label>Date of Birth</label><input type="date" id="id-dob" oninput="updateIDPreview()"></div>
           <div class="fg"><label>Age Category</label>
@@ -592,6 +593,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
               <div class="id-fields">
                 <div class="id-f"><span class="id-f-lbl">Full Name</span><span class="id-f-val" id="prev-name">—</span></div>
                 <div class="id-f"><span class="id-f-lbl">Team</span><span class="id-f-val" id="prev-team">—</span></div>
+                <div class="id-f"><span class="id-f-lbl">Jersey No.</span><span class="id-f-val" id="prev-jersey">—</span></div>
                 <div class="id-f"><span class="id-f-lbl">Position</span><span class="id-f-val" id="prev-pos">—</span></div>
                 <div class="id-f"><span class="id-f-lbl">Date of Birth</span><span class="id-f-val" id="prev-dob">—</span></div>
                 <div class="id-f"><span class="id-f-lbl">Age Category</span><span class="id-f-val" id="prev-agecat">—</span></div>
@@ -1080,6 +1082,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <input type="hidden" id="player-edit-id">
       <div class="form-row"><div class="fg"><label>Full Name *</label><input type="text" id="p-name" placeholder="Player full name"></div><div class="fg"><label>Date of Birth *</label><input type="date" id="p-dob"></div></div>
       <div class="form-row"><div class="fg"><label>Team *</label><input type="text" id="p-team" placeholder="Team name"></div><div class="fg"><label>Position</label><select id="p-pos"><option>Goalkeeper</option><option>Defender</option><option>Midfielder</option><option>Forward</option></select></div></div>
+      <div class="form-row"><div class="fg"><label>Jersey Number</label><input type="number" id="p-jersey" min="0" max="99" placeholder="e.g. 7"></div></div>
       <div class="form-row"><div class="fg"><label>City</label><input type="text" id="p-city" placeholder="City"></div><div class="fg"><label>Tournament</label><select id="p-tourn" onchange="onEditPlayerTournamentChange()"><option value="">Select tournament</option></select></div></div>
       <div class="form-row"><div class="fg"><label>Age Category</label><select id="p-agecat"><option value="">Select age category</option></select></div><div class="fg"><label>Status</label><select id="p-status"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div></div>
       <div class="form-row"><div class="fg"><label>Guardian Name</label><input type="text" id="p-guard" placeholder="Parent / guardian"></div><div class="fg"><label>Guardian Phone</label><input type="tel" id="p-gphone" placeholder="Contact number"></div></div>
@@ -1846,10 +1849,10 @@ function renderPlayers(){
   if(q) players=players.filter(p=>(p.playerName+(p.playerTeam||'')+(p.guardianName||'')).toLowerCase().includes(q));
   if(sf) players=players.filter(p=>p.status===sf);
   const tbody=document.getElementById('players-body');
-  if(!players.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
+  if(!players.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
   tbody.innerHTML=players.map(p=>`<tr>
     <td style="font-family:monospace;font-size:.75rem;">${p.id}</td>
-    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerTournament||'—'}${p.playerCityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${p.playerCityGroup})</span>`:''}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.guardianName||'—'}</td><td>${p.guardianPhone||p.playerPhone||'—'}</td>
+    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerJerseyNumber||'—'}</td><td>${p.playerTournament||'—'}${p.playerCityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${p.playerCityGroup})</span>`:''}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.guardianName||'—'}</td><td>${p.guardianPhone||p.playerPhone||'—'}</td>
     <td>${badge(p.status)}</td>
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editPlayer('${p._key}')"><i class="fas fa-edit"></i></button>
@@ -1862,6 +1865,7 @@ function editPlayer(key){
   document.getElementById('player-edit-id').value=key;
   document.getElementById('p-name').value=p.playerName||'';document.getElementById('p-dob').value=p.playerDOB||'';
   document.getElementById('p-team').value=p.playerTeam||'';document.getElementById('p-pos').value=p.playerPosition||'Midfielder';
+  document.getElementById('p-jersey').value=p.playerJerseyNumber||'';
   document.getElementById('p-city').value=p.playerCity||'';document.getElementById('p-tourn').value=p.playerTournament||'';
   onEditPlayerTournamentChange(p.playerAgeCategory);
   document.getElementById('p-guard').value=p.guardianName||'';document.getElementById('p-gphone').value=p.guardianPhone||'';
@@ -1875,6 +1879,7 @@ function savePlayer(){
   const updates={
     playerName:name, playerDOB:document.getElementById('p-dob').value,
     playerTeam:document.getElementById('p-team').value, playerPosition:document.getElementById('p-pos').value,
+    playerJerseyNumber:document.getElementById('p-jersey').value,
     playerCity:document.getElementById('p-city').value, playerTournament:document.getElementById('p-tourn').value,
     playerAgeCategory:document.getElementById('p-agecat').value,
     guardianName:document.getElementById('p-guard').value, guardianPhone:document.getElementById('p-gphone').value,
@@ -1883,7 +1888,7 @@ function savePlayer(){
   _fbDb.ref('registrations/'+editKey).update(updates).then(()=>{ closeModal('modal-player'); renderPlayers(); refreshDashboard(); });
 }
 function deletePlayerReg(key){ if(!confirm('Permanently delete this player registration?')) return; _fbDb.ref('registrations/'+key).remove(); }
-function clearPlayerForm(){ ['player-edit-id','p-name','p-dob','p-team','p-city','p-guard','p-gphone','p-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('p-agecat').innerHTML='<option value="">Select age category</option>'; }
+function clearPlayerForm(){ ['player-edit-id','p-name','p-dob','p-team','p-jersey','p-city','p-guard','p-gphone','p-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('p-agecat').innerHTML='<option value="">Select age category</option>'; }
 
 // ── ID CARDS ──────────────────────────────────────────────────────────────
 // Pulls from real approved player registrations (Firebase), not a mock list —
@@ -1897,6 +1902,7 @@ function refreshIDCards(){
 function fillIDCardFields(p){
   document.getElementById('id-name').value=p.playerName||'';
   document.getElementById('id-team').value=p.playerTeam||'';
+  document.getElementById('id-jersey').value=p.playerJerseyNumber||'';
   document.getElementById('id-pos').value=p.playerPosition||'Midfielder';
   document.getElementById('id-dob').value=p.playerDOB||'';
   document.getElementById('id-agecat').value=p.playerAgeCategory||'';
@@ -2014,6 +2020,7 @@ async function bulkDownloadIDCards(){
 function updateIDPreview(){
   document.getElementById('prev-name').textContent=document.getElementById('id-name').value||'—';
   document.getElementById('prev-team').textContent=document.getElementById('id-team').value||'—';
+  document.getElementById('prev-jersey').textContent=document.getElementById('id-jersey').value||'—';
   document.getElementById('prev-pos').textContent=document.getElementById('id-pos').value;
   document.getElementById('prev-dob').textContent=document.getElementById('id-dob').value||'—';
   document.getElementById('prev-agecat').textContent=document.getElementById('id-agecat').value||'—';
@@ -2096,7 +2103,7 @@ function printIDCard(){
   <body>${card.outerHTML}<script>setTimeout(()=>window.print(),900);<\/script></body></html>`);
   win.document.close();
 }
-function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-dob','id-num','id-agecat','id-tournament','id-email'].forEach(x=>document.getElementById(x).value=''); document.getElementById('id-prev-photo').innerHTML='<i class="fas fa-user"></i>'; updateIDPreview(); }
+function resetIDCard(){ document.getElementById('idPlayerSelect').value=''; ['id-name','id-team','id-jersey','id-dob','id-num','id-agecat','id-tournament','id-email'].forEach(x=>document.getElementById(x).value=''); document.getElementById('id-prev-photo').innerHTML='<i class="fas fa-user"></i>'; updateIDPreview(); }
 
 // ── LINEUP ────────────────────────────────────────────────────────────────
 let _luEvents = [];

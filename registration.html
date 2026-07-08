@@ -547,6 +547,12 @@
                                 <input type="text" id="playerCity" name="playerCity" placeholder="City / State" required>
                             </div>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerJerseyNumber">Jersey Number *</label>
+                                <input type="number" id="playerJerseyNumber" name="playerJerseyNumber" min="0" max="99" placeholder="e.g. 7" required>
+                            </div>
+                        </div>
 
                         <p class="form-section-label">Team &amp; Tournament</p>
                         <div class="form-group" style="margin-bottom:16px;">
@@ -1585,6 +1591,7 @@
                 playerPhone: document.getElementById('playerPhone').value,
                 playerEmail: document.getElementById('playerEmail').value,
                 playerPosition: document.getElementById('playerPosition').value,
+                playerJerseyNumber: document.getElementById('playerJerseyNumber').value,
                 playerCity: document.getElementById('playerCity').value,
                 playerTeam: teamVal,
                 playerTournament: _tournamentForCheck,
