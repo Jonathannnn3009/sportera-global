@@ -736,15 +736,15 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <div class="card-head">
         <h3><i class="fas fa-calendar-alt"></i> All Fixtures</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <select id="fx-filter" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-            <option value="">All Tournaments</option><option value="IF5L Season 2">IF5L Season 2</option><option value="National Championship 2026">National Championship 2026</option>
+          <select id="fx-filter" onchange="onFxFilterTournamentChange()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+            <option value="">All Tournaments</option>
           </select>
           <select id="fx-filter-age" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-            <option value="">All Ages</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option><option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
+            <option value="">All Ages</option>
           </select>
         </div>
       </div>
-      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>#</th><th>Age</th><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th>Del</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>#</th><th>Age</th><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th>Actions</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
     </div>
   </div>
 </div>
@@ -852,11 +852,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-head">
       <h3><i class="fas fa-futbol"></i> Enter Match Results</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <select id="res-tournament" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-          <option value="">All Tournaments</option><option value="IF5L Season 2">IF5L Season 2</option><option value="National Championship 2026">National Championship 2026</option>
+        <select id="res-tournament" onchange="onResFilterTournamentChange()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Tournaments</option>
         </select>
         <select id="res-agecat" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-          <option value="">All Ages</option><option value="U9">U9</option><option value="U11">U11</option><option value="U13">U13</option><option value="U15">U15</option><option value="U17">U17</option><option value="U19">U19</option><option value="Senior">Senior</option>
+          <option value="">All Ages</option>
         </select>
       </div>
     </div>
@@ -883,10 +883,12 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <select id="lt-agecat" onchange="renderLeagueTable()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
           <option value="">Select Age Category</option>
         </select>
+        <button class="btn btn-gold btn-sm" onclick="exportLeagueTable()"><i class="fas fa-file-csv"></i> Export CSV</button>
       </div>
     </div>
     <div class="card-body">
       <div class="notice"><i class="fas fa-info-circle"></i> Table is auto-calculated from match results. Win = 3 pts, Draw = 1 pt, Loss = 0 pts. If teams have been split into pools (Manage Teams), each pool gets its own table automatically.</div>
+      <h4 id="lt-heading" style="margin:0 0 14px;color:var(--primary);"></h4>
       <div id="lt-tables-container"></div>
       <div id="lt-empty" class="empty" style="display:none;"><i class="fas fa-table"></i><h4>No data yet</h4><p>Enter match results to populate the table.</p></div>
     </div>
@@ -1077,6 +1079,49 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   </div>
 </div>
 
+<!-- Edit an Already-Saved Fixture -->
+<div class="modal-bg" id="modal-edit-fixture">
+  <div class="modal">
+    <div class="modal-head"><h3>Edit Fixture</h3><button class="modal-close" onclick="closeModal('modal-edit-fixture')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="efx-key">
+      <div class="form-row">
+        <div class="fg"><label>Tournament *</label>
+          <select id="efx-tournament" onchange="onEditFixtureTournamentChange()"><option value="">Select tournament</option></select>
+        </div>
+        <div class="fg"><label>Age Category *</label>
+          <select id="efx-agecat" onchange="onEditFixtureFilterChange()"><option value="">Select tournament first</option></select>
+        </div>
+      </div>
+      <div class="form-row" id="efx-pool-row" style="display:none;">
+        <div class="fg"><label>Pool / Group</label>
+          <select id="efx-pool" onchange="onEditFixturePoolChange()"><option value="">All Pools</option></select>
+        </div>
+        <div class="fg"><label>New Pool Name</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="efx-new-pool-name" placeholder="e.g. A, B, Group 1" style="flex:1;">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addPoolFromFixtureForm('efx')"><i class="fas fa-plus"></i> Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Home Team *</label><select id="efx-home"><option value="">Select tournament + age category first</option></select></div>
+        <div class="fg"><label>Away Team *</label><select id="efx-away"><option value="">Select tournament + age category first</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Date & Time *</label><input type="datetime-local" id="efx-dt"></div>
+        <div class="fg"><label>Venue</label><input type="text" id="efx-venue" placeholder="e.g. Goa Sports Complex"></div>
+      </div>
+      <div class="fg"><label>Round / Stage</label>
+        <select id="efx-round">
+          <option>League Stage</option><option>Quarter-Final</option><option>Semi-Final</option><option>Third Place</option><option>Grand Final</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-edit-fixture')">Cancel</button><button class="btn btn-primary" onclick="saveFixtureEdit()">Save Changes</button></div>
+  </div>
+</div>
+
 <!-- ══════════════ SCRIPT ══════════════ -->
 <script>
 // ── AUTH ──────────────────────────────────────────────────────────────────
@@ -1169,7 +1214,7 @@ _fbDb.ref('contactMessages').on('value', snap => {
 // categories, fixtures, lineup, results, league tables, team edit) reads
 // from this one live list instead of duplicating hardcoded <option> tags.
 let _fbTournaments = [];
-const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter'];
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','efx-tournament','lu-tournament','res-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter'];
 const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true, 'appTournamentFilter': true, 'idcTeamTournamentFilter': true };
 
 _fbDb.ref('tournaments').on('value', snap => {
@@ -2386,39 +2431,42 @@ _fbDb.ref('fixtures').on('value', snap => {
 // Age category options depend on which tournament is selected — pulled from
 // that tournament's own configured list instead of a fixed U9-Senior set,
 // so custom category names (or a different set per tournament) actually work.
-function onFixtureTournamentChange(){
-  const tournamentName = document.getElementById('fx-tournament').value;
-  const agecatSel = document.getElementById('fx-agecat');
+// Generalized by prefix so the same logic drives both the Add Fixture form
+// (prefix 'fx') and the Edit Fixture modal (prefix 'efx').
+function populateFixtureAgeCatOptions(prefix){
+  const tournamentName = document.getElementById(prefix+'-tournament').value;
+  const agecatSel = document.getElementById(prefix+'-agecat');
   const t = _fbTournaments.find(x => x.name === tournamentName);
   const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
   agecatSel.innerHTML = tournamentName
     ? '<option value="">Select age category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('')
     : '<option value="">Select tournament first</option>';
-  onFixtureFilterChange();
 }
+function onFixtureTournamentChange(){ populateFixtureAgeCatOptions('fx'); onFixtureFilterChange(); }
+function onEditFixtureTournamentChange(){ populateFixtureAgeCatOptions('efx'); onEditFixtureFilterChange(); }
 
 // Pools are optional — most tournaments have none, in which case the pool
 // row stays hidden and everything behaves exactly as before. If any team
 // in this tournament + age category has been assigned a pool (via Manage
 // Teams), the pool selector appears so fixtures/table can be split by pool.
-function onFixtureFilterChange(){
-  const tournament = document.getElementById('fx-tournament').value;
-  const ageCategory = document.getElementById('fx-agecat').value;
-  const homeSel = document.getElementById('fx-home');
-  const awaySel = document.getElementById('fx-away');
-  const poolRow = document.getElementById('fx-pool-row');
-  const poolSel = document.getElementById('fx-pool');
+function fixtureFilterChangeFor(prefix){
+  const tournament = document.getElementById(prefix+'-tournament').value;
+  const ageCategory = document.getElementById(prefix+'-agecat').value;
+  const homeSel = document.getElementById(prefix+'-home');
+  const awaySel = document.getElementById(prefix+'-away');
+  const poolRow = document.getElementById(prefix+'-pool-row');
+  const poolSel = document.getElementById(prefix+'-pool');
   if(!tournament || !ageCategory){
     homeSel.innerHTML = '<option value="">Select tournament + age category first</option>';
     awaySel.innerHTML = '<option value="">Select tournament + age category first</option>';
-    document.getElementById('fx-matchnum').value = '';
+    if (prefix === 'fx') document.getElementById('fx-matchnum').value = '';
     poolRow.style.display = 'none';
     return;
   }
   // Always show the pool field once tournament + age category are picked —
   // pulls from the tournament's managed pool list (Age Categories & Pools
   // panel), not from whether a team happens to already have one assigned,
-  // so admin can pick a pool while creating the fixture itself.
+  // so admin can pick a pool while creating/editing the fixture itself.
   poolRow.style.display = 'flex';
   const pools = _fbPoolsByTournament[tournamentSlug(tournament)] || [];
   const prevPool = poolSel.value;
@@ -2426,15 +2474,19 @@ function onFixtureFilterChange(){
     ? '<option value="">All / No Pool</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('')
     : '<option value="">No pools set up for this tournament yet</option>');
   if (pools.includes(prevPool)) poolSel.value = prevPool;
-  onFixturePoolChange();
+  fixturePoolChangeFor(prefix);
 }
+function onFixtureFilterChange(){ fixtureFilterChangeFor('fx'); }
+function onEditFixtureFilterChange(){ fixtureFilterChangeFor('efx'); }
 
-// Lets admin define a new pool right from the Add Fixture form, instead of
-// having to switch to the Age Categories & Pools panel first — writes to
-// the same pools/{tournamentSlug} list either way.
-function addPoolFromFixtureForm(){
-  const tournament = document.getElementById('fx-tournament').value;
-  const name = document.getElementById('fx-new-pool-name').value.trim();
+// Lets admin define a new pool right from the Add Fixture form or the Edit
+// Fixture modal, instead of having to switch to the Age Categories & Pools
+// panel first — writes to the same pools/{tournamentSlug} list either way.
+function addPoolFromFixtureForm(prefix){
+  prefix = prefix || 'fx';
+  const tournament = document.getElementById(prefix+'-tournament').value;
+  const nameInput = document.getElementById(prefix+'-new-pool-name');
+  const name = nameInput.value.trim();
   if (!tournament) { alert('Select a tournament first.'); return; }
   if (!name) return;
   const ref = _fbDb.ref('pools/'+tournamentSlug(tournament));
@@ -2442,23 +2494,24 @@ function addPoolFromFixtureForm(){
     const pools = snap.val() || [];
     if (!pools.includes(name)) pools.push(name);
     ref.set(pools).then(() => {
-      document.getElementById('fx-new-pool-name').value = '';
+      nameInput.value = '';
       // _fbPoolsByTournament updates via its own live listener; refresh
       // the dropdown directly too so it doesn't wait on that round-trip.
       _fbPoolsByTournament[tournamentSlug(tournament)] = pools;
-      onFixtureFilterChange();
-      document.getElementById('fx-pool').value = name;
-      onFixturePoolChange();
+      fixtureFilterChangeFor(prefix);
+      document.getElementById(prefix+'-pool').value = name;
+      fixturePoolChangeFor(prefix);
     });
   });
 }
 
-function onFixturePoolChange(){
-  const tournament = document.getElementById('fx-tournament').value;
-  const ageCategory = document.getElementById('fx-agecat').value;
-  const pool = document.getElementById('fx-pool').value;
-  const homeSel = document.getElementById('fx-home');
-  const awaySel = document.getElementById('fx-away');
+function fixturePoolChangeFor(prefix){
+  const tournament = document.getElementById(prefix+'-tournament').value;
+  const ageCategory = document.getElementById(prefix+'-agecat').value;
+  const pool = document.getElementById(prefix+'-pool').value;
+  const homeSel = document.getElementById(prefix+'-home');
+  const awaySel = document.getElementById(prefix+'-away');
+  const prevHome = homeSel.value, prevAway = awaySel.value;
   // The pool picked here only tags which pool this fixture belongs to — it
   // does NOT filter which teams can be selected. Requiring a team to already
   // have that same pool pre-assigned in Manage Teams was the bug: most teams
@@ -2471,9 +2524,15 @@ function onFixturePoolChange(){
     : '<option value="" disabled>No teams registered for this tournament/age category</option>');
   homeSel.innerHTML = opts;
   awaySel.innerHTML = opts;
-  const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!pool || f.pool===pool)).length;
-  document.getElementById('fx-matchnum').value = 'Match ' + (count+1);
+  if ([...homeSel.options].some(o=>o.value===prevHome)) homeSel.value = prevHome;
+  if ([...awaySel.options].some(o=>o.value===prevAway)) awaySel.value = prevAway;
+  if (prefix === 'fx') {
+    const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!pool || f.pool===pool)).length;
+    document.getElementById('fx-matchnum').value = 'Match ' + (count+1);
+  }
 }
+function onFixturePoolChange(){ fixturePoolChangeFor('fx'); }
+function onEditFixturePoolChange(){ fixturePoolChangeFor('efx'); }
 
 function addFixture(){
   const tournament = document.getElementById('fx-tournament').value;
@@ -2506,6 +2565,62 @@ function addFixture(){
   document.getElementById('fx-home').value=''; document.getElementById('fx-away').value='';
   onFixtureFilterChange();
 }
+
+// Opens the Edit Fixture modal pre-filled with this fixture's current data —
+// reuses the same tournament/age/pool/team population chain as Add Fixture
+// (prefix 'efx') so all the same dynamic dropdowns work here too.
+function openEditFixtureModal(key){
+  const f = (_fbFixtures||[]).find(x=>x._key===key); if(!f) return;
+  document.getElementById('efx-key').value = key;
+  document.getElementById('efx-tournament').value = f.tournament;
+  populateFixtureAgeCatOptions('efx');
+  document.getElementById('efx-agecat').value = f.ageCategory;
+  fixtureFilterChangeFor('efx');
+  document.getElementById('efx-pool').value = f.pool || '';
+  fixturePoolChangeFor('efx');
+  document.getElementById('efx-home').value = f.home;
+  document.getElementById('efx-away').value = f.away;
+  document.getElementById('efx-dt').value = f.dt;
+  document.getElementById('efx-venue').value = f.venue || '';
+  document.getElementById('efx-round').value = f.round;
+  openModal('modal-edit-fixture');
+}
+function saveFixtureEdit(){
+  const key = document.getElementById('efx-key').value;
+  const tournament = document.getElementById('efx-tournament').value;
+  const ageCategory = document.getElementById('efx-agecat').value;
+  const pool = document.getElementById('efx-pool').value || null;
+  const home = document.getElementById('efx-home').value;
+  const away = document.getElementById('efx-away').value;
+  const dt = document.getElementById('efx-dt').value;
+  if(!tournament||!ageCategory){ alert('Please select tournament and age category.'); return; }
+  if(!home||!away||!dt){ alert('Home team, away team, and date are required.'); return; }
+  if(home===away){ alert('Home and away team cannot be the same.'); return; }
+  _fbDb.ref('fixtures/'+key).update({
+    tournament, ageCategory, pool, home, away, dt,
+    venue: document.getElementById('efx-venue').value,
+    round: document.getElementById('efx-round').value
+  });
+  if (pool) {
+    [home, away].forEach(teamName => {
+      const teamReg = (_fbRegs||[]).find(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory && r.teamName===teamName);
+      if (teamReg && teamReg.pool !== pool) _fbDb.ref('registrations/'+teamReg._key).update({ pool });
+    });
+  }
+  closeModal('modal-edit-fixture');
+}
+
+// Tournament/age filters for the fixtures list — age options are pulled
+// dynamically from whichever tournament is selected (same pattern as
+// Manage Teams/Players), instead of a fixed hardcoded U9-Senior list that
+// never matched any tournament's real categories.
+function onFxFilterTournamentChange(){
+  const sel = document.getElementById('fx-filter-age');
+  const tournamentName = document.getElementById('fx-filter').value;
+  sel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Ages</option>';
+  renderFixtures();
+}
+
 function renderFixtures(){
   const ft=(document.getElementById('fx-filter')||{}).value||'';
   const fa=(document.getElementById('fx-filter-age')||{}).value||'';
@@ -2519,9 +2634,19 @@ function renderFixtures(){
     <td><strong>${f.home}</strong></td><td><strong>${f.away}</strong></td>
     <td>${fmtDateTime(f.dt)}</td><td>${f.venue||'—'}</td><td>${f.round}</td>
     <td>${badge(f.status)}</td>
-    <td><button class="btn btn-danger btn-xs" onclick="deleteFixture('${f._key}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="openEditFixtureModal('${f._key}')" title="Edit fixture"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteFixture('${f._key}')" title="Delete fixture"><i class="fas fa-trash"></i></button>
+    </td></tr>`).join('');
 }
-function deleteFixture(key){ if(!confirm('Delete fixture?')) return; _fbDb.ref('fixtures/'+key).remove(); }
+// Deleting a fixture that already has a result would leave an orphaned
+// results/ entry (still showing in the Results Log and counted in the
+// league table) with no fixture to point back to — clean that up too.
+function deleteFixture(key){
+  if(!confirm('Delete fixture? Its result (if any) will be deleted too.')) return;
+  _fbDb.ref('fixtures/'+key).remove();
+  _fbDb.ref('results/'+key).remove();
+}
 
 // ── RESULTS ───────────────────────────────────────────────────────────────
 let _fbResults = [];
@@ -2558,6 +2683,16 @@ function resultScoreForm(f, r, saveLabel){
       <div style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;">${f.tournament} · ${f.ageCategory} · Match ${f.matchNumber}</div>
       <button class="btn btn-success btn-sm" onclick="saveResult('${f._key}')"><i class="fas fa-save"></i> ${saveLabel}</button>
     </div>`;
+}
+
+// Age options here are pulled dynamically from whichever tournament is
+// selected, same as the fixtures list filter — replaces a hardcoded
+// U9-Senior list that never matched any tournament's real categories.
+function onResFilterTournamentChange(){
+  const sel = document.getElementById('res-agecat');
+  const tournamentName = document.getElementById('res-tournament').value;
+  sel.innerHTML = tournamentName ? ageCatFilterOptionsFor(tournamentName) : '<option value="">All Ages</option>';
+  renderResultsFixtures();
 }
 
 function renderResultsFixtures(){
@@ -2611,7 +2746,18 @@ function renderResultsLog(){
     <td>${r.home} vs ${r.away} <span style="color:var(--muted);font-size:.75rem;">(${r.ageCategory||''})</span></td>
     <td style="font-weight:800;font-size:1rem;color:var(--primary);">${r.homeScore} – ${r.awayScore}</td>
     <td>${r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td>
-    <td class="actions"><button class="btn btn-ghost btn-xs" onclick="editResult('${r._key}')" title="Correct this result"><i class="fas fa-edit"></i></button></td></tr>`).join('');
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editResult('${r._key}')" title="Correct this result"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteResult('${r._key}')" title="Delete this result"><i class="fas fa-trash"></i></button>
+    </td></tr>`).join('');
+}
+// Deleting a result reverts its fixture back to "upcoming" with the score
+// cleared, so it correctly reappears in the fixtures-to-score list above
+// instead of being stuck "played" with no result behind it.
+function deleteResult(key){
+  if(!confirm('Delete this result? The fixture will return to "upcoming" and its score will be cleared.')) return;
+  _fbDb.ref('results/'+key).remove();
+  _fbDb.ref('fixtures/'+key).update({ status:'upcoming', homeScore:null, awayScore:null });
 }
 
 // ── LEAGUE TABLE ──────────────────────────────────────────────────────────
@@ -2656,7 +2802,13 @@ function renderLeagueTable(){
   const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
   const container=document.getElementById('lt-tables-container');
   const empty=document.getElementById('lt-empty');
-  if(!tourn){ container.innerHTML=''; empty.style.display='block'; return; }
+  const heading=document.getElementById('lt-heading');
+  if(!tourn){ container.innerHTML=''; empty.style.display='block'; heading.textContent=''; return; }
+
+  // Tournament + age category the table is showing, spelled out on the page
+  // itself (not just implied by the dropdown selections) so it's obvious
+  // what's being looked at — same label used in the CSV export filename.
+  heading.textContent = tourn + ' — ' + (ageCat || 'All Age Categories');
 
   let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
   if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
@@ -2676,6 +2828,42 @@ function renderLeagueTable(){
   } else {
     container.innerHTML = tableHtml(computeTableRows(fx), null);
   }
+}
+
+// Exports whatever the League Table panel is currently showing — same
+// tournament/age-category/pool filtering as the on-screen render — with
+// Tournament and Age Category as their own columns on every row.
+function exportLeagueTable(){
+  const tourn=(document.getElementById('lt-tournament')||{}).value||'';
+  const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
+  if(!tourn){ alert('Select a tournament first.'); return; }
+
+  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
+  if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
+  if(!fx.length){ alert('No table data to export yet.'); return; }
+
+  const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&(!ageCat||r.ageCategory===ageCat));
+  const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
+
+  const toRows = (rows, poolLabel) => rows.map((r,i) => [
+    tourn, ageCat || 'All', poolLabel || '—', i+1, r.name, r.p, r.w, r.d, r.l, r.gf, r.ga, r.gd, r.pts
+  ]);
+  let dataRows = [];
+  if (pools.length) {
+    pools.forEach(p => {
+      const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
+      const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
+      dataRows = dataRows.concat(toRows(computeTableRows(poolFx), 'Pool ' + p));
+    });
+  } else {
+    dataRows = toRows(computeTableRows(fx), null);
+  }
+
+  const header=['Tournament','Age Category','Pool','Rank','Team','P','W','D','L','GF','GA','GD','Pts'];
+  const csv=[header,...dataRows].map(r=>r.map(c=>`"${(c??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`league_table_${tournamentSlug(tourn)}${ageCat?'_'+tournamentSlug(ageCat):''}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
 }
 
 // ── NEWS ──────────────────────────────────────────────────────────────────
