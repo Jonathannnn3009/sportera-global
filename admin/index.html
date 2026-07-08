@@ -100,6 +100,7 @@ button{cursor:pointer;font-family:inherit;}
 /* ── TABLE ── */
 .tbl-wrap{overflow-x:auto;}
 .capturable.capturing .no-capture{display:none !important;}
+.sort-ind{display:inline-block;width:12px;font-size:.75rem;opacity:.6;}
 table.dt{width:100%;border-collapse:collapse;font-size:.855rem;}
 table.dt th{background:#f4f6fb;color:var(--primary);font-weight:700;padding:10px 13px;text-align:left;border-bottom:2px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
 table.dt td{padding:11px 13px;border-bottom:1px solid var(--border);vertical-align:middle;}
@@ -251,6 +252,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -761,7 +763,45 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
         </div>
       </div>
-      <div class="card-body" style="padding:0;"><div class="tbl-wrap capturable" id="fixtures-capture"><table class="dt"><thead><tr><th>#</th><th>Age</th><th>City</th><th>Home</th><th>Away</th><th>Date</th><th>Venue</th><th>Round</th><th>Status</th><th class="no-capture">Actions</th></tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap capturable" id="fixtures-capture"><table class="dt"><thead><tr id="fixtures-head-row">
+        <th data-sort="matchNumber" onclick="onFixturesSortClick('matchNumber')" style="cursor:pointer;">#<span class="sort-ind"></span></th>
+        <th data-sort="ageCategory" onclick="onFixturesSortClick('ageCategory')" style="cursor:pointer;">Age<span class="sort-ind"></span></th>
+        <th data-sort="cityGroup" onclick="onFixturesSortClick('cityGroup')" style="cursor:pointer;">City<span class="sort-ind"></span></th>
+        <th data-sort="home" onclick="onFixturesSortClick('home')" style="cursor:pointer;">Home<span class="sort-ind"></span></th>
+        <th data-sort="away" onclick="onFixturesSortClick('away')" style="cursor:pointer;">Away<span class="sort-ind"></span></th>
+        <th data-sort="dt" onclick="onFixturesSortClick('dt')" style="cursor:pointer;">Date<span class="sort-ind"></span></th>
+        <th data-sort="venue" onclick="onFixturesSortClick('venue')" style="cursor:pointer;">Venue<span class="sort-ind"></span></th>
+        <th data-sort="round" onclick="onFixturesSortClick('round')" style="cursor:pointer;">Round<span class="sort-ind"></span></th>
+        <th data-sort="status" onclick="onFixturesSortClick('status')" style="cursor:pointer;">Status<span class="sort-ind"></span></th>
+        <th class="no-capture">Actions</th>
+      </tr></thead><tbody id="fixtures-body"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head"><h3><i class="fas fa-file-excel"></i> Bulk Upload Fixtures (Excel)</h3></div>
+    <div class="card-body">
+      <div class="notice info"><i class="fas fa-info-circle"></i> Upload an .xlsx file with one row per fixture. Team, Tournament, and Age Category names must match exactly what's already registered (case-sensitive) — download the template below and fill it in, or export it and hand it to whoever is scheduling matches.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn btn-ghost" onclick="downloadFixturesTemplate()"><i class="fas fa-download"></i> Download Template (.xlsx)</button>
+      </div>
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="fg"><label>Excel File (.xlsx)</label><input type="file" id="fx-bulk-file" accept=".xlsx,.xls"></div>
+        <div class="fg" style="flex:0;"><button class="btn btn-primary" onclick="bulkUploadFixtures()"><i class="fas fa-upload"></i> Upload Fixtures</button></div>
+      </div>
+      <div id="fx-bulk-result" style="margin-top:14px;"></div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:10px;">
+        <strong>Columns (first row = headers, exact spelling):</strong><br>
+        <code>Tournament</code> — exact tournament name, e.g. "Football 5 Premier League"<br>
+        <code>City</code> — leave blank unless this is a multi-city tournament (e.g. IF5L); must match a city already configured for it<br>
+        <code>Age Category</code> — e.g. "U8" — must be one this tournament actually has<br>
+        <code>Pool</code> — optional; leave blank for no pool<br>
+        <code>Home Team</code> / <code>Away Team</code> — exact registered team names<br>
+        <code>Date</code> — YYYY-MM-DD, e.g. 2026-08-15<br>
+        <code>Time</code> — 24-hour HH:MM, e.g. 16:30<br>
+        <code>Venue</code> — optional<br>
+        <code>Round</code> — optional; one of League Stage, Quarter-Final, Semi-Final, Third Place, Grand Final (defaults to League Stage if blank or unrecognized)
+      </p>
     </div>
   </div>
 </div>
@@ -2280,8 +2320,15 @@ function renderSavedLineups(){
       <div style="display:flex;gap:8px;">
         <button onclick="printLineup('${l._key}')" class="btn btn-gold" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-print"></i> Print</button>
         <button onclick="loadSavedLineup('${l._key}')" class="btn btn-ghost" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-edit"></i> Edit</button>
+        <button onclick="deleteLineup('${l._key}')" class="btn btn-danger" style="font-size:.8rem;padding:6px 14px;"><i class="fas fa-trash"></i> Delete</button>
       </div>
     </div>`).join('');
+}
+
+function deleteLineup(fixtureKey){
+  if(!confirm('Delete this saved lineup? The fixture itself is not affected.')) return;
+  _fbDb.ref('lineups/'+fixtureKey).remove();
+  if (_luFixtureId === fixtureKey) { clearLineup(); document.getElementById('lu-form-wrap').style.display='none'; }
 }
 
 function loadSavedLineup(fixtureKey){
@@ -2719,6 +2766,38 @@ function onFxFilterTournamentChange(){
   renderFixtures();
 }
 
+// Age categories sort numerically (U8 before U10 before U12), not
+// alphabetically (which would put U10/U12 before U8) — non-U<N> labels
+// (Senior, Open, ...) sort after every numeric category, alphabetically
+// among themselves.
+function ageCatNumeric(label){
+  const m = /^U(\d+)$/i.exec((label||'').trim());
+  return m ? parseInt(m[1],10) : null;
+}
+function fixturesCompare(a, b, col){
+  if (col === 'ageCategory') {
+    const an = ageCatNumeric(a.ageCategory), bn = ageCatNumeric(b.ageCategory);
+    if (an !== null && bn !== null) return an - bn;
+    if (an !== null) return -1;
+    if (bn !== null) return 1;
+    return (a.ageCategory||'').localeCompare(b.ageCategory||'');
+  }
+  if (col === 'matchNumber') return (a.matchNumber||0) - (b.matchNumber||0);
+  if (col === 'dt') return new Date(a.dt||0) - new Date(b.dt||0);
+  return (a[col]||'').toString().toLowerCase().localeCompare((b[col]||'').toString().toLowerCase());
+}
+
+// Clicking a column header sorts by it (click again to reverse) — defaults
+// to Age Category ascending (small to big) so the table reads U8, U10,
+// U12, ... out of the box without needing to click anything.
+let _fxSortCol = 'ageCategory';
+let _fxSortDir = 1;
+function onFixturesSortClick(col){
+  if (_fxSortCol === col) _fxSortDir *= -1;
+  else { _fxSortCol = col; _fxSortDir = 1; }
+  renderFixtures();
+}
+
 function renderFixtures(){
   const ft=(document.getElementById('fx-filter')||{}).value||'';
   const fc=(document.getElementById('fx-filter-city')||{}).value||'';
@@ -2727,12 +2806,12 @@ function renderFixtures(){
   if(ft) fx=fx.filter(f=>f.tournament===ft);
   if(fc) fx=fx.filter(f=>f.cityGroup===fc);
   if(fa) fx=fx.filter(f=>f.ageCategory===fa);
+  fx=[...fx].sort((a,b)=>fixturesCompare(a,b,_fxSortCol)*_fxSortDir);
+  document.querySelectorAll('#fixtures-head-row th[data-sort]').forEach(th=>{
+    th.querySelector('.sort-ind').textContent = th.dataset.sort===_fxSortCol ? (_fxSortDir===1?'▲':'▼') : '';
+  });
   const tbody=document.getElementById('fixtures-body');
   if(!fx.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
-  // Shown in the order they were added (Firebase push keys sort
-  // chronologically by creation, matching matchNumber) — previously
-  // re-sorted by date/time, which scrambled the sequence admins actually
-  // entered fixtures in whenever match dates weren't added in order.
   tbody.innerHTML=fx.map(f=>`<tr>
     <td>${f.matchNumber||'—'}</td><td>${f.ageCategory||'—'}</td><td>${f.cityGroup||'—'}</td>
     <td><strong>${f.home}</strong></td><td><strong>${f.away}</strong></td>
@@ -2772,6 +2851,149 @@ async function downloadFixturesImage(format){
   } finally {
     el.classList.remove('capturing');
   }
+}
+
+// Downloads a ready-to-fill .xlsx with the exact headers bulkUploadFixtures()
+// expects, pre-filled with one real example row (using the first tournament
+// and its first two approved teams, when available) so whoever fills it in
+// sees valid values instead of guessing at the format.
+function downloadFixturesTemplate(){
+  const sampleTournament = (_fbTournaments[0]||{}).name || 'Football 5 Premier League';
+  const sampleTeams = (_fbRegs||[]).filter(r=>r.type==='team' && r.status==='approved' && r.tournament===sampleTournament);
+  const home = sampleTeams[0] ? sampleTeams[0].teamName : 'Team A';
+  const awayEntry = sampleTeams.find(t=>t.teamName!==home);
+  const away = awayEntry ? awayEntry.teamName : 'Team B';
+  const ageCat = sampleTeams[0] ? sampleTeams[0].ageCategory : 'U8';
+  const data = [
+    ['Tournament','City','Age Category','Pool','Home Team','Away Team','Date','Time','Venue','Round'],
+    [sampleTournament, '', ageCat, '', home, away, '2026-08-15', '16:30', 'Goa Sports Complex', 'League Stage']
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:26},{wch:14},{wch:12},{wch:8},{wch:20},{wch:20},{wch:12},{wch:8},{wch:20},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fixtures');
+  XLSX.writeFile(wb, 'fixtures_upload_template.xlsx');
+}
+
+// Bulk-creates fixtures from an uploaded .xlsx — same validation rules as
+// the Add Fixture form (tournament/age category/city must already be
+// configured, home ≠ away), plus per-row match numbering scoped by
+// tournament+city+age+pool exactly like addFixture(), and the same
+// auto-pool-assignment for any team that doesn't have that pool yet. Rows
+// that fail validation are skipped and reported, not silently dropped.
+const FIXTURES_VALID_ROUNDS = ['League Stage','Quarter-Final','Semi-Final','Third Place','Grand Final'];
+async function bulkUploadFixtures(){
+  const fileInput = document.getElementById('fx-bulk-file');
+  const resultEl = document.getElementById('fx-bulk-result');
+  const file = fileInput.files[0];
+  if(!file){ alert('Choose an Excel file first.'); return; }
+  resultEl.innerHTML = '<p style="color:var(--muted);">Reading file...</p>';
+
+  let rows;
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array', cellDates:true});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+  } catch(e) {
+    resultEl.innerHTML = `<div class="notice" style="background:#ffebee;border-color:#e53935;color:#c62828;"><i class="fas fa-triangle-exclamation"></i> Could not read the file: ${e.message}</div>`;
+    return;
+  }
+  if(!rows.length){
+    resultEl.innerHTML = '<div class="notice" style="background:#ffebee;border-color:#e53935;color:#c62828;"><i class="fas fa-triangle-exclamation"></i> No rows found in the file.</div>';
+    return;
+  }
+
+  const matchCountCache = {};
+  const poolsToEnsure = {};
+  const teamPoolUpdates = [];
+  const fixturesToPush = {};
+  const errors = [];
+  const warnings = [];
+  let successCount = 0;
+
+  rows.forEach((row, idx) => {
+    const rowNum = idx + 2; // header is row 1
+    const tournament = (row['Tournament']||'').toString().trim();
+    const city = (row['City']||'').toString().trim();
+    const ageCategory = (row['Age Category']||'').toString().trim();
+    const pool = (row['Pool']||'').toString().trim();
+    const home = (row['Home Team']||'').toString().trim();
+    const away = (row['Away Team']||'').toString().trim();
+    let round = (row['Round']||'').toString().trim();
+    const venue = (row['Venue']||'').toString().trim();
+
+    if(!tournament){ errors.push(`Row ${rowNum}: Tournament is required.`); return; }
+    const t = _fbTournaments.find(x=>x.name===tournament);
+    if(!t){ errors.push(`Row ${rowNum}: Tournament "${tournament}" not found.`); return; }
+    if(!ageCategory){ errors.push(`Row ${rowNum}: Age Category is required.`); return; }
+    const validCats = (t.ageCategories && t.ageCategories.length) ? t.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+    if(!validCats.includes(ageCategory)){ errors.push(`Row ${rowNum}: "${ageCategory}" is not a configured age category for ${tournament}.`); return; }
+    if(cityRequiredFor(tournament) && !city){ errors.push(`Row ${rowNum}: City is required — ${tournament} is a multi-city tournament.`); return; }
+    if(city){
+      const cities = _fbCitiesByTournament[tournamentSlug(tournament)]||[];
+      if(cities.length && !cities.includes(city)){ errors.push(`Row ${rowNum}: "${city}" is not a configured city for ${tournament}.`); return; }
+    }
+    if(!home || !away){ errors.push(`Row ${rowNum}: Home Team and Away Team are required.`); return; }
+    if(home===away){ errors.push(`Row ${rowNum}: Home and Away team cannot be the same.`); return; }
+    const teamsForScope = (_fbRegs||[]).filter(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory && (!city||r.cityGroup===city));
+    [home, away].forEach(teamName => {
+      if (!teamsForScope.some(r => r.teamName === teamName)) {
+        warnings.push(`Row ${rowNum}: "${teamName}" isn't a registered team for ${tournament} / ${ageCategory}${city?' / '+city:''} — fixture created anyway, double-check the spelling.`);
+      }
+    });
+
+    const dateRaw = row['Date'];
+    const timeRaw = row['Time'];
+    const dateStr = dateRaw instanceof Date ? dateRaw.toISOString().slice(0,10) : (dateRaw||'').toString().trim();
+    const timeStr = timeRaw instanceof Date ? timeRaw.toTimeString().slice(0,5) : (timeRaw||'').toString().trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)){ errors.push(`Row ${rowNum}: Date must be YYYY-MM-DD (got "${dateStr}").`); return; }
+    if(!/^\d{1,2}:\d{2}$/.test(timeStr)){ errors.push(`Row ${rowNum}: Time must be HH:MM, 24-hour (got "${timeStr}").`); return; }
+    const dt = `${dateStr}T${timeStr.padStart(5,'0')}`;
+
+    if(!round || !FIXTURES_VALID_ROUNDS.includes(round)) round = 'League Stage';
+
+    const scopeKey = [tournament, city, ageCategory, pool].join('|');
+    if (matchCountCache[scopeKey] === undefined) {
+      matchCountCache[scopeKey] = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!city||f.cityGroup===city) && (!pool||f.pool===pool)).length;
+    }
+    matchCountCache[scopeKey]++;
+
+    const newKey = _fbDb.ref('fixtures').push().key;
+    fixturesToPush[newKey] = {
+      tournament, ageCategory, cityGroup: city || null, pool: pool || null,
+      matchNumber: matchCountCache[scopeKey], home, away, dt, venue: venue || '', round, status: 'upcoming'
+    };
+
+    if (pool) {
+      const slug = tournamentSlug(tournament);
+      if (!poolsToEnsure[slug]) poolsToEnsure[slug] = new Set(_fbPoolsByTournament[slug]||[]);
+      poolsToEnsure[slug].add(pool);
+      [home, away].forEach(teamName => {
+        const teamReg = (_fbRegs||[]).find(r => r.type==='team' && r.tournament===tournament && r.ageCategory===ageCategory && r.teamName===teamName && (!city||r.cityGroup===city));
+        if (teamReg && teamReg.pool !== pool) teamPoolUpdates.push({ key: teamReg._key, pool });
+      });
+    }
+    successCount++;
+  });
+
+  if (!Object.keys(fixturesToPush).length) {
+    resultEl.innerHTML = `<div class="notice" style="background:#ffebee;border-color:#e53935;color:#c62828;"><i class="fas fa-triangle-exclamation"></i> No fixtures could be created.</div>` +
+      (errors.length ? `<ul style="color:#c62828;font-size:.85rem;margin-top:8px;">${errors.map(e=>`<li>${e}</li>`).join('')}</ul>` : '');
+    return;
+  }
+
+  const updates = {};
+  Object.entries(fixturesToPush).forEach(([key, val]) => { updates['fixtures/'+key] = val; });
+  teamPoolUpdates.forEach(({key,pool}) => { updates['registrations/'+key+'/pool'] = pool; });
+  Object.entries(poolsToEnsure).forEach(([slug, set]) => { updates['pools/'+slug] = [...set]; });
+
+  await _fbDb.ref().update(updates);
+
+  resultEl.innerHTML = `<div class="notice success"><i class="fas fa-check-circle"></i> ${successCount} fixture(s) added successfully.</div>` +
+    (warnings.length ? `<div class="notice" style="margin-top:10px;background:#fff3e0;border-color:#f0b429;color:#8a5a00;"><i class="fas fa-triangle-exclamation"></i> ${warnings.length} warning(s):<ul style="margin:6px 0 0 20px;">${warnings.map(w=>`<li>${w}</li>`).join('')}</ul></div>` : '') +
+    (errors.length ? `<div class="notice" style="margin-top:10px;background:#ffebee;border-color:#e53935;color:#c62828;"><i class="fas fa-triangle-exclamation"></i> ${errors.length} row(s) skipped:<ul style="margin:6px 0 0 20px;">${errors.map(e=>`<li>${e}</li>`).join('')}</ul></div>` : '');
+  fileInput.value = '';
 }
 
 // ── RESULTS ───────────────────────────────────────────────────────────────
