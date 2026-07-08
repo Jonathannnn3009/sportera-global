@@ -361,6 +361,13 @@
                                 <option value="">Select tournament</option>
                             </select>
                         </div>
+                        <div class="form-group" id="teamCityGroupWrap" style="display:none;">
+                            <label for="teamCityGroup">City *</label>
+                            <p style="font-size:.82rem;color:var(--text-light);margin:-2px 0 10px;">This tournament runs in multiple cities — pick which city leg your team is entering.</p>
+                            <select id="teamCityGroup" name="teamCityGroup">
+                                <option value="">Select city</option>
+                            </select>
+                        </div>
                         <div class="form-group" id="ageCategoryGroup" style="display:none;">
                             <label>Age Category(s) *</label>
                             <p style="font-size:.82rem;color:var(--text-light);margin:-2px 0 10px;">Select every age category your team is entering — the token fee is charged per category.</p>
@@ -986,28 +993,28 @@
             }
             if (!dob) {
                 ageCatSel.innerHTML = '<option value="">Select age category</option>' +
-                    _currentTeamMatches.map(t => `<option value="${t.ageCategory}">${t.ageCategory}</option>`).join('');
+                    _currentTeamMatches.map(t => `<option value="${ageCategoryOptionValue(t.ageCategory, t.cityGroup)}">${ageCategoryOptionLabel(t.ageCategory, t.cityGroup)}</option>`).join('');
                 return;
             }
             _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
                 const cats = snap.val() || [];
                 const eligible = [];
-                const excluded = [];
+                const excludedLabels = [];
                 _currentTeamMatches.forEach(t => {
                     const cutoffDate = getCutoffDate(cats, t.ageCategory);
-                    if (cutoffDate && new Date(dob) < new Date(cutoffDate)) excluded.push(t.ageCategory);
-                    else eligible.push(t.ageCategory);
+                    if (cutoffDate && new Date(dob) < new Date(cutoffDate)) excludedLabels.push(ageCategoryOptionLabel(t.ageCategory, t.cityGroup));
+                    else eligible.push(t);
                 });
                 if (!eligible.length) {
                     ageCatSel.innerHTML = '<option value="">No eligible category</option>';
-                    hint.textContent = `Based on this date of birth, the player is overage for every category this team registered under (${excluded.join(', ')}). Registration cannot proceed for this team.`;
+                    hint.textContent = `Based on this date of birth, the player is overage for every category this team registered under (${excludedLabels.join(', ')}). Registration cannot proceed for this team.`;
                     hint.style.color = '#c62828';
                     hint.style.display = 'block';
                 } else {
                     ageCatSel.innerHTML = '<option value="">Select age category</option>' +
-                        eligible.map(c => `<option value="${c}">${c}</option>`).join('');
-                    if (excluded.length) {
-                        hint.textContent = `${excluded.join(', ')} not shown — this player is overage for ${excluded.length > 1 ? 'those categories' : 'that category'} based on their date of birth.`;
+                        eligible.map(t => `<option value="${ageCategoryOptionValue(t.ageCategory, t.cityGroup)}">${ageCategoryOptionLabel(t.ageCategory, t.cityGroup)}</option>`).join('');
+                    if (excludedLabels.length) {
+                        hint.textContent = `${excludedLabels.join(', ')} not shown — this player is overage for ${excludedLabels.length > 1 ? 'those categories' : 'that category'} based on their date of birth.`;
                         hint.style.color = '#5b6475';
                         hint.style.display = 'block';
                     } else {
@@ -1049,7 +1056,7 @@
         function checkAgeCategoryEligibility() {
             const hint = document.getElementById('playerAgeCategoryHint');
             const tournamentName = document.getElementById('playerTournament').value;
-            const category = document.getElementById('playerAgeCategory').value;
+            const { category } = parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value);
             const dob = document.getElementById('playerDOB').value;
             _ageCategoryEligible = true;
             hint.style.display = 'none';
@@ -1158,16 +1165,43 @@
         ];
         function tournamentSlug(t) { return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
 
+        // A team can register the same age category once per city in a
+        // multi-city tournament (e.g. IF5L Mumbai U12 and IF5L Ambernath U12
+        // are two separate team registrations). So the player's age-category
+        // dropdown encodes city into the option value whenever a match has
+        // one, keeping the value plain "U12" (unchanged) for every
+        // single-city tournament.
+        function ageCategoryOptionValue(ageCategory, cityGroup) {
+            return cityGroup ? ageCategory + '|||' + cityGroup : ageCategory;
+        }
+        function ageCategoryOptionLabel(ageCategory, cityGroup) {
+            return cityGroup ? `${ageCategory} (${cityGroup})` : ageCategory;
+        }
+        function parseAgeCategoryOptionValue(value) {
+            const idx = (value||'').indexOf('|||');
+            return idx === -1 ? { category: value, cityGroup: null } : { category: value.slice(0, idx), cityGroup: value.slice(idx + 3) };
+        }
+
         function getSelectedAgeCategories() {
             return [...document.querySelectorAll('#ageCategoryChecks input[type="checkbox"]:checked')].map(c => c.value);
         }
 
+        // Multi-city tournaments (e.g. IF5L — Mumbai / Ambernath / Hyderabad)
+        // add a required City step right after Tournament. A tournament with
+        // nothing at cities/{slug} is single-city — the field stays hidden
+        // and nothing about the rest of the form changes.
+        let _teamCityRequired = false;
         document.getElementById('tournament').addEventListener('change', function() {
             const group = document.getElementById('ageCategoryGroup');
             const checksBox = document.getElementById('ageCategoryChecks');
+            const cityWrap = document.getElementById('teamCityGroupWrap');
+            const citySel = document.getElementById('teamCityGroup');
             if (!this.value) {
                 group.style.display = 'none';
                 checksBox.innerHTML = '';
+                cityWrap.style.display = 'none';
+                citySel.innerHTML = '<option value="">Select city</option>';
+                _teamCityRequired = false;
                 updateTeamFeeDisplay();
                 return;
             }
@@ -1183,6 +1217,17 @@
                         <input type="checkbox" value="${o.value}" onchange="updateTeamFeeDisplay()" style="accent-color:var(--primary);">
                         ${o.label}
                     </label>`).join('');
+            });
+            _regDb.ref('cities/' + tournamentSlug(this.value)).once('value').then(snap => {
+                const cities = snap.val() || [];
+                _teamCityRequired = cities.length > 0;
+                if (_teamCityRequired) {
+                    cityWrap.style.display = 'block';
+                    citySel.innerHTML = '<option value="">Select city</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+                } else {
+                    cityWrap.style.display = 'none';
+                    citySel.innerHTML = '<option value="">Select city</option>';
+                }
             });
             updateTeamFeeDisplay();
         });
@@ -1203,6 +1248,11 @@
             }
             const teamNameEntered = document.getElementById('teamName').value.trim();
             const tournamentEntered = document.getElementById('tournament').value;
+            const cityGroupEntered = document.getElementById('teamCityGroup').value;
+            if (_teamCityRequired && !cityGroupEntered) {
+                alert('Please select which city your team is entering — this tournament runs in multiple cities.');
+                return;
+            }
             const selectedCategoriesPreCheck = getSelectedAgeCategories();
             if (teamNameEntered && tournamentEntered && selectedCategoriesPreCheck.length) {
                 const snap = await _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value');
@@ -1210,14 +1260,18 @@
                 snap.forEach(child => {
                     const d = child.val();
                     if (d.status === 'rejected') return;
+                    // A team registering the same age category in a *different*
+                    // city (e.g. IF5L Mumbai and IF5L Ambernath) is not a clash —
+                    // only block re-registering the same tournament+city+category.
                     if ((d.teamName||'').trim().toLowerCase() === teamNameEntered.toLowerCase()
                         && d.tournament === tournamentEntered
+                        && (d.cityGroup||'') === (cityGroupEntered||'')
                         && selectedCategoriesPreCheck.includes(d.ageCategory)) {
                         clash.push(d.ageCategory);
                     }
                 });
                 if (clash.length) {
-                    alert('"' + teamNameEntered + '" is already registered for ' + tournamentEntered + ' in: ' + clash.join(', ') + '. Please uncheck ' + (clash.length > 1 ? 'those categories' : 'that category') + ' — a team can only register once per age group.');
+                    alert('"' + teamNameEntered + '" is already registered for ' + tournamentEntered + (cityGroupEntered ? ' (' + cityGroupEntered + ')' : '') + ' in: ' + clash.join(', ') + '. Please uncheck ' + (clash.length > 1 ? 'those categories' : 'that category') + ' — a team can only register once per age group' + (cityGroupEntered ? ' per city' : '') + '.');
                     return;
                 }
             }
@@ -1262,6 +1316,7 @@
                 managerPhone: document.getElementById('managerPhone').value,
                 teamEmail: document.getElementById('teamEmail').value,
                 tournament: document.getElementById('tournament').value,
+                cityGroup: cityGroupEntered || null,
                 ageCategory: cat,
                 teamLogoFile: logoName,
                 teamLogoUrl: logoUrl,
@@ -1296,7 +1351,7 @@
                 return;
             }
             const _tournamentForCheck = document.getElementById('playerTournament').value;
-            const _categoryForCheck = document.getElementById('playerAgeCategory').value;
+            const { category: _categoryForCheck, cityGroup: _cityGroupForCheck } = parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value);
             const _dobForCheck = document.getElementById('playerDOB').value;
             if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
                 const snap = await _regDb.ref('ageCategories/' + tournamentSlug(_tournamentForCheck)).once('value');
@@ -1351,7 +1406,8 @@
                 playerCity: document.getElementById('playerCity').value,
                 playerTeam: teamVal,
                 playerTournament: document.getElementById('playerTournament').value,
-                playerAgeCategory: document.getElementById('playerAgeCategory').value,
+                playerAgeCategory: _categoryForCheck,
+                playerCityGroup: _cityGroupForCheck || null,
                 guardianName: document.getElementById('guardianName').value,
                 guardianPhone: document.getElementById('guardianPhone').value,
                 guardianRelation: document.getElementById('guardianRelation').value,
