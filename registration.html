@@ -549,25 +549,57 @@
                         </div>
 
                         <p class="form-section-label">Team &amp; Tournament</p>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="playerTeam">Team Name *</label>
-                                <select id="playerTeam" name="playerTeam" required>
-                                    <option value="">Loading registered teams...</option>
-                                </select>
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
+                                <input type="checkbox" id="playerNoTeam" onchange="onPlayerNoTeamToggle()" style="width:auto;">
+                                I don't have a team — register as an individual player
+                            </label>
+                            <p style="font-size:.82rem;color:var(--text-light);margin:4px 0 0;">Only available for tournaments that accept individual entries.</p>
+                        </div>
+                        <div id="playerTeamFields">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerTeam">Team Name *</label>
+                                    <select id="playerTeam" name="playerTeam">
+                                        <option value="">Loading registered teams...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="playerTournament">Tournament (auto-filled)</label>
+                                    <input type="text" id="playerTournament" name="playerTournament" readonly style="background:#f8f9ff;" placeholder="Select a team first">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="playerTournament">Tournament (auto-filled)</label>
-                                <input type="text" id="playerTournament" name="playerTournament" readonly style="background:#f8f9ff;" placeholder="Select a team first">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerAgeCategory">Age Category *</label>
+                                    <select id="playerAgeCategory" name="playerAgeCategory">
+                                        <option value="">Select a team first</option>
+                                    </select>
+                                    <p id="playerAgeCategoryHint" style="font-size:.78rem;color:var(--text-light);margin-top:6px;display:none;"></p>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-row">
+                        <div id="playerIndividualFields" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerIndivTournament">Tournament *</label>
+                                    <select id="playerIndivTournament">
+                                        <option value="">Select tournament</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="playerIndivCityWrap" style="display:none;">
+                                    <label for="playerIndivCity">City *</label>
+                                    <select id="playerIndivCity">
+                                        <option value="">Select city</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="form-group">
-                                <label for="playerAgeCategory">Age Category *</label>
-                                <select id="playerAgeCategory" name="playerAgeCategory" required>
-                                    <option value="">Select a team first</option>
+                                <label for="playerIndivAgeCategory">Age Category *</label>
+                                <select id="playerIndivAgeCategory">
+                                    <option value="">Select tournament first</option>
                                 </select>
-                                <p id="playerAgeCategoryHint" style="font-size:.78rem;color:var(--text-light);margin-top:6px;display:none;"></p>
+                                <p id="playerIndivAgeCategoryHint" style="font-size:.78rem;color:var(--text-light);margin-top:6px;display:none;"></p>
                             </div>
                         </div>
 
@@ -915,13 +947,29 @@
             snap.forEach(child => _liveTournaments.push({ _key: child.key, ...child.val() }));
             const sel = document.getElementById('tournament');
             const prevValue = sel.value;
-            const openTournaments = _liveTournaments.filter(t => t.status === 'open');
+            // Purely individual-entry tournaments don't have a team concept at
+            // all — only offer Team Registration for 'team' or 'both' (and
+            // legacy tournaments saved before entryType existed).
+            const openTournaments = _liveTournaments.filter(t => t.status === 'open' && t.entryType !== 'individual');
             sel.innerHTML = '<option value="">Select tournament</option>' +
                 openTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
             if (openTournaments.some(t => t.name === prevValue)) sel.value = prevValue;
             updateTeamFeeDisplay();
+            populatePlayerIndivTournamentOptions();
             updatePlayerPaymentVisibility();
         });
+
+        // Individual-entry registration (no team) is only offered for
+        // tournaments the admin has explicitly opened up to it — entryType
+        // 'individual' or 'both'. A pure 'team' tournament never appears here,
+        // since there'd be no age-category-eligible team for it to attach to.
+        function populatePlayerIndivTournamentOptions() {
+            const sel = document.getElementById('playerIndivTournament');
+            const prevValue = sel.value;
+            const eligible = _liveTournaments.filter(t => t.status === 'open' && (t.entryType === 'individual' || t.entryType === 'both'));
+            sel.innerHTML = '<option value="">Select tournament</option>' + eligible.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            if (eligible.some(t => t.name === prevValue)) sel.value = prevValue;
+        }
 
         function updateTeamFeeDisplay() {
             const t = findTournament(document.getElementById('tournament').value);
@@ -933,9 +981,10 @@
 
         // --- Payment only required for individual-entry tournaments ---
         function updatePlayerPaymentVisibility() {
-            const tournamentName = document.getElementById('playerTournament').value;
+            const noTeam = document.getElementById('playerNoTeam').checked;
+            const tournamentName = noTeam ? document.getElementById('playerIndivTournament').value : document.getElementById('playerTournament').value;
             const t = findTournament(tournamentName);
-            const isIndividual = !!(t && t.entryType === 'individual');
+            const isIndividual = !!(t && (t.entryType === 'individual' || t.entryType === 'both'));
             document.getElementById('playerPaymentSection').style.display = isIndividual ? 'block' : 'none';
             document.getElementById('playerNoPaymentNotice').style.display = (tournamentName && !isIndividual) ? 'flex' : 'none';
             document.querySelectorAll('input[name="playerPayment"]').forEach(r => r.required = isIndividual);
@@ -982,11 +1031,17 @@
         // overage for are removed from the list entirely — not just flagged —
         // so there's no way to pick an ineligible one in the first place.
         let _currentTeamMatches = [];
+        // Guards against a slower, now-superseded refresh (triggered by an
+        // earlier DOB/team change) resolving after a newer one and clobbering
+        // its correct result — only the response matching the most recent
+        // call is allowed to touch the DOM.
+        let _ageCatRefreshId = 0;
         function refreshAgeCategoryOptions() {
             const ageCatSel = document.getElementById('playerAgeCategory');
             const hint = document.getElementById('playerAgeCategoryHint');
             const tournamentName = document.getElementById('playerTournament').value;
             const dob = document.getElementById('playerDOB').value;
+            const refreshId = ++_ageCatRefreshId;
             if (!_currentTeamMatches.length) {
                 ageCatSel.innerHTML = '<option value="">Select a team first</option>';
                 return;
@@ -997,6 +1052,7 @@
                 return;
             }
             _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                if (refreshId !== _ageCatRefreshId) return;
                 const cats = snap.val() || [];
                 const eligible = [];
                 const excludedLabels = [];
@@ -1041,27 +1097,133 @@
                 _currentTeamMatches = _allRegisteredTeams.filter(t => t.teamName === this.value);
                 document.getElementById('playerTournament').value = _currentTeamMatches.length ? _currentTeamMatches[0].tournament : '';
             }
+            // refreshAgeCategoryOptions() already fully recomputes and displays
+            // eligibility for every category this team offers, based on
+            // whatever DOB is currently entered — a separate
+            // checkAgeCategoryEligibility() call here raced against it (both
+            // fire their own async Firebase reads, and checkAgeCategoryEligibility
+            // reads the age-category <select>'s value synchronously, before
+            // refreshAgeCategoryOptions' async rebuild has replaced it). Whichever
+            // of the two finished last won the hint text, so re-selecting a team
+            // or changing DOB could flash a correct "eligible" message only to
+            // have it overwritten by a stale "overage"/"no eligible category"
+            // one a moment later. It's redundant here — dropped.
             refreshAgeCategoryOptions();
             updatePlayerPaymentVisibility();
-            checkAgeCategoryEligibility();
         });
 
         document.getElementById('playerAgeCategory').addEventListener('change', checkAgeCategoryEligibility);
         document.getElementById('playerDOB').addEventListener('change', function() {
             refreshAgeCategoryOptions();
-            checkAgeCategoryEligibility();
+            refreshIndivAgeCategoryOptions();
         });
 
+        // --- Individual entry (no team) — only for tournaments the admin
+        // marked entryType 'individual' or 'both'. Age category comes straight
+        // from the tournament's own ageCategories/{slug} list (same source the
+        // Team Registration checkboxes use), not from any team's registration. ---
+        function onPlayerNoTeamToggle() {
+            const noTeam = document.getElementById('playerNoTeam').checked;
+            document.getElementById('playerTeamFields').style.display = noTeam ? 'none' : 'block';
+            document.getElementById('playerIndividualFields').style.display = noTeam ? 'block' : 'none';
+            document.getElementById('playerTeam').required = !noTeam;
+            document.getElementById('playerAgeCategory').required = !noTeam;
+            document.getElementById('playerIndivTournament').required = noTeam;
+            document.getElementById('playerIndivAgeCategory').required = noTeam;
+            if (noTeam) {
+                populatePlayerIndivTournamentOptions();
+                refreshIndivAgeCategoryOptions();
+            }
+            updatePlayerPaymentVisibility();
+        }
+
+        let _indivCityRequired = false;
+        document.getElementById('playerIndivTournament').addEventListener('change', function() {
+            const tournamentName = this.value;
+            const cityWrap = document.getElementById('playerIndivCityWrap');
+            const citySel = document.getElementById('playerIndivCity');
+            if (!tournamentName) {
+                cityWrap.style.display = 'none';
+                citySel.innerHTML = '<option value="">Select city</option>';
+                _indivCityRequired = false;
+            } else {
+                _regDb.ref('cities/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                    const cities = snap.val() || [];
+                    _indivCityRequired = cities.length > 0;
+                    if (_indivCityRequired) {
+                        cityWrap.style.display = 'block';
+                        citySel.innerHTML = '<option value="">Select city</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+                    } else {
+                        cityWrap.style.display = 'none';
+                        citySel.innerHTML = '<option value="">Select city</option>';
+                    }
+                });
+            }
+            refreshIndivAgeCategoryOptions();
+            updatePlayerPaymentVisibility();
+        });
+
+        let _indivAgeCatRefreshId = 0;
+        function refreshIndivAgeCategoryOptions() {
+            const sel = document.getElementById('playerIndivAgeCategory');
+            const hint = document.getElementById('playerIndivAgeCategoryHint');
+            const tournamentName = document.getElementById('playerIndivTournament').value;
+            const dob = document.getElementById('playerDOB').value;
+            const refreshId = ++_indivAgeCatRefreshId;
+            if (!tournamentName) {
+                sel.innerHTML = '<option value="">Select tournament first</option>';
+                hint.style.display = 'none';
+                return;
+            }
+            _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                if (refreshId !== _indivAgeCatRefreshId) return;
+                const raw = snap.val();
+                const cats = (raw && raw.length) ? raw : DEFAULT_AGE_CATEGORIES.map(o => o.value);
+                const labelOf = c => typeof c === 'object' ? c.label : c;
+                if (!dob) {
+                    sel.innerHTML = '<option value="">Select age category</option>' +
+                        cats.map(c => `<option value="${labelOf(c)}">${labelOf(c)}</option>`).join('');
+                    hint.style.display = 'none';
+                    return;
+                }
+                const eligible = [], excluded = [];
+                cats.forEach(c => {
+                    const label = labelOf(c);
+                    const cutoffDate = getCutoffDate(cats, label);
+                    if (cutoffDate && new Date(dob) < new Date(cutoffDate)) excluded.push(label);
+                    else eligible.push(label);
+                });
+                if (!eligible.length) {
+                    sel.innerHTML = '<option value="">No eligible category</option>';
+                    hint.textContent = `Based on this date of birth, the player is overage for every category in this tournament (${excluded.join(', ')}).`;
+                    hint.style.color = '#c62828';
+                    hint.style.display = 'block';
+                } else {
+                    sel.innerHTML = '<option value="">Select age category</option>' + eligible.map(c => `<option value="${c}">${c}</option>`).join('');
+                    if (excluded.length) {
+                        hint.textContent = `${excluded.join(', ')} not shown — overage based on date of birth.`;
+                        hint.style.color = '#5b6475';
+                        hint.style.display = 'block';
+                    } else {
+                        hint.style.display = 'none';
+                    }
+                }
+            });
+        }
+
         let _ageCategoryEligible = true;
+        let _ageCategoryCheckId = 0;
         function checkAgeCategoryEligibility() {
             const hint = document.getElementById('playerAgeCategoryHint');
             const tournamentName = document.getElementById('playerTournament').value;
             const { category } = parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value);
             const dob = document.getElementById('playerDOB').value;
+            const checkId = ++_ageCategoryCheckId;
             _ageCategoryEligible = true;
             hint.style.display = 'none';
             if (!tournamentName || !category) return;
             _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                if (checkId !== _ageCategoryCheckId) return;
                 const cats = snap.val() || [];
                 const cutoffDate = getCutoffDate(cats, category);
                 if (!cutoffDate) return;
@@ -1350,9 +1512,29 @@
                 alert('Please read and accept the Parent/Guardian Consent Form to proceed.');
                 return;
             }
-            const _tournamentForCheck = document.getElementById('playerTournament').value;
-            const { category: _categoryForCheck, cityGroup: _cityGroupForCheck } = parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value);
+            const _noTeam = document.getElementById('playerNoTeam').checked;
+            const _tournamentForCheck = _noTeam
+                ? document.getElementById('playerIndivTournament').value
+                : document.getElementById('playerTournament').value;
+            const _categoryForCheck = _noTeam
+                ? document.getElementById('playerIndivAgeCategory').value
+                : parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value).category;
+            const _cityGroupForCheck = _noTeam
+                ? (_indivCityRequired ? document.getElementById('playerIndivCity').value : null)
+                : parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value).cityGroup;
             const _dobForCheck = document.getElementById('playerDOB').value;
+            if (_noTeam && !_tournamentForCheck) {
+                alert('Please select a tournament.');
+                return;
+            }
+            if (_noTeam && !_categoryForCheck) {
+                alert('Please select an age category.');
+                return;
+            }
+            if (_noTeam && _indivCityRequired && !_cityGroupForCheck) {
+                alert('Please select a city — this tournament runs in multiple cities.');
+                return;
+            }
             if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
                 const snap = await _regDb.ref('ageCategories/' + tournamentSlug(_tournamentForCheck)).once('value');
                 const cats = snap.val() || [];
@@ -1363,9 +1545,9 @@
                 }
             }
             const teamSel = document.getElementById('playerTeam');
-            const teamVal = teamSel.value === '__other__'
+            const teamVal = _noTeam ? '' : (teamSel.value === '__other__'
                 ? (document.getElementById('playerTeamOther')?.value || '')
-                : teamSel.value;
+                : teamSel.value);
             const ageDocFile = document.getElementById('ageDoc').files[0];
             const ageDocUrl = _uploadedFileUrls['ageDoc'] || '';
             const photoFile = document.getElementById('playerPhoto').files[0];
@@ -1405,9 +1587,10 @@
                 playerPosition: document.getElementById('playerPosition').value,
                 playerCity: document.getElementById('playerCity').value,
                 playerTeam: teamVal,
-                playerTournament: document.getElementById('playerTournament').value,
+                playerTournament: _tournamentForCheck,
                 playerAgeCategory: _categoryForCheck,
                 playerCityGroup: _cityGroupForCheck || null,
+                playerEntryMode: _noTeam ? 'individual' : 'team',
                 guardianName: document.getElementById('guardianName').value,
                 guardianPhone: document.getElementById('guardianPhone').value,
                 guardianRelation: document.getElementById('guardianRelation').value,

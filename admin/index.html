@@ -412,6 +412,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <select id="trn-entry-type">
             <option value="team">Team-based (teams pay a token fee, players free)</option>
             <option value="individual">Individual-entry (players pay directly)</option>
+            <option value="both">Both — teams AND individual players can register</option>
           </select>
         </div>
       </div>
@@ -500,7 +501,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Team Name</th><th>City</th><th>Coach</th><th>Tournament</th><th>Age Category</th><th>Pool</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Team Name</th><th>City</th><th>Coach</th><th>Contact</th><th>Tournament</th><th>Age Category</th><th>Pool</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="teams-body"></tbody>
         </table>
       </div>
@@ -530,7 +531,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Guardian</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Guardian</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="players-body"></tbody>
         </table>
       </div>
@@ -1309,8 +1310,8 @@ function renderTournaments() {
   const statusBadge = { draft: 'b-draft', open: 'b-approved', closed: 'b-rejected' };
   tbody.innerHTML = _fbTournaments.map(t => `<tr>
     <td><strong>${t.name}</strong></td>
-    <td>${t.entryType === 'individual' ? 'Individual-entry' : 'Team-based'}</td>
-    <td>${t.entryType === 'individual' ? '₹'+(t.playerFee||0)+' / player' : '₹'+(t.teamFee||0)+' / team'}</td>
+    <td>${t.entryType === 'individual' ? 'Individual-entry' : t.entryType === 'both' ? 'Team + Individual' : 'Team-based'}</td>
+    <td>${t.entryType === 'both' ? '₹'+(t.teamFee||0)+'/team, ₹'+(t.playerFee||0)+'/player' : t.entryType === 'individual' ? '₹'+(t.playerFee||0)+' / player' : '₹'+(t.teamFee||0)+' / team'}</td>
     <td style="font-size:.82rem;color:var(--muted);">${(t.ageCategories||[]).join(', ')||'—'}${(t.cities||[]).length?`<br><span style="color:var(--primary);">Cities: ${t.cities.join(', ')}</span>`:''}</td>
     <td><span class="badge ${statusBadge[t.status]||''}">${t.status||'draft'}</span></td>
     <td class="actions">
@@ -1414,13 +1415,7 @@ function saveTournament() {
 const DB = {
   get: k => JSON.parse(localStorage.getItem(k)||'[]'),
   set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
-  all() { return _fbRegs; },
-  save(regs) {
-    // Rebuild Firebase from the updated array
-    const out = {};
-    regs.forEach(r => { const key = r._key || _fbDb.ref('registrations').push().key; out[key] = (({_key,...rest})=>rest)(r); });
-    _fbDb.ref('registrations').set(out);
-  }
+  all() { return _fbRegs; }
 };
 
 // ── PANEL NAVIGATION ──────────────────────────────────────────────────────
@@ -1547,17 +1542,25 @@ function deleteRegistration(key){
   closeModal('modal-reg');
 }
 
+// Writes only this one registration's status (targeted Firebase update by
+// key), never the whole collection. DB.save() rebuilds and overwrites every
+// registration from whatever the in-memory _fbRegs snapshot happens to be
+// at that instant — with async work in between (portal account creation,
+// ID card rendering/emailing can each take a real second or more), a fresh
+// snapshot arriving mid-flight would get overwritten wholesale by the
+// second DB.save() call, silently reverting this exact status change back
+// to whatever the stale snapshot had. That's what caused "approved" to
+// flip back to "pending" even though the ID card had already gone out.
 function setStatus(id, status){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
   if(i>-1){
     const reg=regs[i];
-    regs[i].status=status; DB.save(regs); renderApprovals(); refreshDashboard();
+    _fbDb.ref('registrations/'+reg._key).update({ status });
     if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg);
     if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
-      emailIDCardToPlayer(reg).then(() => {
-        const regs2 = DB.all(); const j = regs2.findIndex(r => r.id === id);
-        if (j > -1) { regs2[j].idCardSent = true; DB.save(regs2); }
-      }).catch(e => console.warn('Auto ID card send skipped for', reg.playerName, '—', e.message));
+      emailIDCardToPlayer(reg)
+        .then(() => _fbDb.ref('registrations/'+reg._key).update({ idCardSent: true }))
+        .catch(e => console.warn('Auto ID card send skipped for', reg.playerName, '—', e.message));
     }
   }
 }
@@ -1605,9 +1608,7 @@ async function createPortalAccount(reg) {
     return;
   }
 
-  const regs = DB.all();
-  const i = regs.findIndex(r => r.id === reg.id);
-  if (i > -1) { regs[i].portalAccountCreated = true; DB.save(regs); }
+  if (reg._key) _fbDb.ref('registrations/'+reg._key).update({ portalAccountCreated: true });
 
   fetch(EMAIL_WEBHOOK_URL, {
     method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
@@ -1728,12 +1729,12 @@ function viewReg(id){
 
 function markDocVerified(id){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
-  if(i>-1){ regs[i].docVerified=true; DB.save(regs); viewReg(id); }
+  if(i>-1){ _fbDb.ref('registrations/'+regs[i]._key).update({ docVerified: true }).then(() => viewReg(id)); }
 }
 
 function markPaymentVerified(id){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
-  if(i>-1){ regs[i].paymentVerified=true; DB.save(regs); viewReg(id); }
+  if(i>-1){ _fbDb.ref('registrations/'+regs[i]._key).update({ paymentVerified: true }).then(() => viewReg(id)); }
 }
 
 // ── TEAMS ─────────────────────────────────────────────────────────────────
@@ -1785,13 +1786,13 @@ function renderTeams(){
   if(af) teams=teams.filter(t=>t.ageCategory===af);
   if(q) teams=teams.filter(t=>(t.teamName+t.teamCity+t.coachName).toLowerCase().includes(q));
   const tbody=document.getElementById('teams-body');
-  if(!teams.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
+  if(!teams.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted);">No approved teams yet — approve one from Approve Registrations.</td></tr>'; return; }
   tbody.innerHTML=teams.map(t=>{
     const pools=_fbPoolsByTournament[tournamentSlug(t.tournament)]||[];
     const poolOptions=['',...pools];
     return `<tr>
     <td style="font-family:monospace;font-size:.75rem;">${t.id}</td>
-    <td><strong>${t.teamName}</strong></td><td>${t.teamCity||'—'}</td><td>${t.coachName||'—'}</td><td>${t.tournament||'—'}${t.cityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${t.cityGroup})</span>`:''}</td><td>${t.ageCategory||'—'}</td>
+    <td><strong>${t.teamName}</strong></td><td>${t.teamCity||'—'}</td><td>${t.coachName||'—'}</td><td>${t.coachPhone||t.managerPhone||'—'}</td><td>${t.tournament||'—'}${t.cityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${t.cityGroup})</span>`:''}</td><td>${t.ageCategory||'—'}</td>
     <td><select onchange="setTeamPool('${t._key}',this.value)" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;" ${!pools.length?'title="No pools set up for this tournament yet — see Age Categories & Pools panel"':''}>
       ${poolOptions.map(p=>`<option value="${p}" ${((t.pool||'')===p)?'selected':''}>${p?'Pool '+p:'— None —'}</option>`).join('')}
     </select></td>
@@ -1845,10 +1846,10 @@ function renderPlayers(){
   if(q) players=players.filter(p=>(p.playerName+(p.playerTeam||'')+(p.guardianName||'')).toLowerCase().includes(q));
   if(sf) players=players.filter(p=>p.status===sf);
   const tbody=document.getElementById('players-body');
-  if(!players.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
+  if(!players.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
   tbody.innerHTML=players.map(p=>`<tr>
     <td style="font-family:monospace;font-size:.75rem;">${p.id}</td>
-    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerTournament||'—'}${p.playerCityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${p.playerCityGroup})</span>`:''}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.guardianName||'—'}</td>
+    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerTournament||'—'}${p.playerCityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${p.playerCityGroup})</span>`:''}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.guardianName||'—'}</td><td>${p.guardianPhone||p.playerPhone||'—'}</td>
     <td>${badge(p.status)}</td>
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editPlayer('${p._key}')"><i class="fas fa-edit"></i></button>
@@ -2400,6 +2401,12 @@ function renderAgeCatEditor(){
     }
   });
 }
+// normalizeAgeCat() adds a `wasExplicit` flag purely for the self-heal check
+// in renderAgeCatEditor() — it must never be written back to Firebase.
+// Writing the normalized objects directly here previously leaked that flag
+// into stored data.
+function toStorableAgeCat(c) { return { label: c.label, cutoffDate: c.cutoffDate }; }
+
 function addAgeCategory(){
   const t = document.getElementById('ac-tournament').value;
   const label = document.getElementById('ac-new-label').value.trim();
@@ -2410,7 +2417,7 @@ function addAgeCategory(){
     const cats = (snap.val() || []).map(normalizeAgeCat);
     const existing = cats.find(c=>c.label===label);
     if (existing) existing.cutoffDate = cutoffDate; else cats.push({ label, cutoffDate });
-    ref.set(cats).then(() => { document.getElementById('ac-new-label').value=''; document.getElementById('ac-new-cutoff').value=''; renderAgeCatEditor(); });
+    ref.set(cats.map(toStorableAgeCat)).then(() => { document.getElementById('ac-new-label').value=''; document.getElementById('ac-new-cutoff').value=''; renderAgeCatEditor(); });
   });
 }
 function removeAgeCategory(index){
@@ -2419,7 +2426,7 @@ function removeAgeCategory(index){
   ref.once('value', snap => {
     const cats = (snap.val() || []).map(normalizeAgeCat);
     cats.splice(index, 1);
-    ref.set(cats).then(renderAgeCatEditor);
+    ref.set(cats.map(toStorableAgeCat)).then(renderAgeCatEditor);
   });
 }
 
