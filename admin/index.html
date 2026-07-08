@@ -1307,8 +1307,19 @@ function saveTournament() {
   const ref = editId ? _fbDb.ref('tournaments/'+editId) : _fbDb.ref('tournaments').push();
   ref.update(data).then(() => {
     // Keep the existing per-tournament age-category lookup (used by the
-    // public registration form) in sync automatically.
-    _fbDb.ref('ageCategories/'+tournamentSlugAdmin(name)).set(ageCategories);
+    // public registration form) in sync automatically. Seed every category
+    // with its cutoff up front (derived from the U<N> label when possible)
+    // instead of writing plain strings — a plain string with no cutoff is
+    // exactly what let overage players slip through undetected before.
+    const ageCatRef = _fbDb.ref('ageCategories/'+tournamentSlugAdmin(name));
+    ageCatRef.once('value', snap => {
+      const existing = (snap.val() || []).map(normalizeAgeCat);
+      const seeded = ageCategories.map(label => {
+        const match = existing.find(e => e.label === label);
+        return { label, cutoffDate: match ? match.cutoffDate : deriveDefaultCutoffDate(label) };
+      });
+      ageCatRef.set(seeded);
+    });
     resetTournamentForm();
   });
 }
@@ -2248,24 +2259,46 @@ function exportCSV(type){
 // ── AGE CATEGORIES (per tournament, dynamic) ────────────────────────────────
 function tournamentSlug(t){ return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
 
+// Any category labeled "U<number>" (U8, U10, U14, ...) has an unambiguous
+// cutoff even if nobody ever set one explicitly: a player is eligible if
+// born on/after Jan 1 of (this year - N). This is what lets every category
+// — not just whichever ones an admin happened to add a cutoff for — get
+// real DOB validation instead of silently accepting any age.
+function deriveDefaultCutoffDate(label) {
+  const m = /^U(\d+)$/i.exec((label||'').trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return (new Date().getFullYear() - n) + '-01-01';
+}
+
 // Age categories are stored per tournament as an array of either plain
 // strings (legacy / auto-seeded from the Tournaments panel), {label,
 // cutoffYear} objects (the first cutoff version), or {label, cutoffDate}
 // objects (current — a precise date instead of just a year). This
-// normalizer lets every reader treat them all the same way.
+// normalizer lets every reader treat them all the same way, and falls back
+// to the derived U<N> cutoff whenever nothing was explicitly stored.
 function normalizeAgeCat(c) {
-  if (typeof c !== 'object') return { label: c, cutoffDate: null };
-  if (c.cutoffDate) return { label: c.label, cutoffDate: c.cutoffDate };
-  if (c.cutoffYear) return { label: c.label, cutoffDate: c.cutoffYear + '-01-01' }; // legacy year-only data
-  return { label: c.label, cutoffDate: null };
+  if (typeof c !== 'object') return { label: c, cutoffDate: deriveDefaultCutoffDate(c), wasExplicit: false };
+  if (c.cutoffDate) return { label: c.label, cutoffDate: c.cutoffDate, wasExplicit: true };
+  if (c.cutoffYear) return { label: c.label, cutoffDate: c.cutoffYear + '-01-01', wasExplicit: true }; // legacy year-only data
+  return { label: c.label, cutoffDate: deriveDefaultCutoffDate(c.label), wasExplicit: false };
 }
 function renderAgeCatEditor(){
   const t = document.getElementById('ac-tournament').value;
   const editor = document.getElementById('ac-editor');
   if(!t){ editor.style.display = 'none'; return; }
   editor.style.display = 'block';
-  _fbDb.ref('ageCategories/'+tournamentSlug(t)).once('value', snap => {
-    const cats = (snap.val() || []).map(normalizeAgeCat);
+  const ref = _fbDb.ref('ageCategories/'+tournamentSlug(t));
+  ref.once('value', snap => {
+    const raw = snap.val() || [];
+    const cats = raw.map(normalizeAgeCat);
+    // Self-heal: any category that only got its cutoff via derivation
+    // (never explicitly stored) gets written back now, so the date is
+    // frozen and the registration form doesn't need to re-derive it.
+    const needsHeal = cats.some(c => !c.wasExplicit && c.cutoffDate);
+    if (needsHeal) {
+      ref.set(cats.map(c => ({ label: c.label, cutoffDate: c.cutoffDate })));
+    }
     const list = document.getElementById('ac-list');
     if(!cats.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No custom categories set yet — the registration form will fall back to the default list (U9-Senior), with no DOB cutoff enforced.</p>'; return; }
     list.innerHTML = cats.map((c,i) => `<span class="badge ${c.cutoffDate?'b-upcoming':'b-rejected'}" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;font-size:.85rem;">${c.label} <span style="opacity:.85;">${c.cutoffDate?`(born ${c.cutoffDate}+)`:'<i class="fas fa-triangle-exclamation"></i> no cutoff — any DOB accepted'}</span> <i class="fas fa-times" style="cursor:pointer;" onclick="removeAgeCategory(${i})"></i></span>`).join('');
