@@ -991,6 +991,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <option value="">Select Age Category</option>
         </select>
         <button class="btn btn-gold btn-sm" onclick="exportLeagueTable()"><i class="fas fa-file-csv"></i> Export CSV</button>
+        <button class="btn btn-gold btn-sm" onclick="exportLeagueTablePoster()"><i class="fas fa-share-nodes"></i> Points Table Poster</button>
       </div>
     </div>
     <div class="card-body">
@@ -3475,6 +3476,87 @@ function exportLeagueTable(){
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`league_table_${tournamentSlug(tourn)}${city?'_'+tournamentSlug(city):''}${ageCat?'_'+tournamentSlug(ageCat):''}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
+}
+
+// Shareable, branded points-table poster (Instagram/WhatsApp), styled to
+// match exportFixturePoster()/exportSingleFixturePoster() — one poster per
+// pool if the age category has been split into pools, otherwise a single
+// combined table. Same off-screen html2canvas technique.
+async function exportLeagueTablePoster(){
+  const tourn=(document.getElementById('lt-tournament')||{}).value||'';
+  const city=(document.getElementById('lt-city')||{}).value||'';
+  const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
+  if(!tourn){ alert('Select a Tournament in the filters above first.'); return; }
+  if(!ageCat){ alert('Select an Age Category in the filters above first — the poster covers one age category at a time.'); return; }
+
+  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played'&&f.ageCategory===ageCat);
+  if(city) fx=fx.filter(f=>f.cityGroup===city);
+  if(!fx.length){ alert('No played results yet for this selection — the table has nothing to show.'); return; }
+
+  const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&r.ageCategory===ageCat&&(!city||r.cityGroup===city));
+  const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
+
+  const teamLogo = (name) => {
+    const reg = teams.find(r=>r.teamName===name);
+    return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
+  };
+  const rankBadge = (i) => i===0 ? '#FFD700' : i===1 ? '#C0C0C0' : i===2 ? '#CD7F32' : 'transparent';
+  const tableBlock = (rows, poolLabel) => `
+    <div style="margin-bottom:30px;">
+      ${poolLabel ? `<div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.4rem;color:#FFD700;margin-bottom:12px;">${poolLabel}</div>` : ''}
+      <table style="width:100%;border-collapse:collapse;font-size:.95rem;">
+        <thead><tr style="background:rgba(255,255,255,.12);">
+          <th style="padding:10px 8px;text-align:left;">#</th>
+          <th style="padding:10px 8px;text-align:left;">Team</th>
+          <th style="padding:10px 8px;">P</th><th style="padding:10px 8px;">W</th><th style="padding:10px 8px;">D</th><th style="padding:10px 8px;">L</th>
+          <th style="padding:10px 8px;">GF</th><th style="padding:10px 8px;">GA</th><th style="padding:10px 8px;">GD</th>
+          <th style="padding:10px 8px;background:rgba(255,215,0,.18);">Pts</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map((r,i)=>`<tr style="background:${i%2?'rgba(255,255,255,.04)':'transparent'};border-bottom:1px solid rgba(255,255,255,.15);">
+            <td style="padding:10px 8px;font-weight:800;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${rankBadge(i)};color:${i<3?'#0d1642':'#fff'};">${i+1}</span></td>
+            <td style="padding:10px 8px;font-weight:700;">${teamLogo(r.name)?`<img src="${teamLogo(r.name)}" style="width:22px;height:22px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:8px;">`:''}${r.name}</td>
+            <td style="padding:10px 8px;text-align:center;">${r.p}</td><td style="padding:10px 8px;text-align:center;">${r.w}</td><td style="padding:10px 8px;text-align:center;">${r.d}</td><td style="padding:10px 8px;text-align:center;">${r.l}</td>
+            <td style="padding:10px 8px;text-align:center;">${r.gf}</td><td style="padding:10px 8px;text-align:center;">${r.ga}</td><td style="padding:10px 8px;text-align:center;">${r.gd>0?'+'+r.gd:r.gd}</td>
+            <td style="padding:10px 8px;text-align:center;font-weight:800;background:rgba(255,215,0,.08);">${r.pts}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  const bodyHtml = pools.length
+    ? pools.map(p=>{
+        const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
+        const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
+        return tableBlock(computeTableRows(poolFx), 'Pool ' + p);
+      }).join('')
+    : tableBlock(computeTableRows(fx), null);
+
+  const poster = document.createElement('div');
+  poster.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;background:linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%);color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;';
+  poster.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
+      <img src="../Media (51).png" style="width:64px;height:64px;border-radius:12px;">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
+    </div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:#FFD700;margin-bottom:14px;line-height:1.15;">${tourn}</div>
+    <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:26px;">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:#FFD700;">Points Table</div>
+      <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCat}</strong>${city?' &bull; '+city:''}</div>
+    </div>
+    ${bodyHtml}
+    <div style="text-align:center;margin-top:14px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
+  `;
+  document.body.appendChild(poster);
+  try {
+    const canvas = await html2canvas(poster, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `points_table_${tournamentSlug(tourn)}_${ageCat}${city?'_'+tournamentSlug(city):''}.png`;
+    a.click();
+  } finally {
+    poster.remove();
+  }
 }
 
 // ── NEWS ──────────────────────────────────────────────────────────────────
