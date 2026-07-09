@@ -571,12 +571,6 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="playerTeamSearch">Search Team</label>
-                                    <input type="text" id="playerTeamSearch" placeholder="Type to filter teams..." oninput="filterPlayerTeamOptions()" disabled>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
                                     <label for="playerTeam">Team Name *</label>
                                     <select id="playerTeam" name="playerTeam">
                                         <option value="">Select tournament first</option>
@@ -880,9 +874,6 @@
 
         function onPlayerTournamentSelectChange() {
             const tournamentName = document.getElementById('playerTournament').value;
-            const searchBox = document.getElementById('playerTeamSearch');
-            searchBox.value = '';
-            searchBox.disabled = !tournamentName;
             // A team name can repeat within the same tournament if it
             // registered under more than one city (IF5L Mumbai vs IF5L
             // Ambernath) — dedupe by name+city, not just name.
@@ -898,10 +889,6 @@
             _currentTeamMatches = [];
             refreshAgeCategoryOptions();
             updatePlayerPaymentVisibility();
-        }
-
-        function filterPlayerTeamOptions() {
-            renderPlayerTeamOptions(document.getElementById('playerTeamSearch').value.trim().toLowerCase());
         }
 
         // A team name can repeat within the same tournament across different
@@ -1104,6 +1091,19 @@
             return (new Date().getFullYear() - n) + '-01-01';
         }
 
+        // Age-category eligibility (cutoff dates) is exactly the kind of read
+        // where the Firebase SDK has repeatedly been observed returning
+        // incomplete/stale data on some connections — the same issue fixed
+        // for the Tournament dropdown by reading via plain REST fetch()
+        // instead of the SDK's .once('value'). Age-category cutoffs get the
+        // same treatment here since they gate whether a real player can even
+        // register, and getting this wrong incorrectly blocks or admits players.
+        function fetchAgeCategories(tournamentName) {
+            return fetch('https://f5awebsite-default-rtdb.firebaseio.com/ageCategories/' + tournamentSlug(tournamentName) + '.json')
+                .then(r => r.json())
+                .catch(() => null);
+        }
+
         // --- Validate the player's DOB actually falls under an age category's
         // cutoff date (set by admin per tournament). Handles every format the
         // admin panel may have written: a plain string (no cutoff), {label,
@@ -1159,9 +1159,9 @@
                     _currentTeamMatches.map(t => `<option value="${ageCategoryOptionValue(t.ageCategory, t.cityGroup)}">${ageCategoryOptionLabel(t.ageCategory, t.cityGroup)}</option>`).join('');
                 return;
             }
-            _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+            fetchAgeCategories(tournamentName).then(raw => {
                 if (refreshId !== _ageCatRefreshId) return;
-                const cats = snap.val() || [];
+                const cats = raw || [];
                 const eligible = [];
                 const excludedLabels = [];
                 _currentTeamMatches.forEach(t => {
@@ -1282,9 +1282,8 @@
                 hint.style.display = 'none';
                 return;
             }
-            _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+            fetchAgeCategories(tournamentName).then(raw => {
                 if (refreshId !== _indivAgeCatRefreshId) return;
-                const raw = snap.val();
                 const cats = (raw && raw.length) ? raw : DEFAULT_AGE_CATEGORIES.map(o => o.value);
                 const labelOf = c => typeof c === 'object' ? c.label : c;
                 if (!dob) {
@@ -1329,9 +1328,9 @@
             _ageCategoryEligible = true;
             hint.style.display = 'none';
             if (!tournamentName || !category) return;
-            _regDb.ref('ageCategories/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+            fetchAgeCategories(tournamentName).then(raw => {
                 if (checkId !== _ageCategoryCheckId) return;
-                const cats = snap.val() || [];
+                const cats = raw || [];
                 const cutoffDate = getCutoffDate(cats, category);
                 if (!cutoffDate) return;
                 if (!dob) {
@@ -1476,8 +1475,7 @@
             }
             group.style.display = 'block';
             checksBox.innerHTML = '<span style="color:var(--text-light);font-size:.88rem;">Loading age categories...</span>';
-            _regDb.ref('ageCategories/' + tournamentSlug(this.value)).once('value').then(snap => {
-                const custom = snap.val();
+            fetchAgeCategories(this.value).then(custom => {
                 const options = (custom && custom.length)
                     ? custom.map(c => ({ value: typeof c === 'object' ? c.label : c, label: typeof c === 'object' ? c.label : c }))
                     : DEFAULT_AGE_CATEGORIES;
@@ -1665,8 +1663,7 @@
                 return;
             }
             if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
-                const snap = await _regDb.ref('ageCategories/' + tournamentSlug(_tournamentForCheck)).once('value');
-                const cats = snap.val() || [];
+                const cats = (await fetchAgeCategories(_tournamentForCheck)) || [];
                 const cutoffDate = getCutoffDate(cats, _categoryForCheck);
                 if (cutoffDate && new Date(_dobForCheck) < new Date(cutoffDate)) {
                     alert(`This player is overage for ${_categoryForCheck} — they must be born on or after ${cutoffDate} to qualify. Please choose a different age category before submitting.`);
