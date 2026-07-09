@@ -865,10 +865,12 @@
         let _allRegisteredTeams = [];
         let _currentTournamentTeams = [];
         function loadTeamsDropdown() {
-            _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value', snap => {
-                _allRegisteredTeams = [];
-                snap.forEach(child => { const d = child.val(); if (d.teamName) _allRegisteredTeams.push(d); });
-            });
+            fetch('https://f5awebsite-default-rtdb.firebaseio.com/registrations.json')
+                .then(r => r.json())
+                .then(data => {
+                    _allRegisteredTeams = Object.values(data || {}).filter(d => d.type === 'team' && d.teamName);
+                })
+                .catch(() => {});
         }
         loadTeamsDropdown();
 
@@ -1202,7 +1204,14 @@
             } else {
                 if (existing) existing.remove();
                 const { name, city } = parseTeamOptionValue(this.value);
-                _currentTeamMatches = _currentTournamentTeams.filter(t => t.teamName === name && (t.cityGroup||null) === city);
+                // Must filter the FULL registration list here, not the
+                // deduped _currentTournamentTeams (that list collapses a
+                // team down to one row per team+city for the dropdown, which
+                // silently discards its other age-category registrations —
+                // a team registered for U8/U10/U12 would only ever offer
+                // whichever one row survived the dedup).
+                const tournamentName = document.getElementById('playerTournament').value;
+                _currentTeamMatches = _allRegisteredTeams.filter(t => t.tournament === tournamentName && t.teamName === name && (t.cityGroup||null) === city);
             }
             // refreshAgeCategoryOptions() already fully recomputes and displays
             // eligibility for every category this team offers, based on
