@@ -478,6 +478,21 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <option value="closed">Closed — registration ended</option>
         </select>
       </div>
+      <div class="fg"><label>ID Card Template</label>
+        <select id="trn-id-template">
+          <option value="classic">Classic Navy</option>
+          <option value="gold">Gold Edge</option>
+          <option value="dynamic">Dynamic Diagonal</option>
+          <option value="carbon">Carbon Black</option>
+          <option value="sunset">Sunset Sport</option>
+        </select>
+        <p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Every ID card generated for a player registered under this tournament automatically uses this template.</p>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label><input type="checkbox" id="trn-is-live" style="width:auto;margin-right:6px;">Mark as Live now</label></div>
+        <div class="fg"><label>Live YouTube Link</label><input type="text" id="trn-live-yt" placeholder="https://youtube.com/..."></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">When both are set, the public Live page shows a "LIVE now" banner linking to this stream for this tournament.</p>
       <button class="btn btn-primary" onclick="saveTournament()"><i class="fas fa-save"></i> <span id="trn-save-label">Create Tournament</span></button>
       <button class="btn" style="display:none;margin-left:8px;" id="trn-cancel-edit" onclick="resetTournamentForm()">Cancel Edit</button>
     </div>
@@ -1510,6 +1525,9 @@ function resetTournamentForm() {
   document.getElementById('trn-start-date').value = '';
   document.getElementById('trn-location').value = '';
   document.getElementById('trn-status').value = 'draft';
+  document.getElementById('trn-id-template').value = 'classic';
+  document.getElementById('trn-is-live').checked = false;
+  document.getElementById('trn-live-yt').value = '';
   document.getElementById('trn-save-label').textContent = 'Create Tournament';
   document.getElementById('trn-cancel-edit').style.display = 'none';
 }
@@ -1527,6 +1545,9 @@ function editTournament(key) {
   document.getElementById('trn-start-date').value = t.startDate||'';
   document.getElementById('trn-location').value = t.location||'';
   document.getElementById('trn-status').value = t.status||'draft';
+  document.getElementById('trn-id-template').value = t.idCardTemplate||'classic';
+  document.getElementById('trn-is-live').checked = !!t.isLive;
+  document.getElementById('trn-live-yt').value = t.liveYoutubeUrl||'';
   document.getElementById('trn-save-label').textContent = 'Save Changes';
   document.getElementById('trn-cancel-edit').style.display = 'inline-block';
   switchPanel('tournaments');
@@ -1560,6 +1581,9 @@ function saveTournament() {
     startDate: document.getElementById('trn-start-date').value || null,
     location: document.getElementById('trn-location').value.trim() || null,
     status: document.getElementById('trn-status').value,
+    idCardTemplate: document.getElementById('trn-id-template').value,
+    isLive: document.getElementById('trn-is-live').checked,
+    liveYoutubeUrl: document.getElementById('trn-live-yt').value.trim() || null,
     updatedAt: new Date().toISOString()
   };
   if (!editId) data.createdAt = new Date().toISOString();
@@ -2110,6 +2134,13 @@ function fillIDCardFields(p){
   document.getElementById('id-num').value='SG-PLAYER-'+new Date().getFullYear()+'-'+p._key.slice(-4).toUpperCase();
   const photoBox = document.getElementById('id-prev-photo');
   photoBox.innerHTML = p.playerPhotoUrl ? `<img src="${p.playerPhotoUrl}" alt="Player photo">` : '<i class="fas fa-user"></i>';
+  // Every card for this player uses their tournament's chosen template
+  // (set on the tournament itself), not whatever was last picked manually —
+  // falls back to the global default if the tournament has none set.
+  const t = (_fbTournaments||[]).find(x=>x.name===p.playerTournament);
+  _idCardTemplate = (t && t.idCardTemplate) || 'classic';
+  document.getElementById('id-template').value = _idCardTemplate;
+  applyIdCardTemplateClass();
 }
 function populateIDCard(){
   const key=document.getElementById('idPlayerSelect').value; if(!key) return;

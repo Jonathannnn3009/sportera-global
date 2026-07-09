@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sportera Global — Live fixtures and points tables, updated in real time.">
+    <title>Live Fixtures &amp; Points Table | Sportera Global</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="logo.png" type="image/png">
+    <style>
+        .live-select { padding:10px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:.95rem; font-family:inherit; outline:none; background:#fff; }
+        .live-controls { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:26px; }
+        .live-banner { display:flex; align-items:center; gap:12px; background:linear-gradient(120deg,#b71c1c,#e53935); color:#fff; padding:14px 20px; border-radius:10px; margin-bottom:26px; font-weight:700; }
+        .live-banner .dot { width:10px; height:10px; border-radius:50%; background:#fff; animation:livepulse 1.2s infinite; }
+        @keyframes livepulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+        .live-banner a { color:#fff; text-decoration:underline; margin-left:auto; white-space:nowrap; }
+        .fx-table, .pt-table { width:100%; border-collapse:collapse; font-size:.92rem; }
+        .fx-table th, .pt-table th { background:#0d1642; color:#fff; padding:10px 12px; text-align:left; }
+        .fx-table td, .pt-table td { padding:10px 12px; border-bottom:1px solid #eee; }
+        .pt-table td, .pt-table th { text-align:center; }
+        .pt-table td:nth-child(2), .pt-table th:nth-child(2) { text-align:left; }
+        .pool-heading { margin:26px 0 10px; color:#0d1642; font-family:'Montserrat',sans-serif; font-weight:800; }
+        .empty-note { color:#888; padding:30px; text-align:center; }
+        .score-pill { font-weight:800; color:#0d1642; }
+    </style>
+</head>
+<body>
+    <div class="loader"><div class="loader-spinner"></div></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="Media (51).png" onerror="this.onerror=null;this.style.height='96px';this.style.width='auto'" alt="Sportera Global Logo">
+                <span class="logo-text">Sportera<span>Global</span></span>
+            </a>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="about.html" class="nav-link">About</a>
+                <a href="football5.html" class="nav-link">Football 5</a>
+                <a href="if5l.html" class="nav-link">IF5L</a>
+                <a href="tournaments.html" class="nav-link">Tournaments</a>
+                <a href="live.html" class="nav-link active">Live</a>
+                <a href="exposure.html" class="nav-link">International</a>
+                <a href="gallery.html" class="nav-link">Gallery</a>
+                <a href="registration.html" class="nav-link">Register</a>
+                <a href="news.html" class="nav-link">News</a>
+                <a href="contact.html" class="nav-link">Contact</a>
+            </nav>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <h1>Live Fixtures &amp; Points Table</h1>
+            <p>Follow every match and standing as it happens</p>
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> <span>/</span> <span>Live</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="live-controls">
+                <select id="live-tournament" class="live-select" onchange="onTournamentChange()">
+                    <option value="">Select tournament</option>
+                </select>
+                <select id="live-city" class="live-select" style="display:none;" onchange="onFilterChange()">
+                    <option value="">All Cities</option>
+                </select>
+                <select id="live-agecat" class="live-select" onchange="onFilterChange()">
+                    <option value="">Select tournament first</option>
+                </select>
+            </div>
+
+            <div id="live-banner-wrap"></div>
+
+            <div class="section-title fade-in">
+                <h2>Fixtures</h2>
+                <p>Shown in the order they were scheduled</p>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="fx-table">
+                    <thead><tr>
+                        <th>Match#</th><th>Home</th><th>Away</th><th>Date &amp; Time</th><th>Venue</th><th>Ground</th><th>Round</th><th>Result</th>
+                    </tr></thead>
+                    <tbody id="live-fixtures-body"><tr><td colspan="8" class="empty-note">Select a tournament and age category above.</td></tr></tbody>
+                </table>
+            </div>
+
+            <div class="section-title fade-in" style="margin-top:50px;">
+                <h2>Points Table</h2>
+                <p>Updates automatically as results are entered</p>
+            </div>
+            <div id="live-points-container">
+                <p class="empty-note">Select a tournament and age category above.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+    const REST_BASE = 'https://f5awebsite-default-rtdb.firebaseio.com';
+    // Every read on this page goes through plain REST fetch() rather than the
+    // Firebase SDK — the SDK's .on()/.once() reads have repeatedly been
+    // observed returning incomplete data on some connections across this
+    // whole project (see registration.html's tournament/age-category fixes);
+    // a public page with no login has no way to prompt a retry, so it needs
+    // the reliable path from the start.
+    function restGet(path) {
+        return fetch(REST_BASE + '/' + path + '.json').then(r => r.json()).catch(() => null);
+    }
+
+    let _liveTournaments = [];
+    let _liveFixtures = [];
+    let _liveResults = [];
+    let _liveRegs = [];
+    let _liveCitiesByTournament = {};
+
+    function tournamentSlug(name) { return (name || '').trim().replace(/\s+/g, '_'); }
+    function fmtDateTime(dt) {
+        if (!dt) return 'TBA';
+        const d = new Date(dt);
+        if (isNaN(d)) return dt;
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + ' • ' +
+            d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function init() {
+        const [tournaments, fixtures, results, regs] = await Promise.all([
+            restGet('tournaments'), restGet('fixtures'), restGet('results'), restGet('registrations')
+        ]);
+        _liveTournaments = Object.entries(tournaments || {}).map(([k, v]) => ({ _key: k, ...v }))
+            .filter(t => t.status === 'open' || t.status === 'closed');
+        _liveFixtures = Object.entries(fixtures || {}).map(([k, v]) => ({ _key: k, ...v }));
+        _liveResults = Object.entries(results || {}).map(([k, v]) => ({ _key: k, ...v }));
+        _liveRegs = Object.entries(regs || {}).map(([k, v]) => ({ _key: k, ...v })).filter(r => r.type === 'team');
+
+        _liveCitiesByTournament = {};
+        _liveRegs.forEach(r => {
+            if (!r.cityGroup) return;
+            const slug = tournamentSlug(r.tournament);
+            _liveCitiesByTournament[slug] = _liveCitiesByTournament[slug] || new Set();
+            _liveCitiesByTournament[slug].add(r.cityGroup);
+        });
+
+        const sel = document.getElementById('live-tournament');
+        sel.innerHTML = '<option value="">Select tournament</option>' +
+            _liveTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    }
+
+    function onTournamentChange() {
+        const name = document.getElementById('live-tournament').value;
+        const t = _liveTournaments.find(x => x.name === name);
+        const citySel = document.getElementById('live-city');
+        const cities = [...(_liveCitiesByTournament[tournamentSlug(name)] || [])];
+        if (cities.length) {
+            citySel.style.display = '';
+            citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+        } else {
+            citySel.style.display = 'none';
+            citySel.value = '';
+        }
+        const agecatSel = document.getElementById('live-agecat');
+        const cats = (t && t.ageCategories && t.ageCategories.length) ? t.ageCategories : ['U8','U10','U12','U14','U16','U18'];
+        agecatSel.innerHTML = name
+            ? '<option value="">Select age category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('')
+            : '<option value="">Select tournament first</option>';
+
+        renderLiveBanner(t);
+        onFilterChange();
+    }
+
+    function renderLiveBanner(t) {
+        const wrap = document.getElementById('live-banner-wrap');
+        if (t && t.isLive && t.liveYoutubeUrl) {
+            wrap.innerHTML = `<div class="live-banner"><span class="dot"></span> ${t.name} is LIVE now <a href="${t.liveYoutubeUrl}" target="_blank" rel="noopener">Watch on YouTube <i class="fas fa-arrow-up-right-from-square"></i></a></div>`;
+        } else {
+            wrap.innerHTML = '';
+        }
+    }
+
+    function onFilterChange() {
+        const tourn = document.getElementById('live-tournament').value;
+        const city = document.getElementById('live-city').value;
+        const ageCat = document.getElementById('live-agecat').value;
+        renderFixtures(tourn, city, ageCat);
+        renderPointsTable(tourn, city, ageCat);
+    }
+
+    function renderFixtures(tourn, city, ageCat) {
+        const tbody = document.getElementById('live-fixtures-body');
+        if (!tourn || !ageCat) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-note">Select a tournament and age category above.</td></tr>';
+            return;
+        }
+        let fx = _liveFixtures.filter(f => f.tournament === tourn && f.ageCategory === ageCat);
+        if (city) fx = fx.filter(f => f.cityGroup === city);
+        if (!fx.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-note">No fixtures yet for this selection.</td></tr>';
+            return;
+        }
+        fx = [...fx].sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
+        tbody.innerHTML = fx.map(f => {
+            const r = _liveResults.find(x => x._key === f._key);
+            const result = r ? `<span class="score-pill">${r.homeScore} – ${r.awayScore}</span>` : '<span style="color:#999;">Upcoming</span>';
+            return `<tr>
+                <td>${f.matchNumber || '—'}</td>
+                <td><strong>${f.home}</strong></td>
+                <td><strong>${f.away}</strong></td>
+                <td>${fmtDateTime(f.dt)}</td>
+                <td>${f.venue || '—'}</td>
+                <td>${f.ground || '—'}</td>
+                <td>${f.round || '—'}</td>
+                <td>${result}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function computeTableRows(fx) {
+        const table = {};
+        fx.forEach(f => {
+            const r = _liveResults.find(x => x._key === f._key);
+            if (!r) return;
+            [f.home, f.away].forEach(t => { if (!table[t]) table[t] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }; });
+            const h = table[f.home], a = table[f.away];
+            h.p++; a.p++; h.gf += r.homeScore; h.ga += r.awayScore; a.gf += r.awayScore; a.ga += r.homeScore;
+            if (r.homeScore > r.awayScore) { h.w++; h.pts += 3; a.l++; }
+            else if (r.homeScore < r.awayScore) { a.w++; a.pts += 3; h.l++; }
+            else { h.d++; a.d++; h.pts++; a.pts++; }
+        });
+        return Object.entries(table).map(([name, d]) => ({ name, ...d, gd: d.gf - d.ga }))
+            .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+    }
+
+    function tableHtml(rows, poolLabel) {
+        if (!rows.length) return '';
+        return `
+            ${poolLabel ? `<h4 class="pool-heading">${poolLabel}</h4>` : ''}
+            <div style="overflow-x:auto;"><table class="pt-table">
+                <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
+                <tbody>${rows.map((r, i) => `<tr>
+                    <td>${i + 1}</td><td><strong>${r.name}</strong></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+                    <td>${r.gf}</td><td>${r.ga}</td><td>${r.gd > 0 ? '+' + r.gd : r.gd}</td><td><strong>${r.pts}</strong></td>
+                </tr>`).join('')}</tbody>
+            </table></div>`;
+    }
+
+    function renderPointsTable(tourn, city, ageCat) {
+        const container = document.getElementById('live-points-container');
+        if (!tourn || !ageCat) {
+            container.innerHTML = '<p class="empty-note">Select a tournament and age category above.</p>';
+            return;
+        }
+        let fx = _liveFixtures.filter(f => f.tournament === tourn && f.ageCategory === ageCat);
+        if (city) fx = fx.filter(f => f.cityGroup === city);
+        if (!fx.some(f => _liveResults.some(r => r._key === f._key))) {
+            container.innerHTML = '<p class="empty-note">No results entered yet for this selection.</p>';
+            return;
+        }
+        const teams = _liveRegs.filter(r => r.tournament === tourn && r.ageCategory === ageCat && (!city || r.cityGroup === city));
+        const pools = [...new Set(teams.map(t => t.pool).filter(Boolean))].sort();
+        if (pools.length) {
+            container.innerHTML = pools.map(p => {
+                const poolTeamNames = new Set(teams.filter(t => t.pool === p).map(t => t.teamName));
+                const poolFx = fx.filter(f => poolTeamNames.has(f.home) || poolTeamNames.has(f.away));
+                return tableHtml(computeTableRows(poolFx), 'Pool ' + p);
+            }).join('');
+        } else {
+            container.innerHTML = tableHtml(computeTableRows(fx), null);
+        }
+    }
+
+    init();
+    </script>
+</body>
+</html>
