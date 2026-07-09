@@ -992,9 +992,8 @@
         let _liveTournaments = [];
         function findTournament(name) { return _liveTournaments.find(t => t.name === name); }
 
-        _regDb.ref('tournaments').on('value', snap => {
-            _liveTournaments = [];
-            snap.forEach(child => _liveTournaments.push({ _key: child.key, ...child.val() }));
+        function applyLiveTournaments(list) {
+            _liveTournaments = list;
             const sel = document.getElementById('tournament');
             const prevValue = sel.value;
             // Purely individual-entry tournaments don't have a team concept at
@@ -1008,7 +1007,28 @@
             populatePlayerIndivTournamentOptions();
             populatePlayerTeamTournamentOptions();
             updatePlayerPaymentVisibility();
+        }
+
+        _regDb.ref('tournaments').on('value', snap => {
+            const list = [];
+            snap.forEach(child => list.push({ _key: child.key, ...child.val() }));
+            applyLiveTournaments(list);
         });
+
+        // Defensive follow-up: on some connections the very first 'value'
+        // snapshot from .on() can reflect an incomplete initial sync (fewer
+        // tournaments than actually exist), and — reported live — it doesn't
+        // always self-correct with a later event. A one-off fresh .once()
+        // read a couple seconds after load catches that case and
+        // re-populates the dropdowns if it finds more than what's currently
+        // shown; harmless no-op otherwise.
+        setTimeout(() => {
+            _regDb.ref('tournaments').once('value').then(snap => {
+                const list = [];
+                snap.forEach(child => list.push({ _key: child.key, ...child.val() }));
+                if (list.length > _liveTournaments.length) applyLiveTournaments(list);
+            });
+        }, 2500);
 
         // Player Registration's team-flow Tournament dropdown — same "team or
         // both" tournaments as Team Registration (individual-only tournaments
