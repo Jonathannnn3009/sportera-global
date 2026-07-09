@@ -226,6 +226,22 @@ table.dt td.actions{display:flex;gap:6px;flex-wrap:wrap;}
 .id-card.tmpl-dynamic .id-num,.id-card.tmpl-dynamic .id-valid{color:#0d1642;}
 .id-card.tmpl-dynamic .id-valid{opacity:.8;}
 
+/* Template 4: "Carbon Black" — matte black card, thin gold hairline rules, minimal/premium */
+.id-card.tmpl-carbon{background:linear-gradient(160deg,#1a1a1a 0%,#0a0a0a 100%);border:1px solid rgba(255,215,0,.35);}
+.id-card.tmpl-carbon .id-card-head{background:transparent;border-bottom:1px solid rgba(255,215,0,.35);}
+.id-card.tmpl-carbon .id-photo{border-radius:6px;border:1px solid rgba(255,215,0,.35);background:rgba(255,255,255,.05);}
+.id-card.tmpl-carbon .id-f{border-bottom:1px solid rgba(255,215,0,.15);padding-bottom:5px;}
+.id-card.tmpl-carbon .id-foot{background:transparent;border-top:1px solid rgba(255,215,0,.35);}
+
+/* Template 5: "Sunset Sport" — warm orange/red gradient, playful diagonal ribbon footer */
+.id-card.tmpl-sunset{background:linear-gradient(160deg,#ff512f 0%,#dd2476 100%);box-shadow:0 8px 32px rgba(221,36,118,.35);}
+.id-card.tmpl-sunset .id-card-head{background:rgba(0,0,0,.15);}
+.id-card.tmpl-sunset .id-org span{color:#fff5cc;}
+.id-card.tmpl-sunset .id-photo{border-radius:10px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);}
+.id-card.tmpl-sunset .id-f-lbl{color:#ffe6b3;}
+.id-card.tmpl-sunset .id-foot{background:rgba(0,0,0,.2);}
+.id-card.tmpl-sunset .id-num{color:#fff5cc;}
+
 /* ── LEAGUE TABLE ── */
 table.ltbl{width:100%;border-collapse:collapse;font-size:.85rem;}
 table.ltbl th{background:var(--primary);color:#fff;padding:10px 12px;text-align:center;font-size:.75rem;}
@@ -579,6 +595,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
             <option value="classic">Classic Navy</option>
             <option value="gold">Gold Edge</option>
             <option value="dynamic">Dynamic Diagonal</option>
+            <option value="carbon">Carbon Black</option>
+            <option value="sunset">Sunset Sport</option>
           </select>
           <p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Applies to every card generated from here on — manual, bulk, and auto-generated on approval.</p>
         </div>
@@ -801,6 +819,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           </select>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
+          <select id="poster-theme" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+            <option value="navy">Navy &amp; Gold</option>
+            <option value="crimson">Crimson Red</option>
+            <option value="emerald">Emerald Green</option>
+          </select>
           <button class="btn btn-gold btn-sm" onclick="exportFixturePoster()"><i class="fas fa-share-nodes"></i> Fixture Poster</button>
         </div>
       </div>
@@ -991,6 +1014,11 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <option value="">Select Age Category</option>
         </select>
         <button class="btn btn-gold btn-sm" onclick="exportLeagueTable()"><i class="fas fa-file-csv"></i> Export CSV</button>
+        <select id="poster-theme-lt" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="navy">Navy &amp; Gold</option>
+          <option value="crimson">Crimson Red</option>
+          <option value="emerald">Emerald Green</option>
+        </select>
         <button class="btn btn-gold btn-sm" onclick="exportLeagueTablePoster()"><i class="fas fa-share-nodes"></i> Points Table Poster</button>
       </div>
     </div>
@@ -1999,7 +2027,7 @@ _fbDb.ref('settings/idCardTemplate').once('value').then(snap => {
 });
 function applyIdCardTemplateClass(){
   const card = document.getElementById('id-card-preview');
-  card.classList.remove('tmpl-classic','tmpl-gold','tmpl-dynamic');
+  card.classList.remove('tmpl-classic','tmpl-gold','tmpl-dynamic','tmpl-carbon','tmpl-sunset');
   card.classList.add('tmpl-'+_idCardTemplate);
 }
 function onIdTemplateChange(){
@@ -2228,6 +2256,18 @@ function printIDCard(){
     .id-card.tmpl-dynamic .id-foot{background:var(--gold);}
     .id-card.tmpl-dynamic .id-num,.id-card.tmpl-dynamic .id-valid{color:#0d1642;}
     .id-card.tmpl-dynamic .id-valid{opacity:.8;}
+    .id-card.tmpl-carbon{background:linear-gradient(160deg,#1a1a1a 0%,#0a0a0a 100%);border:1px solid rgba(255,215,0,.35);}
+    .id-card.tmpl-carbon .id-card-head{background:transparent;border-bottom:1px solid rgba(255,215,0,.35);}
+    .id-card.tmpl-carbon .id-photo{border-radius:6px;border:1px solid rgba(255,215,0,.35);background:rgba(255,255,255,.05);}
+    .id-card.tmpl-carbon .id-f{border-bottom:1px solid rgba(255,215,0,.15);padding-bottom:5px;}
+    .id-card.tmpl-carbon .id-foot{background:transparent;border-top:1px solid rgba(255,215,0,.35);}
+    .id-card.tmpl-sunset{background:linear-gradient(160deg,#ff512f 0%,#dd2476 100%);box-shadow:0 8px 32px rgba(221,36,118,.35);}
+    .id-card.tmpl-sunset .id-card-head{background:rgba(0,0,0,.15);}
+    .id-card.tmpl-sunset .id-org span{color:#fff5cc;}
+    .id-card.tmpl-sunset .id-photo{border-radius:10px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);}
+    .id-card.tmpl-sunset .id-f-lbl{color:#ffe6b3;}
+    .id-card.tmpl-sunset .id-foot{background:rgba(0,0,0,.2);}
+    .id-card.tmpl-sunset .id-num{color:#fff5cc;}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
     @media print{
       body{background:#dde3f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -2984,6 +3024,21 @@ function downloadFixturesTemplate(){
 // auto-pool-assignment for any team that doesn't have that pool yet. Rows
 // that fail validation are skipped and reported, not silently dropped.
 const FIXTURES_VALID_ROUNDS = ['League Stage','Quarter-Final','Semi-Final','Third Place','Grand Final'];
+
+// Shared color themes for all poster exports (fixture poster, single-match
+// poster, points table poster) — same layout, different palette. Selected
+// via whichever #poster-theme[-lt] dropdown is present on the panel the
+// export was triggered from; defaults to navy if neither is found.
+const POSTER_THEMES = {
+  navy:    { bg:'linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%)', solid:'#0d1642', accent:'#FFD700' },
+  crimson: { bg:'linear-gradient(160deg,#3a0000 0%,#7a0c0c 55%,#b71c1c 100%)', solid:'#3a0000', accent:'#FFD700' },
+  emerald: { bg:'linear-gradient(160deg,#003d24 0%,#00693e 55%,#0a8f57 100%)', solid:'#003d24', accent:'#FFD700' },
+};
+function getPosterTheme(){
+  const el = document.getElementById('poster-theme') || document.getElementById('poster-theme-lt');
+  return POSTER_THEMES[(el && el.value) || 'navy'];
+}
+
 // Builds a shareable, portrait-format fixture poster (for Instagram/WhatsApp)
 // for whichever Tournament + Age Category is currently selected in the
 // fixtures filters — one age category at a time, since that's how the
@@ -3009,19 +3064,20 @@ async function exportFixturePoster(){
     const reg = (_fbRegs||[]).find(r=>r.type==='team' && r.teamName===name && r.tournament===tournament);
     return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
   };
+  const theme = getPosterTheme();
 
   const poster = document.createElement('div');
-  poster.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;background:linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%);color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;';
+  poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
       <img src="../Media (51).png" style="width:64px;height:64px;border-radius:12px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
-    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:#FFD700;margin-bottom:14px;line-height:1.15;">${tournament}</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tournament}</div>
     <div style="font-size:1.15rem;margin-bottom:6px;"><strong>Dates of Tournament:</strong> ${t.startDate?fmtDate(t.startDate):'TBA'}</div>
     <div style="font-size:1.15rem;margin-bottom:34px;"><strong>Venue:</strong> ${t.location||'TBA'}</div>
     <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:20px;">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:#FFD700;">Fixtures</div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:${theme.accent};">Fixtures</div>
       <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCategory}</strong>${city?' &bull; '+city:''}${pool?' &bull; Pool '+pool:''}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:1rem;">
@@ -3052,7 +3108,7 @@ async function exportFixturePoster(){
   `;
   document.body.appendChild(poster);
   try {
-    const canvas = await html2canvas(poster, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+    const canvas = await html2canvas(poster, { backgroundColor: theme.solid, scale: 2, useCORS: true });
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
     a.download = `fixture_poster_${tournamentSlug(tournament)}_${ageCategory}${city?'_'+tournamentSlug(city):''}${pool?'_Pool'+pool:''}.png`;
@@ -3080,21 +3136,22 @@ async function exportSingleFixturePoster(fixtureKey){
       : `<div style="width:100px;height:100px;border-radius:16px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
   };
 
+  const theme = getPosterTheme();
   const poster = document.createElement('div');
-  poster.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%);color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;';
+  poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
       <img src="../Media (51).png" style="width:52px;height:52px;border-radius:10px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;">Sportera Global</div>
     </div>
-    <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.3rem;color:#FFD700;text-align:center;margin-bottom:4px;">${f.tournament||''}</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.3rem;color:${theme.accent};text-align:center;margin-bottom:4px;">${f.tournament||''}</div>
     <div style="font-size:1.05rem;opacity:.85;margin-bottom:46px;">${f.ageCategory||''}${f.cityGroup?' &bull; '+f.cityGroup:''}${f.pool?' &bull; Pool '+f.pool:''}</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:36px;width:100%;margin-bottom:46px;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;">
         ${logoImg(f.home)}
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.3rem;text-align:center;">${f.home}</div>
       </div>
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.2rem;color:#FFD700;">VS</div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.2rem;color:${theme.accent};">VS</div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;">
         ${logoImg(f.away)}
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.3rem;text-align:center;">${f.away}</div>
@@ -3109,7 +3166,7 @@ async function exportSingleFixturePoster(fixtureKey){
   `;
   document.body.appendChild(poster);
   try {
-    const canvas = await html2canvas(poster, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+    const canvas = await html2canvas(poster, { backgroundColor: theme.solid, scale: 2, useCORS: true });
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
     a.download = `fixture_${tournamentSlug(f.tournament||'')}_${(f.home+'_vs_'+f.away).replace(/[^a-zA-Z0-9]/g,'_')}.png`;
@@ -3500,10 +3557,11 @@ async function exportLeagueTablePoster(){
     const reg = teams.find(r=>r.teamName===name);
     return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
   };
+  const theme = getPosterTheme();
   const rankBadge = (i) => i===0 ? '#FFD700' : i===1 ? '#C0C0C0' : i===2 ? '#CD7F32' : 'transparent';
   const tableBlock = (rows, poolLabel) => `
     <div style="margin-bottom:30px;">
-      ${poolLabel ? `<div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.4rem;color:#FFD700;margin-bottom:12px;">${poolLabel}</div>` : ''}
+      ${poolLabel ? `<div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.4rem;color:${theme.accent};margin-bottom:12px;">${poolLabel}</div>` : ''}
       <table style="width:100%;border-collapse:collapse;font-size:.95rem;">
         <thead><tr style="background:rgba(255,255,255,.12);">
           <th style="padding:10px 8px;text-align:left;">#</th>
@@ -3533,15 +3591,15 @@ async function exportLeagueTablePoster(){
     : tableBlock(computeTableRows(fx), null);
 
   const poster = document.createElement('div');
-  poster.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;background:linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%);color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;';
+  poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
       <img src="../Media (51).png" style="width:64px;height:64px;border-radius:12px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
-    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:#FFD700;margin-bottom:14px;line-height:1.15;">${tourn}</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tourn}</div>
     <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:26px;">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:#FFD700;">Points Table</div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:${theme.accent};">Points Table</div>
       <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCat}</strong>${city?' &bull; '+city:''}</div>
     </div>
     ${bodyHtml}
@@ -3549,7 +3607,7 @@ async function exportLeagueTablePoster(){
   `;
   document.body.appendChild(poster);
   try {
-    const canvas = await html2canvas(poster, { backgroundColor: '#0d1642', scale: 2, useCORS: true });
+    const canvas = await html2canvas(poster, { backgroundColor: theme.solid, scale: 2, useCORS: true });
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
     a.download = `points_table_${tournamentSlug(tourn)}_${ageCat}${city?'_'+tournamentSlug(city):''}.png`;
