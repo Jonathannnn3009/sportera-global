@@ -660,6 +660,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
             <div><div class="id-num" id="prev-id">SG-PLAYER-2026-0000</div><div class="id-valid">Valid for 2026 Season</div></div>
             <div class="qr-box" id="prev-qr"><img id="qr-img" src="" alt="QR" crossorigin="anonymous" style="width:42px;height:42px;display:block;"></div>
           </div>
+          <div style="background:#fff;padding:6px 10px;"><img src="../sponsor-logos.jpg" style="width:100%;height:auto;display:block;"></div>
         </div>
       </div>
     </div>
@@ -3052,6 +3053,12 @@ const POSTER_THEMES = {
   slate:   { bg:'linear-gradient(160deg,#111318 0%,#2b2f3a 55%,#4a4f5e 100%)', solid:'#111318', accent:'#FFD700' },
   gold:    { bg:'linear-gradient(160deg,#3a2c00 0%,#8a6d00 55%,#d4af37 100%)', solid:'#3a2c00', accent:'#fff' },
 };
+// Sponsor logo strip — shown bottom-center on every generated image (ID
+// card, all posters). White backing card so the logos (many on a white
+// background themselves) stay legible against any poster color theme.
+function sponsorStripHtml(){
+  return `<div style="background:#fff;border-radius:10px;padding:10px 18px;margin-top:22px;width:100%;box-sizing:border-box;"><img src="../sponsor-logos.jpg" style="width:100%;height:auto;display:block;"></div>`;
+}
 function getPosterTheme(selectId){
   const el = document.getElementById(selectId);
   return POSTER_THEMES[(el && el.value) || 'navy'];
@@ -3122,7 +3129,8 @@ async function exportFixturePoster(){
         </tr>`).join('')}
       </tbody>
     </table>
-    <div style="text-align:center;margin-top:34px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
+    ${sponsorStripHtml()}
+    <div style="text-align:center;margin-top:12px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
   `;
   document.body.appendChild(poster);
   try {
@@ -3180,7 +3188,10 @@ async function exportSingleFixturePoster(fixtureKey){
       <div style="font-size:1.05rem;opacity:.85;margin-bottom:6px;">${f.venue||'Venue TBA'}${f.ground?' &bull; '+f.ground:''}</div>
       <div style="font-size:1.05rem;opacity:.85;">${f.round||''}${f.matchNumber?' &bull; Match '+f.matchNumber:''}</div>
     </div>
-    <div style="margin-top:auto;font-size:.85rem;opacity:.6;">Sportera Global &bull; sporteraglobal.com</div>
+    <div style="margin-top:auto;width:100%;">
+      ${sponsorStripHtml()}
+      <div style="text-align:center;margin-top:12px;font-size:.85rem;opacity:.6;">Sportera Global &bull; sporteraglobal.com</div>
+    </div>
   `;
   document.body.appendChild(poster);
   try {
@@ -3477,7 +3488,10 @@ async function exportResultPoster(resultKey){
       <div style="font-size:1.05rem;opacity:.85;margin-bottom:6px;">${fmtDate(r.dt)}</div>
       <div style="font-size:1.05rem;opacity:.85;">${f.round||''}${f.matchNumber?' &bull; Match '+f.matchNumber:''}</div>
     </div>
-    <div style="margin-top:auto;font-size:.85rem;opacity:.6;">Sportera Global &bull; sporteraglobal.com</div>
+    <div style="margin-top:auto;width:100%;">
+      ${sponsorStripHtml()}
+      <div style="text-align:center;margin-top:12px;font-size:.85rem;opacity:.6;">Sportera Global &bull; sporteraglobal.com</div>
+    </div>
   `;
   document.body.appendChild(poster);
   try {
@@ -3682,7 +3696,8 @@ async function exportLeagueTablePoster(){
       <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCat}</strong>${city?' &bull; '+city:''}</div>
     </div>
     ${bodyHtml}
-    <div style="text-align:center;margin-top:14px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
+    ${sponsorStripHtml()}
+    <div style="text-align:center;margin-top:12px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
   `;
   document.body.appendChild(poster);
   try {
