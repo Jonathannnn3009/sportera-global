@@ -821,14 +821,23 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
           <select id="poster-theme" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-            <option value="navy">Navy &amp; Gold</option>
-            <option value="crimson">Crimson Red</option>
-            <option value="emerald">Emerald Green</option>
-            <option value="purple">Royal Purple</option>
-            <option value="sunset">Sunset Orange</option>
-            <option value="ocean">Ocean Blue</option>
-            <option value="slate">Slate Grey</option>
-            <option value="gold">Gold Luxe</option>
+            <optgroup label="Gradients">
+              <option value="navy">Navy &amp; Gold</option>
+              <option value="crimson">Crimson Red</option>
+              <option value="emerald">Emerald Green</option>
+              <option value="purple">Royal Purple</option>
+              <option value="sunset">Sunset Orange</option>
+              <option value="ocean">Ocean Blue</option>
+              <option value="slate">Slate Grey</option>
+              <option value="gold">Gold Luxe</option>
+            </optgroup>
+            <optgroup label="Background Styles">
+              <option value="stadium">Stadium Lights</option>
+              <option value="floodlight">Floodlight Night</option>
+              <option value="confetti">Confetti Purple</option>
+              <option value="pitch">Pitch Lines</option>
+              <option value="spotlight">Spotlight</option>
+            </optgroup>
           </select>
           <button class="btn btn-gold btn-sm" onclick="exportFixturePoster()"><i class="fas fa-share-nodes"></i> Fixture Poster</button>
         </div>
@@ -1021,14 +1030,23 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         </select>
         <button class="btn btn-gold btn-sm" onclick="exportLeagueTable()"><i class="fas fa-file-csv"></i> Export CSV</button>
         <select id="poster-theme-lt" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-          <option value="navy">Navy &amp; Gold</option>
-          <option value="crimson">Crimson Red</option>
-          <option value="emerald">Emerald Green</option>
-          <option value="purple">Royal Purple</option>
-          <option value="sunset">Sunset Orange</option>
-          <option value="ocean">Ocean Blue</option>
-          <option value="slate">Slate Grey</option>
-          <option value="gold">Gold Luxe</option>
+          <optgroup label="Gradients">
+            <option value="navy">Navy &amp; Gold</option>
+            <option value="crimson">Crimson Red</option>
+            <option value="emerald">Emerald Green</option>
+            <option value="purple">Royal Purple</option>
+            <option value="sunset">Sunset Orange</option>
+            <option value="ocean">Ocean Blue</option>
+            <option value="slate">Slate Grey</option>
+            <option value="gold">Gold Luxe</option>
+          </optgroup>
+          <optgroup label="Background Styles">
+            <option value="stadium">Stadium Lights</option>
+            <option value="floodlight">Floodlight Night</option>
+            <option value="confetti">Confetti Purple</option>
+            <option value="pitch">Pitch Lines</option>
+            <option value="spotlight">Spotlight</option>
+          </optgroup>
         </select>
         <button class="btn btn-gold btn-sm" onclick="exportLeagueTablePoster()"><i class="fas fa-share-nodes"></i> Points Table Poster</button>
       </div>
@@ -3052,6 +3070,16 @@ const POSTER_THEMES = {
   ocean:   { bg:'linear-gradient(160deg,#012a4a 0%,#01497c 55%,#2a6f97 100%)', solid:'#012a4a', accent:'#FFD700' },
   slate:   { bg:'linear-gradient(160deg,#111318 0%,#2b2f3a 55%,#4a4f5e 100%)', solid:'#111318', accent:'#FFD700' },
   gold:    { bg:'linear-gradient(160deg,#3a2c00 0%,#8a6d00 55%,#d4af37 100%)', solid:'#3a2c00', accent:'#fff' },
+  // "Background image" style themes — built entirely from layered CSS
+  // gradients (spotlights, pitch-line patterns, confetti dots), not actual
+  // photos. Avoids any stock-image licensing issue while still giving a
+  // textured, photo-like look; renders crisply through html2canvas exactly
+  // like the plain gradients above.
+  stadium: { bg:'radial-gradient(circle at 20% -10%, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 35%), radial-gradient(circle at 80% -10%, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 35%), radial-gradient(circle at 50% 110%, rgba(255,215,0,.15) 0%, rgba(255,215,0,0) 50%), linear-gradient(160deg,#04210f 0%,#0b3d1e 55%,#166534 100%)', solid:'#04210f', accent:'#FFD700' },
+  floodlight: { bg:'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 60%), radial-gradient(ellipse at 15% 100%, rgba(255,215,0,.12) 0%, rgba(255,215,0,0) 55%), linear-gradient(180deg,#000814 0%,#001d3d 55%,#003566 100%)', solid:'#000814', accent:'#FFD700' },
+  confetti: { bg:'radial-gradient(circle at 10% 20%, rgba(255,215,0,.55) 0 3px, transparent 4px), radial-gradient(circle at 80% 12%, rgba(255,255,255,.4) 0 2px, transparent 3px), radial-gradient(circle at 60% 82%, rgba(255,215,0,.45) 0 3px, transparent 4px), radial-gradient(circle at 30% 62%, rgba(255,255,255,.35) 0 2px, transparent 3px), radial-gradient(circle at 90% 70%, rgba(255,215,0,.45) 0 2px, transparent 3px), radial-gradient(circle at 45% 35%, rgba(255,255,255,.3) 0 2px, transparent 3px), linear-gradient(160deg,#1a0033 0%,#4a0e6e 55%,#7b2cbf 100%)', solid:'#1a0033', accent:'#FFD700' },
+  pitch: { bg:'radial-gradient(circle at 50% 50%, transparent 0%, transparent 14%, rgba(255,255,255,.18) 14.5%, rgba(255,255,255,.18) 15%, transparent 15.5%), linear-gradient(90deg, transparent 49.6%, rgba(255,255,255,.18) 49.6%, rgba(255,255,255,.18) 50.4%, transparent 50.4%), repeating-linear-gradient(180deg, rgba(255,255,255,.05) 0 60px, rgba(0,0,0,.05) 60px 120px), linear-gradient(160deg,#0b3d1e 0%,#166534 55%,#1e7a3d 100%)', solid:'#0b3d1e', accent:'#FFD700' },
+  spotlight: { bg:'radial-gradient(circle at 50% 30%, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 45%), radial-gradient(circle at 50% 100%, rgba(255,215,0,.2) 0%, rgba(255,215,0,0) 60%), linear-gradient(180deg,#050505 0%,#141414 55%,#262626 100%)', solid:'#050505', accent:'#FFD700' },
 };
 // Sponsor logo strip — shown bottom-center on every generated image (ID
 // card, all posters). White backing card so the logos (many on a white
