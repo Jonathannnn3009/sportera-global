@@ -3027,15 +3027,18 @@ const FIXTURES_VALID_ROUNDS = ['League Stage','Quarter-Final','Semi-Final','Thir
 
 // Shared color themes for all poster exports (fixture poster, single-match
 // poster, points table poster) — same layout, different palette. Selected
-// via whichever #poster-theme[-lt] dropdown is present on the panel the
-// export was triggered from; defaults to navy if neither is found.
+// via the #poster-theme (Fixtures panel) or #poster-theme-lt (League Table
+// panel) dropdown — both selects stay in the DOM at all times (panels are
+// just hidden/shown, not removed), so callers must pass the exact element
+// id for the panel they're exporting from rather than relying on whichever
+// one happens to be found first.
 const POSTER_THEMES = {
   navy:    { bg:'linear-gradient(160deg,#0d1642 0%,#1a237e 55%,#3949ab 100%)', solid:'#0d1642', accent:'#FFD700' },
   crimson: { bg:'linear-gradient(160deg,#3a0000 0%,#7a0c0c 55%,#b71c1c 100%)', solid:'#3a0000', accent:'#FFD700' },
   emerald: { bg:'linear-gradient(160deg,#003d24 0%,#00693e 55%,#0a8f57 100%)', solid:'#003d24', accent:'#FFD700' },
 };
-function getPosterTheme(){
-  const el = document.getElementById('poster-theme') || document.getElementById('poster-theme-lt');
+function getPosterTheme(selectId){
+  const el = document.getElementById(selectId);
   return POSTER_THEMES[(el && el.value) || 'navy'];
 }
 
@@ -3064,7 +3067,7 @@ async function exportFixturePoster(){
     const reg = (_fbRegs||[]).find(r=>r.type==='team' && r.teamName===name && r.tournament===tournament);
     return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
   };
-  const theme = getPosterTheme();
+  const theme = getPosterTheme('poster-theme');
 
   const poster = document.createElement('div');
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
@@ -3136,7 +3139,7 @@ async function exportSingleFixturePoster(fixtureKey){
       : `<div style="width:100px;height:100px;border-radius:16px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
   };
 
-  const theme = getPosterTheme();
+  const theme = getPosterTheme('poster-theme');
   const poster = document.createElement('div');
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;`;
   poster.innerHTML = `
@@ -3557,7 +3560,7 @@ async function exportLeagueTablePoster(){
     const reg = teams.find(r=>r.teamName===name);
     return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
   };
-  const theme = getPosterTheme();
+  const theme = getPosterTheme('poster-theme-lt');
   const rankBadge = (i) => i===0 ? '#FFD700' : i===1 ? '#C0C0C0' : i===2 ? '#CD7F32' : 'transparent';
   const tableBlock = (rows, poolLabel) => `
     <div style="margin-bottom:30px;">
