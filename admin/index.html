@@ -300,7 +300,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 <!-- ══════════════ SIDEBAR ══════════════ -->
 <aside class="sidebar">
   <div class="sb-head">
-    <img src="../Media (46).png" alt="Logo">
+    <img src="../Media (45).png" alt="Logo">
     <div><div class="sb-brand">Sportera <span>Global</span></div><div class="sb-sub">Admin Panel</div></div>
   </div>
 
@@ -926,6 +926,9 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <div class="card-head"><h3 id="lu-home-title"><i class="fas fa-home"></i> Home Team</h3></div>
         <div class="card-body">
           <p style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--gold);font-weight:700;margin-bottom:10px;">Starting Lineup</p>
+          <div style="display:grid;grid-template-columns:40px 1fr 110px 90px auto;gap:8px;padding:0 10px;margin-bottom:6px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;">
+            <div>Jersey #</div><div>Name</div><div>DOB</div><div>Position</div><div></div>
+          </div>
           <div id="lu-home-players"></div>
           <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="addLineupPlayer('home')"><i class="fas fa-plus"></i> Add Player</button>
         </div>
@@ -935,6 +938,9 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <div class="card-head"><h3 id="lu-away-title"><i class="fas fa-plane"></i> Away Team</h3></div>
         <div class="card-body">
           <p style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--gold);font-weight:700;margin-bottom:10px;">Starting Lineup</p>
+          <div style="display:grid;grid-template-columns:40px 1fr 110px 90px auto;gap:8px;padding:0 10px;margin-bottom:6px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;">
+            <div>Jersey #</div><div>Name</div><div>DOB</div><div>Position</div><div></div>
+          </div>
           <div id="lu-away-players"></div>
           <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="addLineupPlayer('away')"><i class="fas fa-plus"></i> Add Player</button>
         </div>
@@ -1008,7 +1014,28 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><h3><i class="fas fa-list-ol"></i> Results Log</h3></div>
+    <div class="card-head">
+      <h3><i class="fas fa-list-ol"></i> Results Log</h3>
+      <select id="poster-theme-res" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;" title="Theme used by the Share/result-poster button below">
+        <optgroup label="Gradients">
+          <option value="navy">Navy &amp; Gold</option>
+          <option value="crimson">Crimson Red</option>
+          <option value="emerald">Emerald Green</option>
+          <option value="purple">Royal Purple</option>
+          <option value="sunset">Sunset Orange</option>
+          <option value="ocean">Ocean Blue</option>
+          <option value="slate">Slate Grey</option>
+          <option value="gold">Gold Luxe</option>
+        </optgroup>
+        <optgroup label="Background Styles">
+          <option value="stadium">Stadium Lights</option>
+          <option value="floodlight">Floodlight Night</option>
+          <option value="confetti">Confetti Purple</option>
+          <option value="pitch">Pitch Lines</option>
+          <option value="spotlight">Spotlight</option>
+        </optgroup>
+      </select>
+    </div>
     <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Match</th><th>Score</th><th>MOTM</th><th>Top Scorer</th><th>Date</th><th>Actions</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
   </div>
 </div>
@@ -3123,7 +3150,7 @@ async function exportFixturePoster(){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
-      <img src="../Media (51).png" style="width:64px;height:64px;border-radius:12px;">
+      <img src="../Media (45).png" style="width:92px;height:92px;object-fit:contain;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tournament}</div>
@@ -3131,7 +3158,7 @@ async function exportFixturePoster(){
     <div style="font-size:1.15rem;margin-bottom:34px;"><strong>Venue:</strong> ${t.location||'TBA'}</div>
     <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:20px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:${theme.accent};">Fixtures</div>
-      <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCategory}</strong>${city?' &bull; '+city:''}${pool?' &bull; Pool '+pool:''}</div>
+      <div style="font-size:1.5rem;font-weight:600;margin-top:6px;">Age Category: <strong>${ageCategory}</strong>${city?' &bull; '+city:''}${pool?' &bull; Pool '+pool:''}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:1rem;">
       <thead><tr style="background:rgba(255,255,255,.12);">
@@ -3195,11 +3222,11 @@ async function exportSingleFixturePoster(fixtureKey){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
-      <img src="../Media (51).png" style="width:52px;height:52px;border-radius:10px;">
+      <img src="../Media (45).png" style="width:76px;height:76px;object-fit:contain;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.3rem;color:${theme.accent};text-align:center;margin-bottom:4px;">${f.tournament||''}</div>
-    <div style="font-size:1.05rem;opacity:.85;margin-bottom:46px;">${f.ageCategory||''}${f.cityGroup?' &bull; '+f.cityGroup:''}${f.pool?' &bull; Pool '+f.pool:''}</div>
+    <div style="font-size:1.3rem;font-weight:600;opacity:.85;margin-bottom:46px;">${f.ageCategory||''}${f.cityGroup?' &bull; '+f.cityGroup:''}${f.pool?' &bull; Pool '+f.pool:''}</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:36px;width:100%;margin-bottom:46px;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;">
         ${logoImg(f.home)}
@@ -3488,16 +3515,16 @@ async function exportResultPoster(resultKey){
       : `<div style="width:100px;height:100px;border-radius:16px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
   };
 
-  const theme = getPosterTheme('poster-theme');
+  const theme = getPosterTheme('poster-theme-res');
   const poster = document.createElement('div');
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
-      <img src="../Media (51).png" style="width:52px;height:52px;border-radius:10px;">
+      <img src="../Media (45).png" style="width:76px;height:76px;object-fit:contain;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.3rem;color:${theme.accent};text-align:center;margin-bottom:4px;">${f.tournament||''}</div>
-    <div style="font-size:1.05rem;opacity:.85;margin-bottom:10px;">${f.ageCategory||''}${f.cityGroup?' &bull; '+f.cityGroup:''}${f.pool?' &bull; Pool '+f.pool:''}</div>
+    <div style="font-size:1.3rem;font-weight:600;opacity:.85;margin-bottom:10px;">${f.ageCategory||''}${f.cityGroup?' &bull; '+f.cityGroup:''}${f.pool?' &bull; Pool '+f.pool:''}</div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;letter-spacing:2px;color:${theme.accent};margin-bottom:36px;">FULL TIME</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:28px;width:100%;margin-bottom:36px;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;">
@@ -3715,13 +3742,13 @@ async function exportLeagueTablePoster(){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
-      <img src="../Media (51).png" style="width:64px;height:64px;border-radius:12px;">
+      <img src="../Media (45).png" style="width:92px;height:92px;object-fit:contain;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tourn}</div>
     <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:26px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:${theme.accent};">Points Table</div>
-      <div style="font-size:1.2rem;margin-top:6px;">Age Category: <strong>${ageCat}</strong>${city?' &bull; '+city:''}</div>
+      <div style="font-size:1.5rem;font-weight:600;margin-top:6px;">Age Category: <strong>${ageCat}</strong>${city?' &bull; '+city:''}</div>
     </div>
     ${bodyHtml}
     ${sponsorStripHtml()}
