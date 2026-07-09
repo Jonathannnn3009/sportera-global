@@ -3234,11 +3234,11 @@ function resultScoreForm(f, r, saveLabel){
   r = r || {};
   return `
     <div class="score-row">
-      <div class="score-team">${f.home}</div>
+      <div class="score-team"><span style="display:block;font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px;">Home</span>${f.home}</div>
       <input type="number" class="score-input" id="hs-${f._key}" min="0" value="${r.homeScore||0}">
       <div class="score-vs">VS</div>
       <input type="number" class="score-input" id="as-${f._key}" min="0" value="${r.awayScore||0}">
-      <div class="score-team away">${f.away}</div>
+      <div class="score-team away"><span style="display:block;font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px;">Away</span>${f.away}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
       <input type="text" placeholder="Man of the Match" id="motm-${f._key}" value="${r.motm||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
@@ -3333,7 +3333,11 @@ function renderResultsLog(){
 function deleteResult(key){
   if(!confirm('Delete this result? The fixture will return to "upcoming" and its score will be cleared.')) return;
   _fbDb.ref('results/'+key).remove();
-  _fbDb.ref('fixtures/'+key).update({ status:'upcoming', homeScore:null, awayScore:null });
+  // If the fixture itself was already deleted (e.g. via deleteFixture(),
+  // which removes both), .update() on a path that doesn't exist creates a
+  // new orphaned stub node with only these fields — guard against that.
+  const fx = (_fbFixtures||[]).find(f=>f._key===key);
+  if (fx) _fbDb.ref('fixtures/'+key).update({ status:'upcoming', homeScore:null, awayScore:null });
 }
 
 // ── LEAGUE TABLE ──────────────────────────────────────────────────────────
