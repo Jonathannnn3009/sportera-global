@@ -242,6 +242,18 @@ table.dt td.actions{display:flex;gap:6px;flex-wrap:wrap;}
 .id-card.tmpl-sunset .id-foot{background:rgba(0,0,0,.2);}
 .id-card.tmpl-sunset .id-num{color:#fff5cc;}
 
+/* Template 6: "Emerald Pro" — deep green gradient, clean white text, minimal gold accents */
+.id-card.tmpl-emerald{background:linear-gradient(150deg,#00351f 0%,#00693e 60%,#0a8f57 100%);box-shadow:0 8px 32px rgba(0,105,62,.35);}
+.id-card.tmpl-emerald .id-card-head{background:rgba(0,0,0,.2);}
+.id-card.tmpl-emerald .id-photo{border-radius:8px;border:2px solid rgba(255,215,0,.6);}
+.id-card.tmpl-emerald .id-foot{background:rgba(0,0,0,.22);}
+
+/* Template 7: "Royal Purple" — regal purple/violet gradient, gold-foil style header rule */
+.id-card.tmpl-purple{background:linear-gradient(150deg,#1a0033 0%,#4a0e6e 60%,#7b2cbf 100%);box-shadow:0 8px 32px rgba(74,14,110,.4);}
+.id-card.tmpl-purple .id-card-head{background:rgba(0,0,0,.2);border-bottom:2px solid var(--gold);}
+.id-card.tmpl-purple .id-photo{border-radius:8px;border:2px solid var(--gold);}
+.id-card.tmpl-purple .id-foot{background:rgba(0,0,0,.25);}
+
 /* ── LEAGUE TABLE ── */
 table.ltbl{width:100%;border-collapse:collapse;font-size:.85rem;}
 table.ltbl th{background:var(--primary);color:#fff;padding:10px 12px;text-align:center;font-size:.75rem;}
@@ -468,8 +480,9 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <div class="fg"><label>Cities (for multi-city tournaments, e.g. IF5L)</label><input type="text" id="trn-cities" placeholder="Mumbai, Ambernath, Hyderabad"><p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Comma-separated. Leave blank for a single-city tournament — no city step is added anywhere. If set, teams must pick a city when registering, and fixtures/results/tables are organized per city.</p></div>
       <div class="form-row">
         <div class="fg"><label>Start Date</label><input type="date" id="trn-start-date"></div>
-        <div class="fg"><label>Location</label><input type="text" id="trn-location" placeholder="e.g. Goa, Multiple Cities"></div>
+        <div class="fg"><label>End Date (optional, for multi-day tournaments)</label><input type="date" id="trn-end-date"></div>
       </div>
+      <div class="fg"><label>Location</label><input type="text" id="trn-location" placeholder="e.g. Goa, Multiple Cities"></div>
       <p style="font-size:.78rem;color:var(--muted);margin:-10px 0 14px;">Date and location appear on the public Tournament Calendar once this tournament is Open or Closed (Draft stays hidden).</p>
       <div class="fg"><label>Status</label>
         <select id="trn-status">
@@ -485,6 +498,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
           <option value="dynamic">Dynamic Diagonal</option>
           <option value="carbon">Carbon Black</option>
           <option value="sunset">Sunset Sport</option>
+          <option value="emerald">Emerald Pro</option>
+          <option value="purple">Royal Purple</option>
         </select>
         <p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Every ID card generated for a player registered under this tournament automatically uses this template.</p>
       </div>
@@ -554,6 +569,25 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <select id="teamsAgeCatFilter" onchange="renderTeams()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
           <option value="">All Age Categories</option>
         </select>
+        <select id="poster-theme-teams" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;" title="Theme used by the welcome-poster share button">
+          <optgroup label="Gradients">
+            <option value="navy">Navy &amp; Gold</option>
+            <option value="crimson">Crimson Red</option>
+            <option value="emerald">Emerald Green</option>
+            <option value="purple">Royal Purple</option>
+            <option value="sunset">Sunset Orange</option>
+            <option value="ocean">Ocean Blue</option>
+            <option value="slate">Slate Grey</option>
+            <option value="gold">Gold Luxe</option>
+          </optgroup>
+          <optgroup label="Background Styles">
+            <option value="stadium">Stadium Lights</option>
+            <option value="floodlight">Floodlight Night</option>
+            <option value="confetti">Confetti Purple</option>
+            <option value="pitch">Pitch Lines</option>
+            <option value="spotlight">Spotlight</option>
+          </optgroup>
+        </select>
         <button class="btn btn-primary btn-sm" onclick="openAddTeamModal()"><i class="fas fa-plus"></i> Add Team</button>
       </div>
     </div>
@@ -612,6 +646,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
             <option value="dynamic">Dynamic Diagonal</option>
             <option value="carbon">Carbon Black</option>
             <option value="sunset">Sunset Sport</option>
+            <option value="emerald">Emerald Pro</option>
+            <option value="purple">Royal Purple</option>
           </select>
           <p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Applies to every card generated from here on — manual, bulk, and auto-generated on approval.</p>
         </div>
@@ -1523,6 +1559,7 @@ function resetTournamentForm() {
   document.getElementById('trn-age-cats').value = '';
   document.getElementById('trn-cities').value = '';
   document.getElementById('trn-start-date').value = '';
+  document.getElementById('trn-end-date').value = '';
   document.getElementById('trn-location').value = '';
   document.getElementById('trn-status').value = 'draft';
   document.getElementById('trn-id-template').value = 'classic';
@@ -1543,6 +1580,7 @@ function editTournament(key) {
   document.getElementById('trn-age-cats').value = (t.ageCategories||[]).join(', ');
   document.getElementById('trn-cities').value = (t.cities||[]).join(', ');
   document.getElementById('trn-start-date').value = t.startDate||'';
+  document.getElementById('trn-end-date').value = t.endDate||'';
   document.getElementById('trn-location').value = t.location||'';
   document.getElementById('trn-status').value = t.status||'draft';
   document.getElementById('trn-id-template').value = t.idCardTemplate||'classic';
@@ -1579,6 +1617,7 @@ function saveTournament() {
     ageCategories,
     cities,
     startDate: document.getElementById('trn-start-date').value || null,
+    endDate: document.getElementById('trn-end-date').value || null,
     location: document.getElementById('trn-location').value.trim() || null,
     status: document.getElementById('trn-status').value,
     idCardTemplate: document.getElementById('trn-id-template').value,
@@ -2000,6 +2039,7 @@ function renderTeams(){
     </select></td>
     <td>${badge(t.status)}</td>
     <td class="actions">
+      <button class="btn btn-gold btn-xs" onclick="exportTeamWelcomePoster('${t._key}')" title="Download welcome poster to share"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editTeam('${t._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTeamReg('${t._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`;
@@ -2034,6 +2074,49 @@ function saveTeam(){
   _fbDb.ref('registrations/'+editKey).update(updates).then(()=>{ closeModal('modal-team'); renderTeams(); refreshDashboard(); });
 }
 function deleteTeamReg(key){ if(!confirm('Permanently delete this team registration?')) return; _fbDb.ref('registrations/'+key).remove(); }
+
+// Shareable "Welcome to the tournament" poster for a newly-approved team —
+// same header/footer branding as the fixture/points-table posters, built
+// around the team's logo instead of a match. Square format like the
+// single-fixture poster, good for Instagram.
+async function exportTeamWelcomePoster(teamKey){
+  const t = (_fbRegs||[]).find(x=>x._key===teamKey);
+  if(!t){ alert('Team not found.'); return; }
+  const theme = getPosterTheme('poster-theme-teams');
+  const logoHtml = t.teamLogoUrl
+    ? `<img src="${t.teamLogoUrl}" style="width:180px;height:180px;border-radius:20px;object-fit:cover;background:#fff;">`
+    : `<div style="width:180px;height:180px;border-radius:20px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:4rem;font-weight:800;">${(t.teamName||'?').charAt(0)}</div>`;
+
+  const poster = document.createElement('div');
+  poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;`;
+  poster.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:30px;">
+      <img src="../Media (45).png" style="width:76px;height:76px;object-fit:contain;">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;">Sportera Global</div>
+    </div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.4rem;color:${theme.accent};text-align:center;margin-bottom:36px;">Welcome to ${t.tournament||'the tournament'}${t.cityGroup?' &bull; '+t.cityGroup:''}</div>
+    <div style="margin-bottom:30px;">${logoHtml}</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.4rem;text-align:center;margin-bottom:10px;">${t.teamName||''}</div>
+    <div style="font-size:1.5rem;font-weight:600;opacity:.9;margin-bottom:36px;">${t.ageCategory||''}</div>
+    <div style="width:100%;border-top:2px solid rgba(255,255,255,.25);padding-top:26px;text-align:center;">
+      <div style="font-size:1.1rem;opacity:.85;">Coach: <strong>${t.coachName||'—'}</strong></div>
+    </div>
+    <div style="margin-top:auto;width:100%;">
+      ${sponsorStripHtml()}
+      <div style="text-align:center;margin-top:12px;font-size:.85rem;opacity:.6;">Sportera Global &bull; sporteraglobal.com</div>
+    </div>
+  `;
+  document.body.appendChild(poster);
+  try {
+    const canvas = await html2canvas(poster, { backgroundColor: theme.solid, scale: 2, useCORS: true });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `welcome_${tournamentSlug(t.tournament||'')}_${(t.teamName||'team').replace(/[^a-zA-Z0-9]/g,'_')}.png`;
+    a.click();
+  } finally {
+    poster.remove();
+  }
+}
 function clearTeamForm(){ ['team-edit-id','t-name','t-city','t-coach','t-cphone','t-mgr','t-mphone','t-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('t-agecat').innerHTML='<option value="">Select age category</option>'; }
 
 // ── PLAYERS ───────────────────────────────────────────────────────────────
@@ -2107,7 +2190,7 @@ _fbDb.ref('settings/idCardTemplate').once('value').then(snap => {
 });
 function applyIdCardTemplateClass(){
   const card = document.getElementById('id-card-preview');
-  card.classList.remove('tmpl-classic','tmpl-gold','tmpl-dynamic','tmpl-carbon','tmpl-sunset');
+  card.classList.remove('tmpl-classic','tmpl-gold','tmpl-dynamic','tmpl-carbon','tmpl-sunset','tmpl-emerald','tmpl-purple');
   card.classList.add('tmpl-'+_idCardTemplate);
 }
 function onIdTemplateChange(){
@@ -2355,6 +2438,14 @@ function printIDCard(){
     .id-card.tmpl-sunset .id-f-lbl{color:#ffe6b3;}
     .id-card.tmpl-sunset .id-foot{background:rgba(0,0,0,.2);}
     .id-card.tmpl-sunset .id-num{color:#fff5cc;}
+    .id-card.tmpl-emerald{background:linear-gradient(150deg,#00351f 0%,#00693e 60%,#0a8f57 100%);box-shadow:0 8px 32px rgba(0,105,62,.35);}
+    .id-card.tmpl-emerald .id-card-head{background:rgba(0,0,0,.2);}
+    .id-card.tmpl-emerald .id-photo{border-radius:8px;border:2px solid rgba(255,215,0,.6);}
+    .id-card.tmpl-emerald .id-foot{background:rgba(0,0,0,.22);}
+    .id-card.tmpl-purple{background:linear-gradient(150deg,#1a0033 0%,#4a0e6e 60%,#7b2cbf 100%);box-shadow:0 8px 32px rgba(74,14,110,.4);}
+    .id-card.tmpl-purple .id-card-head{background:rgba(0,0,0,.2);border-bottom:2px solid var(--gold);}
+    .id-card.tmpl-purple .id-photo{border-radius:8px;border:2px solid var(--gold);}
+    .id-card.tmpl-purple .id-foot{background:rgba(0,0,0,.25);}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
     @media print{
       body{background:#dde3f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
@@ -3185,7 +3276,7 @@ async function exportFixturePoster(){
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tournament}</div>
-    <div style="font-size:1.15rem;margin-bottom:6px;"><strong>Dates of Tournament:</strong> ${t.startDate?fmtDate(t.startDate):'TBA'}</div>
+    <div style="font-size:1.15rem;margin-bottom:6px;"><strong>Dates of Tournament:</strong> ${t.startDate?(fmtDate(t.startDate)+(t.endDate&&t.endDate!==t.startDate?' – '+fmtDate(t.endDate):'')):'TBA'}</div>
     <div style="font-size:1.15rem;margin-bottom:34px;"><strong>Venue:</strong> ${t.location||'TBA'}</div>
     <div style="border-top:2px solid rgba(255,255,255,.25);padding-top:26px;margin-bottom:20px;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.9rem;color:${theme.accent};">Fixtures</div>
@@ -3419,6 +3510,12 @@ function resultScoreForm(f, r, saveLabel){
   // correcting an already-saved one (r is that fixture's existing result) —
   // same fields either way, just pre-filled when editing.
   r = r || {};
+  // Yellow/red cards and MOTM are entered per-team, not as one shared field —
+  // jersey numbers can repeat across the two teams (e.g. both teams field a
+  // #7), so a single combined "jersey #s" input made it impossible to tell
+  // which team a carded player belonged to. Falls back to the old shared
+  // fields (homeYellow||yellowCards) so results saved before this change
+  // still display something instead of going blank.
   return `
     <div class="score-row">
       <div class="score-team"><span style="display:block;font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px;">Home</span>${f.home}</div>
@@ -3428,17 +3525,26 @@ function resultScoreForm(f, r, saveLabel){
       <div class="score-team away"><span style="display:block;font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px;">Away</span>${f.away}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
-      <input type="text" placeholder="Man of the Match" id="motm-${f._key}" value="${r.motm||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f._key}" value="${r.scorer||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f._key}" value="${r.scorer||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;grid-column:1 / -1;">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
-      <input type="text" placeholder="Yellow cards (jersey #s, comma separated)" id="yellow-${f._key}" value="${r.yellowCards||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="text" placeholder="Red cards (jersey #s, comma separated)" id="red-${f._key}" value="${r.redCards||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px;padding:0 4px;">
+      <div style="border:1.5px solid var(--border);border-radius:8px;padding:10px;">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px;">${f.home} (Home)</div>
+        <input type="text" placeholder="Man of the Match" id="hmotm-${f._key}" value="${r.homeMotm||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <input type="text" placeholder="Yellow cards (jersey #s)" id="hyellow-${f._key}" value="${r.homeYellow||r.yellowCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <input type="text" placeholder="Red cards (jersey #s)" id="hred-${f._key}" value="${r.homeRed||r.redCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <input type="number" placeholder="Fouls" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+      </div>
+      <div style="border:1.5px solid var(--border);border-radius:8px;padding:10px;">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px;">${f.away} (Away)</div>
+        <input type="text" placeholder="Man of the Match" id="amotm-${f._key}" value="${r.awayMotm||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <input type="text" placeholder="Yellow cards (jersey #s)" id="ayellow-${f._key}" value="${r.awayYellow||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <input type="text" placeholder="Red cards (jersey #s)" id="ared-${f._key}" value="${r.awayRed||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <input type="number" placeholder="Fouls" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:18px;padding:0 4px;">
-      <input type="number" placeholder="Home Fouls" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <input type="number" placeholder="Away Fouls" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
-      <div style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;">${f.tournament}${f.cityGroup?' · '+f.cityGroup:''} · ${f.ageCategory} · Match ${f.matchNumber}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px;padding:0 4px;">
+      <div style="font-size:.78rem;color:var(--muted);">${f.tournament}${f.cityGroup?' · '+f.cityGroup:''} · ${f.ageCategory} · Match ${f.matchNumber}</div>
       <button class="btn btn-success btn-sm" onclick="saveResult('${f._key}')"><i class="fas fa-save"></i> ${saveLabel}</button>
     </div>`;
 }
@@ -3484,17 +3590,20 @@ function editResult(fxKey){
 function saveResult(fxKey){
   const hs=parseInt(document.getElementById('hs-'+fxKey).value)||0;
   const as=parseInt(document.getElementById('as-'+fxKey).value)||0;
-  const motm=document.getElementById('motm-'+fxKey).value;
   const scorer=document.getElementById('scorer-'+fxKey).value;
-  const yellow=document.getElementById('yellow-'+fxKey).value;
-  const red=document.getElementById('red-'+fxKey).value;
+  const homeMotm=document.getElementById('hmotm-'+fxKey).value;
+  const awayMotm=document.getElementById('amotm-'+fxKey).value;
+  const homeYellow=document.getElementById('hyellow-'+fxKey).value;
+  const awayYellow=document.getElementById('ayellow-'+fxKey).value;
+  const homeRed=document.getElementById('hred-'+fxKey).value;
+  const awayRed=document.getElementById('ared-'+fxKey).value;
   const hfoul=parseInt(document.getElementById('hfoul-'+fxKey).value)||0;
   const afoul=parseInt(document.getElementById('afoul-'+fxKey).value)||0;
   const fx=(_fbFixtures||[]).find(f=>f._key===fxKey); if(!fx) return;
   _fbDb.ref('fixtures/'+fxKey).update({status:'played', homeScore:hs, awayScore:as});
   _fbDb.ref('results/'+fxKey).set({
-    home:fx.home, away:fx.away, homeScore:hs, awayScore:as, motm, scorer,
-    yellowCards:yellow, redCards:red, homeFouls:hfoul, awayFouls:afoul,
+    home:fx.home, away:fx.away, homeScore:hs, awayScore:as, scorer,
+    homeMotm, awayMotm, homeYellow, awayYellow, homeRed, awayRed, homeFouls:hfoul, awayFouls:afoul,
     tournament:fx.tournament, ageCategory:fx.ageCategory, cityGroup:fx.cityGroup||null, matchNumber:fx.matchNumber,
     dt:new Date().toISOString()
   });
@@ -3508,7 +3617,7 @@ function renderResultsLog(){
   tbody.innerHTML=results.map(r=>`<tr>
     <td>${r.home} vs ${r.away} <span style="color:var(--muted);font-size:.75rem;">(${[r.cityGroup,r.ageCategory].filter(Boolean).join(' · ')})</span></td>
     <td style="font-weight:800;font-size:1rem;color:var(--primary);">${r.homeScore} – ${r.awayScore}</td>
-    <td>${r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td>
+    <td>${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')||r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td>
     <td class="actions">
       <button class="btn btn-gold btn-xs" onclick="exportResultPoster('${r._key}')" title="Download result poster to share"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editResult('${r._key}')" title="Correct this result"><i class="fas fa-edit"></i></button>
@@ -3569,7 +3678,7 @@ async function exportResultPoster(resultKey){
       </div>
     </div>
     <div style="width:100%;border-top:2px solid rgba(255,255,255,.25);padding-top:30px;text-align:center;">
-      ${r.motm?`<div style="font-size:1.05rem;margin-bottom:8px;"><strong>Man of the Match:</strong> ${r.motm}</div>`:''}
+      ${(r.homeMotm||r.awayMotm)?`<div style="font-size:1.05rem;margin-bottom:8px;"><strong>Man of the Match:</strong> ${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')}</div>`:(r.motm?`<div style="font-size:1.05rem;margin-bottom:8px;"><strong>Man of the Match:</strong> ${r.motm}</div>`:'')}
       ${r.scorer?`<div style="font-size:1.05rem;margin-bottom:8px;"><strong>Top Scorer:</strong> ${r.scorer}</div>`:''}
       <div style="font-size:1.05rem;opacity:.85;margin-bottom:6px;">${fmtDate(r.dt)}</div>
       <div style="font-size:1.05rem;opacity:.85;">${f.round||''}${f.matchNumber?' &bull; Match '+f.matchNumber:''}</div>
