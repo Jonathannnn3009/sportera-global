@@ -3537,26 +3537,37 @@ function resultScoreForm(f, r, saveLabel){
       <div class="score-team away"><span style="display:block;font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px;">Away</span>${f.away}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 4px;">
-      <input type="text" placeholder="Top Scorer (goals)" id="scorer-${f._key}" value="${r.scorer||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;grid-column:1 / -1;">
+      <div style="grid-column:1 / -1;">
+        <label style="display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:3px;">Top Scorer (goals)</label>
+        <input type="text" id="scorer-${f._key}" value="${r.scorer||''}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px;padding:0 4px;">
       <div style="border:1.5px solid var(--border);border-radius:8px;padding:10px;">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px;">${f.home} (Home)</div>
-        <input type="text" placeholder="Man of the Match" id="hmotm-${f._key}" value="${r.homeMotm||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
-        <input type="text" placeholder="Yellow cards (jersey #s)" id="hyellow-${f._key}" value="${r.homeYellow||r.yellowCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
-        <input type="text" placeholder="Red cards (jersey #s)" id="hred-${f._key}" value="${r.homeRed||r.redCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
-        <input type="number" placeholder="Fouls" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Man of the Match</label>
+        <input type="text" id="hmotm-${f._key}" value="${r.homeMotm||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Yellow cards (jersey #s)</label>
+        <input type="text" id="hyellow-${f._key}" value="${r.homeYellow||r.yellowCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Red cards (jersey #s)</label>
+        <input type="text" id="hred-${f._key}" value="${r.homeRed||r.redCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Fouls</label>
+        <input type="number" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
       </div>
       <div style="border:1.5px solid var(--border);border-radius:8px;padding:10px;">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px;">${f.away} (Away)</div>
-        <input type="text" placeholder="Man of the Match" id="amotm-${f._key}" value="${r.awayMotm||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
-        <input type="text" placeholder="Yellow cards (jersey #s)" id="ayellow-${f._key}" value="${r.awayYellow||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
-        <input type="text" placeholder="Red cards (jersey #s)" id="ared-${f._key}" value="${r.awayRed||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
-        <input type="number" placeholder="Fouls" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Man of the Match</label>
+        <input type="text" id="amotm-${f._key}" value="${r.awayMotm||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Yellow cards (jersey #s)</label>
+        <input type="text" id="ayellow-${f._key}" value="${r.awayYellow||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Red cards (jersey #s)</label>
+        <input type="text" id="ared-${f._key}" value="${r.awayRed||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Fouls</label>
+        <input type="number" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px;padding:0 4px;">
-      <div style="font-size:.78rem;color:var(--muted);">${f.tournament}${f.cityGroup?' · '+f.cityGroup:''} · ${f.ageCategory} · Match ${f.matchNumber}</div>
+      <div style="font-size:.95rem;color:var(--muted);">${f.tournament}${f.cityGroup?' · '+f.cityGroup:''} · <strong style="font-size:1.05rem;color:var(--text);">${f.ageCategory}</strong> · Match ${f.matchNumber||'—'} · ${f.round||'—'}</div>
       <button class="btn btn-success btn-sm" onclick="saveResult('${f._key}')"><i class="fas fa-save"></i> ${saveLabel}</button>
     </div>`;
 }
