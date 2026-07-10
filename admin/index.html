@@ -3645,12 +3645,16 @@ async function bulkDownloadResultPosters(){
     return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
   };
   const theme = getPosterTheme('poster-theme-res');
-  const cardsText = r => {
-    const y = [r.homeYellow, r.awayYellow].filter(Boolean).join(', ');
-    const rd = [r.homeRed, r.awayRed].filter(Boolean).join(', ');
-    return [y?'Yellow: '+y:'', rd?'Red: '+rd:''].filter(Boolean).join(' &bull; ');
+  // Each team's own MOTM/yellow/red shown under that team's own name — not
+  // combined into one shared line, since that made it impossible to tell
+  // which team a card or MOTM actually belonged to once both teams had one.
+  const teamInfoHtml = (motm, yellow, red) => {
+    const parts = [];
+    if (motm) parts.push(`⭐ ${motm}`);
+    if (yellow) parts.push(`🟨 ${yellow}`);
+    if (red) parts.push(`🟥 ${red}`);
+    return parts.length ? `<div style="font-size:.78rem;opacity:.85;margin-top:4px;">${parts.join('<br>')}</div>` : '';
   };
-  const motmText = r => [r.homeMotm, r.awayMotm].filter(Boolean).join(', ') || r.motm || '';
 
   const sameTournament = results.every(r => r.tournament === results[0].tournament);
   const sameAgeCat = results.every(r => r.ageCategory === results[0].ageCategory);
@@ -3668,18 +3672,27 @@ async function bulkDownloadResultPosters(){
       const hLogo = teamLogo(r.home, r.tournament);
       const aLogo = teamLogo(r.away, r.tournament);
       return `
-      <div style="display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 0;${i>0?'border-top:1px solid rgba(255,255,255,.2);':''}">
-        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:12px;">
-          <div style="font-size:1.3rem;font-weight:700;text-align:right;">${r.home}</div>
-          ${hLogo?`<img src="${hLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+      <div style="display:flex;align-items:flex-start;justify-content:center;gap:24px;padding:22px 0;${i>0?'border-top:1px solid rgba(255,255,255,.2);':''}">
+        <div style="flex:1;display:flex;align-items:flex-start;justify-content:flex-end;gap:12px;text-align:right;">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;">
+              <div style="font-size:1.3rem;font-weight:700;">${r.home}</div>
+              ${hLogo?`<img src="${hLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+            </div>
+            ${teamInfoHtml(r.homeMotm, r.homeYellow, r.homeRed)}
+          </div>
         </div>
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;color:${theme.accent};white-space:nowrap;min-width:90px;text-align:center;">${r.homeScore} – ${r.awayScore}</div>
-        <div style="flex:1;display:flex;align-items:center;gap:12px;">
-          ${aLogo?`<img src="${aLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
-          <div style="font-size:1.3rem;font-weight:700;">${r.away}</div>
+        <div style="flex:1;display:flex;align-items:flex-start;gap:12px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              ${aLogo?`<img src="${aLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+              <div style="font-size:1.3rem;font-weight:700;">${r.away}</div>
+            </div>
+            ${teamInfoHtml(r.awayMotm, r.awayYellow, r.awayRed)}
+          </div>
         </div>
       </div>
-      ${(motmText(r)||cardsText(r))?`<div style="text-align:center;font-size:.9rem;opacity:.8;margin-bottom:4px;">${motmText(r)?'MOTM: '+motmText(r):''}${motmText(r)&&cardsText(r)?' &bull; ':''}${cardsText(r)}</div>`:''}
       `;
     }).join('')}
     ${sponsorStripHtml()}
@@ -3814,19 +3827,29 @@ async function exportResultPoster(resultKey){
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.5rem;color:${theme.accent};text-align:center;margin-bottom:6px;">${f.tournament||''}</div>
     <div style="font-size:1.4rem;font-weight:600;opacity:.85;margin-bottom:14px;">${f.ageCategory||''}${f.cityGroup?' &bull; '+f.cityGroup:''}${f.pool?' &bull; Pool '+f.pool:''}</div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:2px;color:${theme.accent};margin-bottom:44px;">FULL TIME</div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:38px;width:100%;margin-bottom:44px;">
+    <div style="display:flex;align-items:flex-start;justify-content:center;gap:38px;width:100%;margin-bottom:44px;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:18px;flex:1;">
         ${logoImg(r.home)}
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;">${r.home}</div>
+        <div style="text-align:center;">
+          ${r.homeMotm?`<div style="font-size:.95rem;margin-bottom:4px;">⭐ ${r.homeMotm}</div>`:''}
+          ${r.homeYellow?`<div style="font-size:.9rem;margin-bottom:4px;">🟨 ${r.homeYellow}</div>`:''}
+          ${r.homeRed?`<div style="font-size:.9rem;">🟥 ${r.homeRed}</div>`:''}
+        </div>
       </div>
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:3.6rem;color:#fff;white-space:nowrap;">${r.homeScore} – ${r.awayScore}</div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:3.6rem;color:#fff;white-space:nowrap;margin-top:35px;">${r.homeScore} – ${r.awayScore}</div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:18px;flex:1;">
         ${logoImg(r.away)}
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;">${r.away}</div>
+        <div style="text-align:center;">
+          ${r.awayMotm?`<div style="font-size:.95rem;margin-bottom:4px;">⭐ ${r.awayMotm}</div>`:''}
+          ${r.awayYellow?`<div style="font-size:.9rem;margin-bottom:4px;">🟨 ${r.awayYellow}</div>`:''}
+          ${r.awayRed?`<div style="font-size:.9rem;">🟥 ${r.awayRed}</div>`:''}
+        </div>
       </div>
     </div>
     <div style="width:100%;border-top:2px solid rgba(255,255,255,.25);padding-top:34px;text-align:center;">
-      ${(r.homeMotm||r.awayMotm)?`<div style="font-size:1.2rem;margin-bottom:10px;"><strong>Man of the Match:</strong> ${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')}</div>`:(r.motm?`<div style="font-size:1.2rem;margin-bottom:10px;"><strong>Man of the Match:</strong> ${r.motm}</div>`:'')}
+      ${(!r.homeMotm && !r.awayMotm && r.motm)?`<div style="font-size:1.2rem;margin-bottom:10px;"><strong>Man of the Match:</strong> ${r.motm}</div>`:''}
       ${r.scorer?`<div style="font-size:1.2rem;margin-bottom:10px;"><strong>Top Scorer:</strong> ${r.scorer}</div>`:''}
       <div style="font-size:1.2rem;opacity:.85;margin-bottom:8px;">${fmtDate(r.dt)}</div>
       <div style="font-size:1.2rem;opacity:.85;">${f.round||''}${f.matchNumber?' &bull; Match '+f.matchNumber:''}</div>
