@@ -620,7 +620,7 @@
                             <div class="upload-preview" id="playerPhotoPreview"></div>
                         </div>
 
-                        <p class="form-section-label">Age Proof Document *</p>
+                        <p class="form-section-label" id="ageDocLabel">Age Proof Document *</p>
                         <div class="upload-box" id="ageDocBox">
                             <input type="file" id="ageDoc" name="ageDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload('ageDoc','ageDocPreview','ageDocBox')" required>
                             <i class="fas fa-file-alt"></i>
@@ -816,6 +816,17 @@
             const el = document.getElementById(displayId);
             if (age >= 0 && age < 100) {
                 el.innerHTML = '<span class="age-badge">Age: ' + age + '</span>';
+            }
+            // Age proof is only mandatory for minors — an 18+ player doesn't
+            // need a guardian-oriented age document, so don't force it.
+            if (displayId === 'playerAgeDisplay') {
+                const ageDoc = document.getElementById('ageDoc');
+                const label = document.getElementById('ageDocLabel');
+                if (ageDoc) {
+                    const isMinor = age < 18;
+                    ageDoc.required = isMinor;
+                    if (label) label.textContent = 'Age Proof Document' + (isMinor ? ' *' : ' (optional — not required for 18+)');
+                }
             }
         }
 

@@ -1113,7 +1113,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <button class="btn btn-gold btn-sm" onclick="bulkDownloadResultPosters()"><i class="fas fa-download"></i> Download Selected</button>
       </div>
     </div>
-    <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th><input type="checkbox" id="reslog-select-all" onchange="toggleAllResultsLog(this.checked)"></th><th>Match</th><th>Score</th><th>MOTM</th><th>Top Scorer</th><th>Cards</th><th>Date</th><th>Actions</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
+    <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th><input type="checkbox" id="reslog-select-all" onchange="toggleAllResultsLog(this.checked)"></th><th>Match</th><th>Score</th><th>MOTM</th><th>Scorers</th><th>Cards</th><th>Date</th><th>Actions</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
   </div>
 </div>
 
@@ -3542,11 +3542,53 @@ _fbDb.ref('results').on('value', snap => {
   renderResultsLog(); renderLeagueTable();
 });
 
+// Per-fixture, per-side list of {name, minute} goal scorers — kept here
+// (not just in the DOM) since rows are added/removed dynamically and need
+// to survive being written into the result and re-rendered on edit.
+let _resultScorersState = {};
+function initResultScorers(fxKey, r){
+  // Bulk "enter results" rendering calls this for every upcoming fixture
+  // (with r undefined) before the admin has typed anything, which must not
+  // later stomp on real saved data — but opening Edit on an already-played
+  // result always carries real scorers that need to win over that earlier
+  // empty init. Track whether we've ever loaded real saved data so a second
+  // init from actual r can still take effect once.
+  const hasRealData = r && ((r.homeScorers && r.homeScorers.length) || (r.awayScorers && r.awayScorers.length));
+  if (_resultScorersState[fxKey] && (_resultScorersState[fxKey]._loadedFromR || !hasRealData)) return;
+  _resultScorersState[fxKey] = { home: (r && r.homeScorers) || [], away: (r && r.awayScorers) || [], _loadedFromR: !!hasRealData };
+}
+function renderResultScorersList(fxKey, side){
+  const el = document.getElementById(side.charAt(0)+'scorersList-'+fxKey);
+  if (!el) return;
+  const list = (_resultScorersState[fxKey]||{})[side] || [];
+  el.innerHTML = list.map((s,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:3px 0;">
+    <span>⚽ ${s.name} <strong>${s.minute}'</strong></span>
+    <button type="button" onclick="removeResultScorer('${fxKey}','${side}',${i})" style="background:none;border:none;color:#e53935;cursor:pointer;padding:2px 6px;"><i class="fas fa-times"></i></button>
+  </div>`).join('');
+}
+function addResultScorer(fxKey, side){
+  const nameEl = document.getElementById(side.charAt(0)+'scname-'+fxKey);
+  const minEl = document.getElementById(side.charAt(0)+'scmin-'+fxKey);
+  const name = nameEl.value.trim();
+  const minute = minEl.value.trim();
+  if (!name) { alert('Enter the scorer\'s name first.'); return; }
+  initResultScorers(fxKey);
+  _resultScorersState[fxKey][side].push({ name, minute: minute || '?' });
+  nameEl.value = ''; minEl.value = '';
+  renderResultScorersList(fxKey, side);
+}
+function removeResultScorer(fxKey, side, idx){
+  _resultScorersState[fxKey][side].splice(idx,1);
+  renderResultScorersList(fxKey, side);
+}
+
 function resultScoreForm(f, r, saveLabel){
   // Shared form for both entering a new result (r is undefined) and
   // correcting an already-saved one (r is that fixture's existing result) —
   // same fields either way, just pre-filled when editing.
   r = r || {};
+  initResultScorers(f._key, r);
+  setTimeout(()=>{ renderResultScorersList(f._key,'home'); renderResultScorersList(f._key,'away'); }, 0);
   // Yellow/red cards and MOTM are entered per-team, not as one shared field —
   // jersey numbers can repeat across the two teams (e.g. both teams field a
   // #7), so a single combined "jersey #s" input made it impossible to tell
@@ -3577,7 +3619,14 @@ function resultScoreForm(f, r, saveLabel){
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Red cards (jersey #s)</label>
         <input type="text" id="hred-${f._key}" value="${r.homeRed||r.redCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Fouls</label>
-        <input type="number" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+        <input type="number" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;margin-bottom:6px;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (name + minute)</label>
+        <div id="hscorersList-${f._key}" style="margin-bottom:4px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="hscname-${f._key}" placeholder="Player name" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
+          <input type="number" id="hscmin-${f._key}" placeholder="Min" min="0" style="width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;">
+          <button type="button" onclick="addResultScorer('${f._key}','home')" class="btn btn-ghost btn-xs"><i class="fas fa-plus"></i></button>
+        </div>
       </div>
       <div style="border:1.5px solid var(--border);border-radius:8px;padding:10px;">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px;">${f.away} (Away)</div>
@@ -3588,7 +3637,14 @@ function resultScoreForm(f, r, saveLabel){
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Red cards (jersey #s)</label>
         <input type="text" id="ared-${f._key}" value="${r.awayRed||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Fouls</label>
-        <input type="number" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;">
+        <input type="number" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;margin-bottom:6px;">
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (name + minute)</label>
+        <div id="ascorersList-${f._key}" style="margin-bottom:4px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="ascname-${f._key}" placeholder="Player name" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
+          <input type="number" id="ascmin-${f._key}" placeholder="Min" min="0" style="width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;">
+          <button type="button" onclick="addResultScorer('${f._key}','away')" class="btn btn-ghost btn-xs"><i class="fas fa-plus"></i></button>
+        </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px;padding:0 4px;">
@@ -3671,8 +3727,12 @@ async function bulkDownloadResultPosters(){
     ${results.map((r,i)=>{
       const hLogo = teamLogo(r.home, r.tournament);
       const aLogo = teamLogo(r.away, r.tournament);
+      const fx = (_fbFixtures||[]).find(x=>x._key===r._key);
+      const round = r.round || (fx && fx.round) || '';
+      const matchMeta = [r.ageCategory, round, r.matchNumber?'Match '+r.matchNumber:''].filter(Boolean).join(' &bull; ');
       return `
-      <div style="display:flex;align-items:flex-start;justify-content:center;gap:24px;padding:22px 0;${i>0?'border-top:1px solid rgba(255,255,255,.2);':''}">
+      ${matchMeta ? `<div style="text-align:center;font-size:.85rem;opacity:.7;padding-top:${i>0?'22px':'0'};${i>0?'border-top:1px solid rgba(255,255,255,.2);':''}">${matchMeta}</div>` : ''}
+      <div style="display:flex;align-items:flex-start;justify-content:center;gap:24px;padding:10px 0 22px;${i>0&&!matchMeta?'border-top:1px solid rgba(255,255,255,.2);':''}">
         <div style="flex:1;display:flex;align-items:flex-start;justify-content:flex-end;gap:12px;text-align:right;">
           <div>
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;">
@@ -3748,13 +3808,16 @@ function saveResult(fxKey){
   const hfoul=parseInt(document.getElementById('hfoul-'+fxKey).value)||0;
   const afoul=parseInt(document.getElementById('afoul-'+fxKey).value)||0;
   const fx=(_fbFixtures||[]).find(f=>f._key===fxKey); if(!fx) return;
+  const scorersState = _resultScorersState[fxKey] || {home:[],away:[]};
   _fbDb.ref('fixtures/'+fxKey).update({status:'played', homeScore:hs, awayScore:as});
   _fbDb.ref('results/'+fxKey).set({
     home:fx.home, away:fx.away, homeScore:hs, awayScore:as, scorer,
     homeMotm, awayMotm, homeYellow, awayYellow, homeRed, awayRed, homeFouls:hfoul, awayFouls:afoul,
-    tournament:fx.tournament, ageCategory:fx.ageCategory, cityGroup:fx.cityGroup||null, matchNumber:fx.matchNumber,
+    homeScorers: scorersState.home||[], awayScorers: scorersState.away||[],
+    tournament:fx.tournament, ageCategory:fx.ageCategory, cityGroup:fx.cityGroup||null, matchNumber:fx.matchNumber, round:fx.round,
     dt:new Date().toISOString()
   });
+  delete _resultScorersState[fxKey];
   closeModal('modal-edit-result');
   renderResultsFixtures();
 }
@@ -3774,11 +3837,17 @@ function renderResultsLog(){
     if (!yellow && !red) return '—';
     return `${yellow?`<span style="display:inline-block;background:#f0b429;color:#3a2c00;font-weight:700;font-size:.72rem;padding:2px 6px;border-radius:4px;margin-right:4px;">Y ${yellow}</span>`:''}${red?`<span style="display:inline-block;background:#e53935;color:#fff;font-weight:700;font-size:.72rem;padding:2px 6px;border-radius:4px;">R ${red}</span>`:''}`;
   };
+  const scorersHtml = r => {
+    const home = (r.homeScorers||[]).map(s=>`${s.name} ${s.minute}'`).join(', ');
+    const away = (r.awayScorers||[]).map(s=>`${s.name} ${s.minute}'`).join(', ');
+    if (!home && !away) return r.scorer||'—';
+    return `${home?`<div><strong>${r.home}:</strong> ${home}</div>`:''}${away?`<div><strong>${r.away}:</strong> ${away}</div>`:''}`;
+  };
   tbody.innerHTML=results.map(r=>`<tr>
     <td><input type="checkbox" class="reslog-check" data-key="${r._key}"></td>
     <td>${r.home} vs ${r.away} <span style="color:var(--muted);font-size:.75rem;">(${[r.cityGroup,r.ageCategory].filter(Boolean).join(' · ')})</span></td>
     <td style="font-weight:800;font-size:1rem;color:var(--primary);">${r.homeScore} – ${r.awayScore}</td>
-    <td>${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')||r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${cardsHtml(r)}</td><td>${fmtDate(r.dt)}</td>
+    <td>${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')||r.motm||'—'}</td><td style="font-size:.82rem;">${scorersHtml(r)}</td><td>${cardsHtml(r)}</td><td>${fmtDate(r.dt)}</td>
     <td class="actions">
       <button class="btn btn-gold btn-xs" onclick="exportResultPoster('${r._key}')" title="Download result poster to share"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editResult('${r._key}')" title="Correct this result"><i class="fas fa-edit"></i></button>
