@@ -112,6 +112,45 @@
     <!-- Footer -->
     <footer>
         <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo-text">Sportera <span>Global</span></div>
+                    <p>A sports development and event management platform dedicated to creating opportunities for athletes through competitions, leagues, and international exposure.</p>
+                    <div class="footer-social">
+                        <a href="https://instagram.com/sportera.global" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.facebook.com/football5association" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.youtube.com/football5association" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="football5.html">Football 5</a></li>
+                        <li><a href="if5l.html">IF5L</a></li>
+                        <li><a href="tournaments.html">Tournaments</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="registration.html">Registration</a></li>
+                        <li><a href="gallery.html">Gallery</a></li>
+                        <li><a href="downloads.html">Downloads</a></li>
+                        <li><a href="news.html">News</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="portal/login.html" style="color:#ffd700; font-weight:600;"><i class="fas fa-user-circle"></i> Player &amp; Team Portal</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:football5association@gmail.com"><i class="fas fa-envelope"></i> football5association@gmail.com</a></li>
+                        <li><a href="https://instagram.com/sportera.global" target="_blank"><i class="fab fa-instagram"></i> @football5association</a></li>
+                        <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="admin/login.html" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
+                    </ul>
+                </div>
+            </div>
             <div class="footer-bottom">
                 <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
             </div>
@@ -223,7 +262,16 @@
         fx = [...fx].sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
         tbody.innerHTML = fx.map(f => {
             const r = _liveResults.find(x => x._key === f._key);
-            const result = r ? `<span class="score-pill">${r.homeScore} – ${r.awayScore}</span>` : '<span style="color:#999;">Upcoming</span>';
+            let result = '<span style="color:#999;">Upcoming</span>';
+            if (r) {
+                const motm = [r.homeMotm, r.awayMotm].filter(Boolean).join(', ') || r.motm || '';
+                const yellow = [r.homeYellow, r.awayYellow].filter(Boolean).join(', ');
+                const red = [r.homeRed, r.awayRed].filter(Boolean).join(', ');
+                result = `<span class="score-pill">${r.homeScore} – ${r.awayScore}</span>`
+                    + (motm ? `<div style="font-size:.78rem;color:#555;margin-top:2px;">MOTM: ${motm}</div>` : '')
+                    + (yellow ? `<div style="font-size:.75rem;color:#8a6d00;margin-top:2px;">🟨 ${yellow}</div>` : '')
+                    + (red ? `<div style="font-size:.75rem;color:#c62828;margin-top:2px;">🟥 ${red}</div>` : '');
+            }
             return `<tr>
                 <td>${f.matchNumber || '—'}</td>
                 <td><strong>${f.home}</strong></td>
