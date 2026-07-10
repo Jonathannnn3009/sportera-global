@@ -1036,7 +1036,21 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 
     <!-- Saved lineups -->
     <div class="card" style="margin-top:20px;">
-      <div class="card-head"><h3><i class="fas fa-history"></i> Saved Lineups</h3></div>
+      <div class="card-head">
+        <h3><i class="fas fa-history"></i> Saved Lineups</h3>
+        <select id="poster-theme-lineup" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;" title="Theme used by the Print button below">
+          <optgroup label="Gradients">
+            <option value="navy">Navy &amp; Gold</option>
+            <option value="crimson">Crimson Red</option>
+            <option value="emerald">Emerald Green</option>
+            <option value="purple">Royal Purple</option>
+            <option value="sunset">Sunset Orange</option>
+            <option value="ocean">Ocean Blue</option>
+            <option value="slate">Slate Grey</option>
+            <option value="gold">Gold Luxe</option>
+          </optgroup>
+        </select>
+      </div>
       <div class="card-body" id="lu-saved-list"><p style="color:var(--muted);font-size:.88rem;">No lineups saved yet.</p></div>
     </div>
   </div>
@@ -2664,15 +2678,21 @@ function loadSavedLineup(fixtureKey){
 function printLineup(fixtureKey){
   const l = _fbLineups.find(x=>x._key===fixtureKey);
   if(!l) return;
+  const theme = getPosterTheme('poster-theme-lineup');
   const rows = side => (l[side]||[]).map(p=>`<tr><td>${p.num||'—'}</td><td>${p.name||'—'}</td><td>${p.dob?fmtDate(p.dob):'—'}</td><td>${p.pos||'—'}</td></tr>`).join('');
+  const eventIcon = type => ({goal:'⚽',yellow:'🟨',red:'🟥',sub:'🔄'}[type] || '•');
+  const events = [...(l.events||[])].sort((a,b)=>(parseInt(a.minute)||0)-(parseInt(b.minute)||0));
+  const eventRows = events.map(e=>`<tr><td>${e.minute||'—'}'</td><td>${e.team==='home'?l.matchLabel.split(' vs ')[0]:l.matchLabel.split(' vs ')[1]||e.team}</td><td>${e.player||'—'}</td><td>${eventIcon(e.type)} ${e.type||'—'}</td></tr>`).join('');
   const win = window.open('','_blank','width=800,height=900');
   win.document.write(`<!DOCTYPE html><html><head><title>Match Lineup — ${l.matchLabel}</title>
   <style>
     *{box-sizing:border-box;font-family:Arial,sans-serif;}
-    body{padding:24px;color:#222;}
-    h1{font-size:1.3rem;color:#0d1642;margin-bottom:4px;}
-    .meta{font-size:.85rem;color:#666;margin-bottom:20px;}
-    .cols{display:flex;gap:24px;}
+    body{padding:0;color:#222;margin:0;}
+    .header{background:${theme.bg};color:#fff;padding:24px;}
+    .header h1{font-size:1.4rem;margin:0 0 4px;}
+    .header .meta{font-size:.9rem;opacity:.9;}
+    .content{padding:24px;}
+    .cols{display:flex;gap:24px;margin-bottom:24px;}
     .col{flex:1;}
     h3{font-size:1rem;color:#1a237e;border-bottom:2px solid #FFD700;padding-bottom:6px;margin-bottom:10px;}
     table{width:100%;border-collapse:collapse;font-size:.85rem;}
@@ -2680,11 +2700,16 @@ function printLineup(fixtureKey){
     th{background:#f4f6fb;color:#1a237e;}
   </style></head>
   <body>
-    <h1>Match ${l.matchNumber}: ${l.matchLabel}</h1>
-    <div class="meta">${l.tournament} &bull; ${l.ageCategory} Age Category</div>
-    <div class="cols">
-      <div class="col"><h3>Home Team</h3><table><thead><tr><th>#</th><th>Name</th><th>DOB</th><th>Pos</th></tr></thead><tbody>${rows('homePlayers')}</tbody></table></div>
-      <div class="col"><h3>Away Team</h3><table><thead><tr><th>#</th><th>Name</th><th>DOB</th><th>Pos</th></tr></thead><tbody>${rows('awayPlayers')}</tbody></table></div>
+    <div class="header">
+      <h1>Match ${l.matchNumber}: ${l.matchLabel}</h1>
+      <div class="meta">${l.tournament} &bull; ${l.ageCategory} Age Category</div>
+    </div>
+    <div class="content">
+      <div class="cols">
+        <div class="col"><h3>Home Team</h3><table><thead><tr><th>#</th><th>Name</th><th>DOB</th><th>Pos</th></tr></thead><tbody>${rows('homePlayers')}</tbody></table></div>
+        <div class="col"><h3>Away Team</h3><table><thead><tr><th>#</th><th>Name</th><th>DOB</th><th>Pos</th></tr></thead><tbody>${rows('awayPlayers')}</tbody></table></div>
+      </div>
+      ${events.length ? `<h3>Match Events</h3><table><thead><tr><th>Min</th><th>Team</th><th>Player</th><th>Event</th></tr></thead><tbody>${eventRows}</tbody></table>` : ''}
     </div>
     <script>setTimeout(()=>window.print(),700);<\/script>
   </body></html>`);

@@ -1062,6 +1062,14 @@ footer {
     transition: var(--transition);
 }
 
+.footer-links ul li a[href^="mailto:"] {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
 .footer-links ul li a:hover {
     color: var(--gold);
     padding-left: 5px;
