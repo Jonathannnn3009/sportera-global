@@ -1099,7 +1099,7 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
         <button class="btn btn-gold btn-sm" onclick="bulkDownloadResultPosters()"><i class="fas fa-download"></i> Download Selected</button>
       </div>
     </div>
-    <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th><input type="checkbox" id="reslog-select-all" onchange="toggleAllResultsLog(this.checked)"></th><th>Match</th><th>Score</th><th>MOTM</th><th>Top Scorer</th><th>Date</th><th>Actions</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
+    <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th><input type="checkbox" id="reslog-select-all" onchange="toggleAllResultsLog(this.checked)"></th><th>Match</th><th>Score</th><th>MOTM</th><th>Top Scorer</th><th>Cards</th><th>Date</th><th>Actions</th></tr></thead><tbody id="results-log"></tbody></table></div></div>
   </div>
 </div>
 
@@ -3594,16 +3594,70 @@ function toggleAllResultsLog(checked){
   document.querySelectorAll('.reslog-check').forEach(cb => cb.checked = checked);
 }
 
-// Downloads a poster for every checked result, one at a time (small delay
-// between each) — an age group can easily have 15-20+ played matches, so
-// downloading every single one via separate clicks isn't practical; this
-// lets the admin filter down to what they want and grab just those.
+// Combines every checked result into ONE downloaded image (not a separate
+// file per match) — an age group can easily have 15-20+ played matches, so
+// this lets the admin filter down to what they want, check several, and get
+// a single shareable results-roundup poster instead of a pile of downloads.
 async function bulkDownloadResultPosters(){
   const keys = [...document.querySelectorAll('.reslog-check:checked')].map(cb => cb.dataset.key);
   if(!keys.length){ alert('Check at least one result first.'); return; }
-  for(const key of keys){
-    await exportResultPoster(key);
-    await new Promise(r=>setTimeout(r,300));
+  const results = keys.map(k => (_fbResults||[]).find(r=>r._key===k)).filter(Boolean);
+  if(!results.length){ alert('Could not find the selected results.'); return; }
+
+  const teamLogo = (name, tournament) => {
+    const reg = (_fbRegs||[]).find(rr=>rr.type==='team' && rr.teamName===name && rr.tournament===tournament);
+    return reg && reg.teamLogoUrl ? reg.teamLogoUrl : '';
+  };
+  const theme = getPosterTheme('poster-theme-res');
+  const cardsText = r => {
+    const y = [r.homeYellow, r.awayYellow].filter(Boolean).join(', ');
+    const rd = [r.homeRed, r.awayRed].filter(Boolean).join(', ');
+    return [y?'Yellow: '+y:'', rd?'Red: '+rd:''].filter(Boolean).join(' &bull; ');
+  };
+  const motmText = r => [r.homeMotm, r.awayMotm].filter(Boolean).join(', ') || r.motm || '';
+
+  const sameTournament = results.every(r => r.tournament === results[0].tournament);
+  const sameAgeCat = results.every(r => r.ageCategory === results[0].ageCategory);
+
+  const poster = document.createElement('div');
+  poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
+  poster.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:30px;">
+      <img src="../Media (51).png" style="width:88px;height:88px;border-radius:50%;">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
+    </div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.2rem;color:${theme.accent};margin-bottom:8px;">Match Results${sameTournament?' — '+results[0].tournament:''}</div>
+    <div style="font-size:1.2rem;margin-bottom:34px;">${sameAgeCat?results[0].ageCategory:'Multiple Age Categories'}</div>
+    ${results.map((r,i)=>{
+      const hLogo = teamLogo(r.home, r.tournament);
+      const aLogo = teamLogo(r.away, r.tournament);
+      return `
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 0;${i>0?'border-top:1px solid rgba(255,255,255,.2);':''}">
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:12px;">
+          <div style="font-size:1.3rem;font-weight:700;text-align:right;">${r.home}</div>
+          ${hLogo?`<img src="${hLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+        </div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;color:${theme.accent};white-space:nowrap;min-width:90px;text-align:center;">${r.homeScore} – ${r.awayScore}</div>
+        <div style="flex:1;display:flex;align-items:center;gap:12px;">
+          ${aLogo?`<img src="${aLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+          <div style="font-size:1.3rem;font-weight:700;">${r.away}</div>
+        </div>
+      </div>
+      ${(motmText(r)||cardsText(r))?`<div style="text-align:center;font-size:.9rem;opacity:.8;margin-bottom:4px;">${motmText(r)?'MOTM: '+motmText(r):''}${motmText(r)&&cardsText(r)?' &bull; ':''}${cardsText(r)}</div>`:''}
+      `;
+    }).join('')}
+    ${sponsorStripHtml()}
+    <div style="text-align:center;margin-top:12px;font-size:.9rem;opacity:.7;">Sportera Global &bull; sporteraglobal.com</div>
+  `;
+  document.body.appendChild(poster);
+  try {
+    const canvas = await html2canvas(poster, { backgroundColor: theme.solid, scale: 2, useCORS: true });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `results_roundup_${new Date().toISOString().slice(0,10)}.png`;
+    a.click();
+  } finally {
+    poster.remove();
   }
 }
 
@@ -3664,12 +3718,18 @@ function renderResultsLog(){
   if(c) results=results.filter(r=>r.cityGroup===c);
   if(a) results=results.filter(r=>r.ageCategory===a);
   const tbody=document.getElementById('results-log');
-  if(!results.length){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">No results match these filters.</td></tr>'; return; }
+  if(!results.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);">No results match these filters.</td></tr>'; return; }
+  const cardsHtml = r => {
+    const yellow = [r.homeYellow, r.awayYellow].filter(Boolean).join(', ');
+    const red = [r.homeRed, r.awayRed].filter(Boolean).join(', ');
+    if (!yellow && !red) return '—';
+    return `${yellow?`<span style="display:inline-block;background:#f0b429;color:#3a2c00;font-weight:700;font-size:.72rem;padding:2px 6px;border-radius:4px;margin-right:4px;">Y ${yellow}</span>`:''}${red?`<span style="display:inline-block;background:#e53935;color:#fff;font-weight:700;font-size:.72rem;padding:2px 6px;border-radius:4px;">R ${red}</span>`:''}`;
+  };
   tbody.innerHTML=results.map(r=>`<tr>
     <td><input type="checkbox" class="reslog-check" data-key="${r._key}"></td>
     <td>${r.home} vs ${r.away} <span style="color:var(--muted);font-size:.75rem;">(${[r.cityGroup,r.ageCategory].filter(Boolean).join(' · ')})</span></td>
     <td style="font-weight:800;font-size:1rem;color:var(--primary);">${r.homeScore} – ${r.awayScore}</td>
-    <td>${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')||r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${fmtDate(r.dt)}</td>
+    <td>${[r.homeMotm,r.awayMotm].filter(Boolean).join(', ')||r.motm||'—'}</td><td>${r.scorer||'—'}</td><td>${cardsHtml(r)}</td><td>${fmtDate(r.dt)}</td>
     <td class="actions">
       <button class="btn btn-gold btn-xs" onclick="exportResultPoster('${r._key}')" title="Download result poster to share"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editResult('${r._key}')" title="Correct this result"><i class="fas fa-edit"></i></button>
