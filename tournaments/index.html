@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sportera Global Tournaments - Archives, records, upcoming events, and tournament calendar.">
+    <title>Tournaments | Sportera Global</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../logo.png" type="image/png">
+</head>
+<body>
+    <div class="loader"><div class="loader-spinner"></div></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="../" class="logo">
+                <img src="../Media (51).png" onerror="this.onerror=null;this.style.height=&#39;96px&#39;;this.style.width=&#39;auto&#39;" alt="Sportera Global Logo">
+                <span class="logo-text">Sportera<span>Global</span></span>
+            </a>
+            <nav class="nav-menu">
+                <a href="../" class="nav-link">Home</a>
+                <a href="../about/" class="nav-link">About</a>
+                <a href="../football5/" class="nav-link">Football 5</a>
+                <a href="../if5l/" class="nav-link">IF5L</a>
+                <a href="./" class="nav-link active">Tournaments</a>
+                <a href="../live/" class="nav-link">Live</a>
+                <a href="../exposure/" class="nav-link">International</a>
+                <a href="../gallery/" class="nav-link">Gallery</a>
+                <a href="../registration/" class="nav-link">Register</a>
+                <a href="../news/" class="nav-link">News</a>
+                <a href="../contact/" class="nav-link">Contact</a>
+            </nav>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <h1>Tournaments</h1>
+            <p>Championships, Records &amp; Upcoming Events</p>
+            <div class="breadcrumb">
+                <a href="../">Home</a> <span>/</span> <span>Tournaments</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upcoming Tournaments -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Tournament Calendar</h2>
+                <p>Upcoming and past tournaments</p>
+            </div>
+            <div class="fade-in" style="overflow-x: auto;">
+                <table class="tournament-table">
+                    <thead>
+                        <tr>
+                            <th>Tournament</th>
+                            <th>Date</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendar-live-rows"></tbody>
+                    <tbody>
+                        <tr>
+                            <td><strong>Indian Football 5 League 2026 (Season 1)</strong></td>
+                            <td>November 2026</td>
+                            <td>Multiple Cities</td>
+                            <td><span class="status-upcoming">Coming Soon</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>International Football Tournament 2026</strong></td>
+                            <td>June 2026</td>
+                            <td>Phuket, Thailand</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 National Level Club Championship 2026</strong></td>
+                            <td>May 2026</td>
+                            <td>Goa</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 National Level Club Championship 2025</strong></td>
+                            <td>May 2025</td>
+                            <td>Goa</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 National Level Club Championship 2024</strong></td>
+                            <td>June 2024</td>
+                            <td>Goa</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Attempt to India Book of Records 2023</strong></td>
+                            <td>November 2023</td>
+                            <td>Belgaum, Karnataka</td>
+                            <td><span class="status-completed">Successful</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 National Level Club Championship 2023</strong></td>
+                            <td>May 2023</td>
+                            <td>Goa</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 Cup 2021</strong></td>
+                            <td>January 2021</td>
+                            <td>Pune</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 Cup 2020</strong></td>
+                            <td>November 2020</td>
+                            <td>Pune</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Football 5 National Level Club Championship 2019</strong></td>
+                            <td>June 2019</td>
+                            <td>Bangalore</td>
+                            <td><span class="status-completed">Completed</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Records -->
+    <section class="section" style="background: var(--light-gray);">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Records &amp; Awards</h2>
+                <p>Celebrating excellence in Football 5</p>
+            </div>
+            <div style="text-align:center; margin-bottom:40px;" class="fade-in">
+                <img src="../Media (13).jpg" alt="Football 5 National Level Club Championship" style="width:120px; height:120px; object-fit:cover; border-radius:50%; margin:0 auto 16px; box-shadow:var(--shadow); display:block;">
+                <p style="color:var(--text-light); font-size:0.9rem;">Football 5 National Level Club Championship</p>
+            </div>
+            <div class="fade-in" style="text-align:center; max-width:850px; margin:0 auto 40px;">
+                <img src="../Media (30).jpg" alt="India Book of Records" style="width:120px; height:120px; object-fit:cover; border-radius:50%; margin:0 auto 16px; box-shadow:var(--shadow); display:block;">
+                <h3 style="color:var(--primary); font-size:1.4rem; margin-bottom:10px;">India Book of Records</h3>
+                <p style="color:var(--text-light);">Record holder in the India Book of Records for the Longest Non-Stop 5-a-Side Football Tournament.</p>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;">
+                <div class="fade-in"><img src="../Media (26).jpg" alt="India Book of Records event" style="width:100%; height:220px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow);"></div>
+                <div class="fade-in"><img src="../Media (28).jpg" alt="India Book of Records event" style="width:100%; height:220px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow);"></div>
+                <div class="fade-in"><img src="../Media (29).jpg" alt="India Book of Records event" style="width:100%; height:220px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow);"></div>
+                <div class="fade-in"><img src="../Media (30).jpg" alt="India Book of Records certificate" style="width:100%; height:220px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow);"></div>
+                <div class="fade-in"><img src="../Media (31).jpg" alt="India Book of Records event" style="width:100%; height:220px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow);"></div>
+                <div class="fade-in"><img src="../celebration.jpg" alt="Football 5 National Level Club Championship" style="width:100%; height:220px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--shadow);"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rules & Regulations -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Rules &amp; Regulations</h2>
+                <p>Tournament guidelines and downloadable documents</p>
+            </div>
+            <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                <div class="feature-item fade-in">
+                    <div class="feature-icon"><i class="fas fa-book"></i></div>
+                    <div>
+                        <h4>Rule Book</h4>
+                        <p>Complete rules and regulations for Football 5 tournaments. Available for download.</p>
+                    </div>
+                </div>
+                <div class="feature-item fade-in">
+                    <div class="feature-icon"><i class="fas fa-file-alt"></i></div>
+                    <div>
+                        <h4>Registration Forms</h4>
+                        <p>Team and player registration forms for upcoming tournaments.</p>
+                    </div>
+                </div>
+                <div class="feature-item fade-in">
+                    <div class="feature-icon"><i class="fas fa-bullhorn"></i></div>
+                    <div>
+                        <h4>Circulars &amp; Notices</h4>
+                        <p>Official communications, press releases, and tournament updates.</p>
+                    </div>
+                </div>
+                <div class="feature-item fade-in">
+                    <div class="feature-icon"><i class="fas fa-gavel"></i></div>
+                    <div>
+                        <h4>Tournament Regulations</h4>
+                        <p>Specific regulations for each tournament edition including eligibility criteria.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo-text">Sportera <span>Global</span></div>
+                    <p>A sports development and event management platform dedicated to creating opportunities for athletes through competitions, leagues, and international exposure.</p>
+                    <div class="footer-social">
+                        <a href="https://instagram.com/sportera.global" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.facebook.com/football5association" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.youtube.com/football5association" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="../about/">About Us</a></li>
+                        <li><a href="../football5/">Football 5</a></li>
+                        <li><a href="../if5l/">IF5L</a></li>
+                        <li><a href="./">Tournaments</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="../registration/">Registration</a></li>
+                        <li><a href="../gallery/">Gallery</a></li>
+                        <li><a href="../downloads/">Downloads</a></li>
+                        <li><a href="../news/">News</a></li>
+                        <li><a href="../contact/">Contact</a></li>
+                        <li><a href="../portal/login.html" style="color:#ffd700; font-weight:600;"><i class="fas fa-user-circle"></i> Player &amp; Team Portal</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:football5association@gmail.com"><i class="fas fa-envelope"></i> football5association@gmail.com</a></li>
+                        <li><a href="https://instagram.com/sportera.global" target="_blank"><i class="fab fa-instagram"></i> @football5association</a></li>
+                        <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="../admin/" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+    // Tournaments the admin creates show up here automatically — Open/Closed
+    // ones only (Draft stays hidden until the admin publishes it) — added
+    // above the existing historical archive rows, which stay untouched.
+    firebase.initializeApp({
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    });
+    function fmtCalendarDate(iso) {
+      if (!iso) return 'Date TBA';
+      const d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    }
+    firebase.database().ref('tournaments').on('value', snap => {
+      const rows = [];
+      snap.forEach(child => {
+        const t = child.val();
+        if (t.status !== 'open' && t.status !== 'closed') return; // hide drafts
+        rows.push(t);
+      });
+      rows.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+      const statusHtml = t => t.status === 'open'
+        ? '<span class="status-upcoming">Coming Soon</span>'
+        : '<span class="status-completed">Completed</span>';
+      document.getElementById('calendar-live-rows').innerHTML = rows.map(t => `
+        <tr>
+          <td><strong>${t.name}</strong></td>
+          <td>${fmtCalendarDate(t.startDate)}</td>
+          <td>${t.location || 'TBA'}</td>
+          <td>${statusHtml(t)}</td>
+        </tr>`).join('');
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1756 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Register your team or as a player for Football 5 tournaments and IF5L.">
+    <title>Registration | Sportera Global</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../logo.png" type="image/png">
+    <style>
+        .reg-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 40px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .reg-tab {
+            flex: 1;
+            padding: 18px 30px;
+            text-align: center;
+            background: var(--white);
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .reg-tab.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+        .reg-tab:hover:not(.active) {
+            background: var(--light-gray);
+            color: var(--primary);
+        }
+        .reg-form-section { display: none; }
+        .reg-form-section.active { display: block; }
+        .form-box {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+        }
+        .form-box h3 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .form-box > p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        .form-section-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--gold);
+            margin: 28px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .payment-options {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .payment-option:hover { border-color: var(--primary); }
+        .payment-option input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; }
+        .payment-option.selected { border-color: var(--primary); background: #f0f3ff; }
+        .payment-option .pay-icon { font-size: 1.4rem; color: var(--primary); width: 28px; }
+        .payment-option strong { font-size: 0.95rem; color: var(--dark); }
+        .payment-option span { font-size: 0.82rem; color: var(--text-light); }
+        .fee-box {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .fee-box h4 { color: var(--gold); margin-bottom: 10px; font-size: 1rem; }
+        .fee-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; opacity: 0.9; }
+        .fee-row.total { font-weight: 700; font-size: 1.05rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 6px; opacity: 1; }
+        .payment-notice {
+            background: #fff8e1;
+            border-left: 4px solid var(--gold);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.88rem;
+            color: #5d4e00;
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .success-msg {
+            display: none;
+            text-align: center;
+            padding: 50px 30px;
+        }
+        .success-msg i { font-size: 3.5rem; color: #2e7d32; margin-bottom: 20px; display: block; }
+        .success-msg h3 { color: var(--primary); margin-bottom: 10px; }
+        .success-msg p { color: var(--text-light); }
+        .otp-screen {
+            display: none;
+            text-align: center;
+            padding: 50px 30px;
+        }
+        .otp-screen .otp-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; display: block; }
+        .otp-screen h3 { color: var(--primary); margin-bottom: 8px; }
+        .otp-screen .otp-subtitle { color: var(--text-light); margin-bottom: 30px; font-size: 0.95rem; }
+        .otp-boxes {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .otp-boxes input {
+            width: 58px;
+            height: 64px;
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+            color: var(--primary);
+        }
+        .otp-boxes input:focus { border-color: var(--primary); }
+        .otp-boxes input.error { border-color: #e53935; }
+        .otp-error { color: #e53935; font-size: 0.88rem; margin-bottom: 14px; display: none; }
+        .otp-demo-hint {
+            background: #fff8e1;
+            border-left: 4px solid var(--gold);
+            padding: 10px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.82rem;
+            color: #5d4e00;
+            text-align: left;
+            margin: 16px auto;
+            max-width: 340px;
+        }
+        .otp-resend { font-size: 0.85rem; color: var(--text-light); margin-top: 16px; }
+        .otp-resend a { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: none; }
+        .player-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 12px;
+            background: #f8f9ff;
+            border: 1px solid #e0e4f0;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .player-row .form-group { margin-bottom: 0; }
+        .player-row .form-group label { font-size: 0.78rem; }
+        .player-row .form-group input,
+        .player-row .form-group select { padding: 10px 12px; font-size: 0.9rem; }
+        .btn-remove-player {
+            background: #ffeaea;
+            border: 1px solid #ffcccc;
+            color: #e53935;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-remove-player:hover { background: #ffcccc; }
+        .btn-add-player {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: 2px dashed var(--primary);
+            color: var(--primary);
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            justify-content: center;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+        }
+        .btn-add-player:hover { background: #f0f3ff; }
+        .player-count-label { font-size: 0.8rem; color: var(--text-light); text-align: right; margin-bottom: 10px; }
+        .age-badge { display:inline-block; background:var(--primary); color:#fff; font-size:.75rem; font-weight:700; padding:3px 10px; border-radius:20px; margin-left:10px; vertical-align:middle; }
+        .upload-box {
+            border: 2px dashed #c0c8e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            background: #f8f9ff;
+            position: relative;
+        }
+        .upload-box:hover { border-color: var(--primary); background: #f0f3ff; }
+        .upload-box input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+        .upload-box i { font-size:1.8rem; color:var(--primary); margin-bottom:8px; display:block; }
+        .upload-box .up-label { font-size:.88rem; color:var(--text-light); }
+        .upload-box .up-label strong { color:var(--primary); }
+        .upload-preview { margin-top:10px; font-size:.82rem; color:#2e7d32; display:none; }
+        .consent-box {
+            background: #f8f9ff;
+            border: 1px solid #dde3f5;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 8px;
+        }
+        .consent-box h5 { color:var(--primary); font-size:.95rem; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+        .consent-clauses { max-height: 220px; overflow-y: auto; margin-bottom:16px; padding-right:4px; }
+        .consent-clauses ol { padding-left:18px; }
+        .consent-clauses li { font-size:.83rem; color:var(--text-light); margin-bottom:8px; line-height:1.6; }
+        .consent-clauses li strong { color:var(--text); }
+        .consent-check { display:flex; align-items:flex-start; gap:12px; padding:14px; background:#fff; border-radius:8px; border:2px solid #e0e4f0; cursor:pointer; transition:border-color .2s; }
+        .consent-check:hover { border-color:var(--primary); }
+        .consent-check input[type="checkbox"] { accent-color:var(--primary); width:18px; height:18px; flex-shrink:0; margin-top:2px; }
+        .consent-check label { font-size:.85rem; color:var(--text); cursor:pointer; line-height:1.5; }
+        .consent-check label strong { color:var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="loader"><div class="loader-spinner"></div></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="../" class="logo">
+                <img src="../Media (51).png" onerror="this.onerror=null;this.style.height=&#39;96px&#39;;this.style.width=&#39;auto&#39;" alt="Sportera Global Logo">
+                <span class="logo-text">Sportera<span>Global</span></span>
+            </a>
+            <nav class="nav-menu">
+                <a href="../" class="nav-link">Home</a>
+                <a href="../about/" class="nav-link">About</a>
+                <a href="../football5/" class="nav-link">Football 5</a>
+                <a href="../if5l/" class="nav-link">IF5L</a>
+                <a href="../tournaments/" class="nav-link">Tournaments</a>
+                <a href="../live/" class="nav-link">Live</a>
+                <a href="../exposure/" class="nav-link">International</a>
+                <a href="../gallery/" class="nav-link">Gallery</a>
+                <a href="./" class="nav-link active">Register</a>
+                <a href="../news/" class="nav-link">News</a>
+                <a href="../contact/" class="nav-link">Contact</a>
+            </nav>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <h1>Registration</h1>
+            <p>Register Your Team or as a Player</p>
+            <div class="breadcrumb">
+                <a href="../">Home</a> <span>/</span> <span>Registration</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Registration Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Register Now</h2>
+                <p>Choose your registration type below</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="reg-tabs fade-in">
+                <button class="reg-tab active" onclick="switchTab('team')">
+                    <i class="fas fa-users"></i> Team Registration
+                </button>
+                <button class="reg-tab" onclick="switchTab('player')">
+                    <i class="fas fa-user"></i> Player Registration
+                </button>
+            </div>
+
+            <!-- Team Registration Form -->
+            <div id="teamSection" class="reg-form-section active fade-in">
+                <div class="form-box">
+                    <h3><i class="fas fa-users"></i> Team Registration</h3>
+                    <p>Register your team.</p>
+
+                    <div id="teamOtp" class="otp-screen">
+                        <i class="fas fa-shield-alt otp-icon"></i>
+                        <h3>Confirm Payment</h3>
+                        <p class="otp-subtitle">An OTP has been sent to your registered mobile number.<br>Enter it below to authorise and confirm your payment.</p>
+                        <div class="otp-boxes">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp1">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp2">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp3">
+                            <input type="tel" maxlength="1" class="otp-digit" id="tOtp4">
+                        </div>
+
+                        <p class="otp-error" id="tOtpError">Incorrect OTP. Please try again.</p>
+                        <button class="btn btn-primary" style="width:100%; max-width:340px; padding:14px;" onclick="verifyOtp('team')">
+                            <i class="fas fa-check-circle"></i> Verify & Complete Registration
+                        </button>
+                        <p class="otp-resend">Didn't receive it? <a onclick="resetOtpInputs('team')">Resend OTP</a></p>
+                    </div>
+
+                    <div id="teamSuccess" class="success-msg">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Registration Submitted!</h3>
+                        <p>Your team registration has been received. We will review your details and confirm via email within 48 hours.</p>
+                        <a href="../" class="btn btn-primary" style="margin-top:20px;">Back to Home</a>
+                    </div>
+
+                    <form id="teamForm" onsubmit="return false;">
+                        <p class="form-section-label">Team Information</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teamName">Team Name *</label>
+                                <input type="text" id="teamName" name="teamName" placeholder="Your team name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="teamCity">City *</label>
+                                <input type="text" id="teamCity" name="teamCity" placeholder="City / State" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="tournament">Tournament *</label>
+                            <select id="tournament" name="tournament" required>
+                                <option value="">Select tournament</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="teamCityGroupWrap" style="display:none;">
+                            <label for="teamCityGroup">City *</label>
+                            <p style="font-size:.82rem;color:var(--text-light);margin:-2px 0 10px;">This tournament runs in multiple cities — pick which city leg your team is entering.</p>
+                            <select id="teamCityGroup" name="teamCityGroup">
+                                <option value="">Select city</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="ageCategoryGroup" style="display:none;">
+                            <label>Age Category(s) *</label>
+                            <p style="font-size:.82rem;color:var(--text-light);margin:-2px 0 10px;">Select every age category your team is entering — the token fee is charged per category.</p>
+                            <div id="ageCategoryChecks" style="display:flex;flex-wrap:wrap;gap:10px;">
+                                <span style="color:var(--text-light);font-size:.88rem;">Loading age categories...</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="teamEmail">Team Email *</label>
+                            <input type="email" id="teamEmail" name="teamEmail" placeholder="Contact email for team" required>
+                        </div>
+
+                        <p class="form-section-label">Coach / Manager Details</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="coachName">Coach Name *</label>
+                                <input type="text" id="coachName" name="coachName" placeholder="Head coach full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="coachPhone">Coach Phone *</label>
+                                <input type="tel" id="coachPhone" name="coachPhone" placeholder="10-digit mobile" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="managerName">Manager Name</label>
+                                <input type="text" id="managerName" name="managerName" placeholder="Team manager (if any)">
+                            </div>
+                            <div class="form-group">
+                                <label for="managerPhone">Manager Phone</label>
+                                <input type="tel" id="managerPhone" name="managerPhone" placeholder="10-digit mobile">
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Team Logo</p>
+                        <div class="upload-box" id="logoUploadBox">
+                            <input type="file" id="teamLogo" name="teamLogo" accept="image/*" onchange="handleFileUpload('teamLogo','logoPreview','logoUploadBox')" required>
+                            <i class="fas fa-image"></i>
+                            <div class="up-label"><strong>Click to upload team logo</strong><br>PNG, JPG up to 5MB</div>
+                            <div class="upload-preview" id="logoPreview"></div>
+                        </div>
+
+                        <div class="notice info" style="background:#e8eaf6;border:1px solid #c5cae9;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:0.88rem;color:#1a237e;">
+                            <i class="fas fa-info-circle"></i> Player details are not required at this stage. Once your team registration is confirmed, add your players individually through the <strong>Player Registration</strong> section below.
+                        </div>
+
+                        <p class="form-section-label">Team Consent Form</p>
+                        <div class="consent-box">
+                            <h5><i class="fas fa-file-contract"></i> Team Consent Form</h5>
+                            <div class="consent-clauses">
+                                <p style="font-size:.83rem; color:var(--text-light); margin-bottom:10px; line-height:1.6;">By registering for this event, the Team Manager/Coach confirms and agrees to the following on behalf of the team and its participants:</p>
+                                <ol>
+                                    <li><strong>Eligibility:</strong> All players meet the eligibility criteria of the respective category and possess valid documents as required by the Organising Committee.</li>
+                                    <li><strong>Rules & Regulations:</strong> The team agrees to abide by all rules, regulations, policies, and decisions of the Organising Committee before, during, and after the event.</li>
+                                    <li><strong>Code of Conduct:</strong> The team will maintain discipline, sportsmanship, and respectful behaviour throughout the event. Any misconduct, indiscipline, or violation of event rules may result in disciplinary action, including suspension or disqualification.</li>
+                                    <li><strong>Medical & Liability:</strong> The team confirms that all participants are medically fit to take part in the event. In the event of an emergency, the Organising Committee is authorised to arrange appropriate medical assistance. All medical expenses shall be borne by the participant or team. The Organising Committee shall not be held liable for any injury, illness, accident, loss, or damage occurring before, during, or after the event.</li>
+                                    <li><strong>Personal Belongings:</strong> The Organising Committee shall not be responsible for the loss, theft, or damage of any personal belongings or valuables.</li>
+                                    <li><strong>Property Damage:</strong> The team accepts responsibility for any damage caused by its players or officials to the venue, accommodation, equipment, or any event property and agrees to bear the associated costs.</li>
+                                    <li><strong>Media Consent:</strong> The team grants the Organising Committee the right to capture, use, publish, and distribute photographs, videos, audio recordings, and other media featuring the team or its participants for promotional, educational, marketing, archival, or other event-related purposes without additional compensation.</li>
+                                    <li><strong>Health & Safety:</strong> The team agrees to comply with all health, safety, security, and venue protocols issued by the Organising Committee or venue authorities during the event.</li>
+                                    <li><strong>Declaration:</strong> The Team Manager/Coach confirms that all information submitted during registration is true and accurate and accepts full responsibility for the team's participation and compliance with these terms.</li>
+                                </ol>
+                            </div>
+                            <div class="form-group" style="margin-bottom:14px;">
+                                <label for="teamSignature">Full Name as Digital Signature *</label>
+                                <input type="text" id="teamSignature" placeholder="Type your full name to sign this consent form" required style="font-style:italic;">
+                            </div>
+                            <label class="consent-check">
+                                <input type="checkbox" id="teamConsent" required>
+                                <label for="teamConsent">By registering for this event, the Team Manager/Coach confirms that they have read, understood, and <strong>agree to the above terms and conditions</strong> on behalf of the team and all its participants.</label>
+                            </label>
+                        </div>
+
+                        <p class="form-section-label">Token Registration Amount</p>
+                        <div class="fee-box">
+                            <h4><i class="fas fa-receipt"></i> Slot Reservation Fee</h4>
+                            <div class="fee-row"><span>Token Amount (per age category)</span><span id="teamFeeDisplay">₹10,000</span></div>
+                            <div class="fee-row total"><span>Total Payable Now</span><span id="teamFeeDisplayTotal">₹10,000</span></div>
+                        </div>
+                        <div class="payment-notice" style="margin-bottom:16px;">
+                            <i class="fas fa-info-circle" style="color: var(--gold); margin-top:2px;"></i>
+                            <span>This token amount confirms your team's slot in the selected tournament and age category. The remaining balance payment details will be shared with you via email.</span>
+                        </div>
+                        <div class="payment-options">
+                            <label class="payment-option">
+                                <input type="radio" name="teamPayment" value="UPI" required onchange="updatePaymentPanel('team')">
+                                <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
+                                <div><strong>UPI Payment</strong><br><span>Pay instantly via UPI ID / QR code</span></div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="teamPayment" value="Bank Transfer" onchange="updatePaymentPanel('team')">
+                                <span class="pay-icon"><i class="fas fa-university"></i></span>
+                                <div><strong>Bank Transfer / NEFT</strong><br><span>Account details shown below</span></div>
+                            </label>
+                        </div>
+
+                        <div id="teamPaymentPanel" style="display:none; background:#f8f9ff; border:1px solid #dde3f5; border-radius:12px; padding:20px; margin-top:16px;"></div>
+
+                        <div class="payment-notice" style="margin-top:16px;">
+                            <i class="fas fa-exclamation-circle" style="color: var(--gold); margin-top:2px;"></i>
+                            <span><strong>All payments once made are final and non-refundable under any circumstances.</strong></span>
+                        </div>
+                        <br>
+                        <button type="submit" class="btn btn-primary" style="width:100%; font-size:1rem; padding:16px;">
+                            <i class="fas fa-paper-plane"></i> Submit Team Registration
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Player Registration Form -->
+            <div id="playerSection" class="reg-form-section fade-in">
+                <div class="form-box">
+                    <h3><i class="fas fa-user"></i> Player Registration</h3>
+                    <p>Register as an individual player and receive your official digital ID card.</p>
+
+                    <div id="playerOtp" class="otp-screen">
+                        <i class="fas fa-shield-alt otp-icon"></i>
+                        <h3>Confirm Payment</h3>
+                        <p class="otp-subtitle">An OTP has been sent to your registered mobile number.<br>Enter it below to authorise and confirm your payment.</p>
+                        <div class="otp-boxes">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp1">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp2">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp3">
+                            <input type="tel" maxlength="1" class="otp-digit" id="pOtp4">
+                        </div>
+
+                        <p class="otp-error" id="pOtpError">Incorrect OTP. Please try again.</p>
+                        <button class="btn btn-primary" style="width:100%; max-width:340px; padding:14px;" onclick="verifyOtp('player')">
+                            <i class="fas fa-check-circle"></i> Verify & Complete Registration
+                        </button>
+                        <p class="otp-resend">Didn't receive it? <a onclick="resetOtpInputs('player')">Resend OTP</a></p>
+                    </div>
+
+                    <div id="playerSuccess" class="success-msg">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Player Registration Submitted!</h3>
+                        <p>Your registration has been received. Your digital ID card will be issued after verification within 48 hours.</p>
+                        <a href="../" class="btn btn-primary" style="margin-top:20px;">Back to Home</a>
+                    </div>
+
+                    <form id="playerForm" onsubmit="return false;">
+                        <p class="form-section-label">Personal Details</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerName">Full Name *</label>
+                                <input type="text" id="playerName" name="playerName" placeholder="Player's full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerDOB">Date of Birth * <span id="playerAgeDisplay"></span></label>
+                                <input type="date" id="playerDOB" name="playerDOB" required onchange="calcAge(this.value,'playerAgeDisplay')">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerPhone">Phone Number *</label>
+                                <input type="tel" id="playerPhone" name="playerPhone" placeholder="10-digit mobile" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerEmail">Email Address *</label>
+                                <input type="email" id="playerEmail" name="playerEmail" placeholder="Player email" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerPosition">Position *</label>
+                                <select id="playerPosition" name="playerPosition" required>
+                                    <option value="">Select position</option>
+                                    <option value="Goalkeeper">Goalkeeper</option>
+                                    <option value="Defender">Defender</option>
+                                    <option value="Midfielder">Midfielder</option>
+                                    <option value="Forward">Forward</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerCity">City *</label>
+                                <input type="text" id="playerCity" name="playerCity" placeholder="City / State" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="playerJerseyNumber">Jersey Number *</label>
+                                <input type="number" id="playerJerseyNumber" name="playerJerseyNumber" min="0" max="99" placeholder="e.g. 7" required>
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Team &amp; Tournament</p>
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
+                                <input type="checkbox" id="playerNoTeam" onchange="onPlayerNoTeamToggle()" style="width:auto;">
+                                I don't have a team — register as an individual player
+                            </label>
+                            <p style="font-size:.82rem;color:var(--text-light);margin:4px 0 0;">Only available for tournaments that accept individual entries.</p>
+                        </div>
+                        <div id="playerTeamFields">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerTournament">Tournament *</label>
+                                    <select id="playerTournament" name="playerTournament" onchange="onPlayerTournamentSelectChange()">
+                                        <option value="">Select tournament</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="playerTeam">Team Name *</label>
+                                    <select id="playerTeam" name="playerTeam">
+                                        <option value="">Select tournament first</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerAgeCategory">Age Category *</label>
+                                    <select id="playerAgeCategory" name="playerAgeCategory">
+                                        <option value="">Select a team first</option>
+                                    </select>
+                                    <p id="playerAgeCategoryHint" style="font-size:.78rem;color:var(--text-light);margin-top:6px;display:none;"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="playerIndividualFields" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="playerIndivTournament">Tournament *</label>
+                                    <select id="playerIndivTournament">
+                                        <option value="">Select tournament</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="playerIndivCityWrap" style="display:none;">
+                                    <label for="playerIndivCity">City *</label>
+                                    <select id="playerIndivCity">
+                                        <option value="">Select city</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="playerIndivAgeCategory">Age Category *</label>
+                                <select id="playerIndivAgeCategory">
+                                    <option value="">Select tournament first</option>
+                                </select>
+                                <p id="playerIndivAgeCategoryHint" style="font-size:.78rem;color:var(--text-light);margin-top:6px;display:none;"></p>
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Passport-Size Photograph *</p>
+                        <div class="upload-box" id="playerPhotoBox">
+                            <input type="file" id="playerPhoto" name="playerPhoto" accept="image/*" onchange="handleFileUpload('playerPhoto','playerPhotoPreview','playerPhotoBox')" required>
+                            <i class="fas fa-user-circle"></i>
+                            <div class="up-label"><strong>Upload passport-size photo</strong><br>JPG, PNG up to 5MB</div>
+                            <div class="upload-preview" id="playerPhotoPreview"></div>
+                        </div>
+
+                        <p class="form-section-label">Age Proof Document *</p>
+                        <div class="upload-box" id="ageDocBox">
+                            <input type="file" id="ageDoc" name="ageDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload('ageDoc','ageDocPreview','ageDocBox')" required>
+                            <i class="fas fa-file-alt"></i>
+                            <div class="up-label"><strong>Upload age proof document</strong><br>Aadhar Card, Birth Certificate or Passport — PDF/JPG/PNG, up to 5MB</div>
+                            <div class="upload-preview" id="ageDocPreview"></div>
+                        </div>
+
+                        <p class="form-section-label">Guardian Details (if under 18)</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="guardianName">Guardian Name</label>
+                                <input type="text" id="guardianName" name="guardianName" placeholder="Parent / Guardian full name">
+                            </div>
+                            <div class="form-group">
+                                <label for="guardianPhone">Guardian Phone</label>
+                                <input type="tel" id="guardianPhone" name="guardianPhone" placeholder="Guardian contact number">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="guardianRelation">Relationship to Player</label>
+                                <input type="text" id="guardianRelation" name="guardianRelation" placeholder="e.g. Father, Mother, Guardian">
+                            </div>
+                            <div class="form-group">
+                                <label for="guardianEmail">Guardian Email</label>
+                                <input type="email" id="guardianEmail" name="guardianEmail" placeholder="Guardian email address">
+                            </div>
+                        </div>
+
+                        <p class="form-section-label">Parent / Guardian Consent Form</p>
+                        <div class="consent-box">
+                            <h5><i class="fas fa-file-contract"></i> Parent/Guardian Consent Form</h5>
+                            <div class="consent-clauses">
+                                <p style="font-size:.83rem; color:var(--text-light); margin-bottom:10px; line-height:1.6;">I, the undersigned Parent/Guardian, hereby give permission for my child/ward to participate in this event and agree to the following:</p>
+                                <ol>
+                                    <li><strong>Medical Authorization:</strong> I authorize the Organising Committee and its representatives to obtain appropriate medical treatment for my child/ward in the event of an emergency. All medical expenses shall be my responsibility.</li>
+                                    <li><strong>Assumption of Risk & Liability:</strong> I acknowledge that participation in sporting and related activities involves inherent risks. I release and hold harmless the Organising Committee, its officials, staff, volunteers, sponsors, and venue authorities from any liability for injury, illness, accident, loss, or damage arising before, during, or after the event, except where prohibited by applicable law.</li>
+                                    <li><strong>Personal Belongings:</strong> I understand that the Organising Committee is not responsible for the loss, theft, or damage of personal belongings.</li>
+                                    <li><strong>Property Damage:</strong> I accept responsibility for any damage caused by my child/ward to the venue, accommodation, equipment, or other event property.</li>
+                                    <li><strong>Code of Conduct:</strong> I understand that all participants are expected to maintain discipline, respect, and good sportsmanship. Misconduct or violation of event rules may result in disciplinary action, including removal from the event without refund.</li>
+                                    <li><strong>Media Consent:</strong> I grant the Organising Committee permission to photograph, film, and record my child/ward and to use such media for promotional, educational, marketing, archival, or other event-related purposes without additional compensation.</li>
+                                    <li><strong>Insurance:</strong> I understand that the Organising Committee does not provide medical or accident insurance unless specifically stated. I am responsible for arranging appropriate insurance coverage if required.</li>
+                                    <li><strong>Supervision:</strong> Where required by the event regulations, I agree to accompany my child/ward or arrange appropriate supervision for the duration of the event.</li>
+                                    <li><strong>Data Privacy:</strong> I consent to the collection, storage, and use of personal information for registration, event administration, communication, emergency response, and other legitimate event-related purposes, in accordance with the Organising Committee's privacy policy.</li>
+                                    <li><strong>Fees & Cancellation:</strong> I understand and accept the event's registration, cancellation, and refund policy as communicated by the Organising Committee.</li>
+                                    <li><strong>Declaration:</strong> I confirm that the information provided during registration is true and accurate. I have read, understood, and agree to comply with all event rules, regulations, and decisions of the Organising Committee.</li>
+                                </ol>
+                            </div>
+                            <div class="form-group" style="margin-bottom:14px;">
+                                <label for="playerSignature">Parent/Guardian Full Name as Digital Signature *</label>
+                                <input type="text" id="playerSignature" placeholder="Type your full name to sign this consent form" required style="font-style:italic;">
+                            </div>
+                            <label class="consent-check">
+                                <input type="checkbox" id="playerConsent" required>
+                                <label for="playerConsent">I, as parent/guardian, <strong>confirm and accept all the above terms</strong> of this Parent/Guardian Consent Form and confirm that all information provided is accurate.</label>
+                            </label>
+                        </div>
+
+                        <div id="playerNoPaymentNotice" class="payment-notice" style="display:none;">
+                            <i class="fas fa-check-circle" style="color:#2e7d32; margin-top:2px;"></i>
+                            <span>I accept full responsibility for all costs associated with my participation and acknowledge that any fees, deposits, or payments made are strictly non-refundable and non-transferable. I agree to abide by all rules and decisions of the tournament organizers.</span>
+                        </div>
+                        <div id="playerPaymentSection" style="display:none;">
+                            <p class="form-section-label">Payment (Required for Individual Registration)</p>
+                            <div class="fee-box">
+                                <h4><i class="fas fa-receipt"></i> Registration Fee Summary</h4>
+                                <div class="fee-row"><span id="playerFeeLabel">Individual Registration Fee</span><span id="playerFeeDisplay">₹2,999</span></div>
+                                <div class="fee-row total"><span>Total</span><span id="playerFeeDisplayTotal">₹2,999</span></div>
+                            </div>
+                            <div class="payment-options">
+                                <label class="payment-option">
+                                    <input type="radio" name="playerPayment" value="UPI" id="playerPayUPI" onchange="updatePaymentPanel('player')">
+                                    <span class="pay-icon"><i class="fas fa-mobile-alt"></i></span>
+                                    <div><strong>UPI Payment</strong><br><span>Pay instantly via UPI ID / QR code</span></div>
+                                </label>
+                                <label class="payment-option">
+                                    <input type="radio" name="playerPayment" value="Bank Transfer" onchange="updatePaymentPanel('player')">
+                                    <span class="pay-icon"><i class="fas fa-university"></i></span>
+                                    <div><strong>Bank Transfer / NEFT</strong><br><span>Account details shown below</span></div>
+                                </label>
+                            </div>
+
+                            <div id="playerPaymentPanel" style="display:none; background:#f8f9ff; border:1px solid #dde3f5; border-radius:12px; padding:20px; margin-top:16px;"></div>
+
+                            <div class="payment-notice" style="margin-top:16px;">
+                                <i class="fas fa-exclamation-circle" style="color: var(--gold); margin-top:2px;"></i>
+                                <span><strong>All payments once made are final and non-refundable under any circumstances.</strong></span>
+                            </div>
+                        </div>
+                        <br>
+                        <button type="submit" class="btn btn-primary" style="width:100%; font-size:1rem; padding:16px;">
+                            <i class="fas fa-paper-plane"></i> Submit Player Registration
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo-text">Sportera <span>Global</span></div>
+                    <p>A sports development and event management platform dedicated to creating opportunities for athletes through competitions, leagues, and international exposure.</p>
+                    <div class="footer-social">
+                        <a href="https://instagram.com/sportera.global" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.facebook.com/football5association" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.youtube.com/football5association" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="../about/">About Us</a></li>
+                        <li><a href="../football5/">Football 5</a></li>
+                        <li><a href="../if5l/">IF5L</a></li>
+                        <li><a href="../tournaments/">Tournaments</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="./">Registration</a></li>
+                        <li><a href="../gallery/">Gallery</a></li>
+                        <li><a href="../downloads/">Downloads</a></li>
+                        <li><a href="../news/">News</a></li>
+                        <li><a href="../contact/">Contact</a></li>
+                        <li><a href="../portal/login.html" style="color:#ffd700; font-weight:600;"><i class="fas fa-user-circle"></i> Player &amp; Team Portal</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:football5association@gmail.com"><i class="fas fa-envelope"></i> football5association@gmail.com</a></li>
+                        <li><a href="https://instagram.com/sportera.global" target="_blank"><i class="fab fa-instagram"></i> @football5association</a></li>
+                        <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="../admin/" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+    const _fbConfig = {
+      apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
+      authDomain: "f5awebsite.firebaseapp.com",
+      databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
+      projectId: "f5awebsite",
+      storageBucket: "f5awebsite.firebasestorage.app",
+      messagingSenderId: "751370782333",
+      appId: "1:751370782333:web:16637ab22e324a2fa25314"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
+    const _regDb = firebase.database();
+    </script>
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.reg-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.reg-form-section').forEach(s => s.classList.remove('active'));
+            if (tab === 'team') {
+                document.querySelectorAll('.reg-tab')[0].classList.add('active');
+                document.getElementById('teamSection').classList.add('active');
+            } else {
+                document.querySelectorAll('.reg-tab')[1].classList.add('active');
+                document.getElementById('playerSection').classList.add('active');
+            }
+        }
+
+        document.querySelectorAll('.payment-option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                this.closest('.payment-options').querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        // --- Age calculator ---
+        function calcAge(dob, displayId) {
+            if (!dob) return;
+            const today = new Date();
+            const birth = new Date(dob);
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+            const el = document.getElementById(displayId);
+            if (age >= 0 && age < 100) {
+                el.innerHTML = '<span class="age-badge">Age: ' + age + '</span>';
+            }
+        }
+
+        // --- File upload handler: encodes file as base64 and stores directly in
+        // Realtime Database (no Firebase Storage / billing plan needed) ---
+        const _uploadedFileUrls = {}; // inputId -> base64 data URL
+        function handleFileUpload(inputId, previewId, boxId) {
+            const input = document.getElementById(inputId);
+            const file = input.files[0];
+            const preview = document.getElementById(previewId);
+            if (!file) return;
+            const MAX_UPLOAD_MB = 5;
+            if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+                // Clear the selection entirely — otherwise the file stays
+                // "selected" (input.files[0] still truthy) but never gets
+                // converted, so submit would loop forever on "still uploading"
+                // instead of correctly asking the user to choose a file again.
+                input.value = '';
+                delete _uploadedFileUrls[inputId];
+                preview.style.display = 'block';
+                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> "' + file.name + '" is ' + (file.size/1024/1024).toFixed(1) + 'MB — over the ' + MAX_UPLOAD_MB + 'MB limit. Try a smaller photo, or compress/resize it (e.g. TinyPNG, or your phone\'s "reduce file size" option when sharing) and upload again.';
+                document.getElementById(boxId).style.borderColor = '#c62828';
+                alert('"' + file.name + '" is ' + (file.size/1024/1024).toFixed(1) + 'MB — over the ' + MAX_UPLOAD_MB + 'MB limit. Please compress or resize the image and try again.');
+                return;
+            }
+            delete _uploadedFileUrls[inputId];
+            preview.style.display = 'block';
+            preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing ' + file.name + '...';
+            document.getElementById(boxId).style.borderColor = '#FFD700';
+            const reader = new FileReader();
+            reader.onload = function() {
+                _uploadedFileUrls[inputId] = reader.result;
+                preview.innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB) — ready';
+                document.getElementById(boxId).style.borderColor = '#2e7d32';
+            };
+            reader.onerror = function() {
+                preview.innerHTML = '<i class="fas fa-exclamation-circle"></i> Could not read file. Please try again.';
+                document.getElementById(boxId).style.borderColor = '#c62828';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- Load registered teams from Firebase into player dropdown ---
+        // A tournament can end up with a lot of registered teams, so the Team
+        // Name list is scoped to whichever tournament is picked above (not
+        // every team ever registered, across every tournament), and can be
+        // narrowed further with the search box.
+        let _allRegisteredTeams = [];
+        let _currentTournamentTeams = [];
+        function loadTeamsDropdown() {
+            fetch('https://f5awebsite-default-rtdb.firebaseio.com/registrations.json')
+                .then(r => r.json())
+                .then(data => {
+                    _allRegisteredTeams = Object.values(data || {}).filter(d => d.type === 'team' && d.teamName);
+                })
+                .catch(() => {});
+        }
+        loadTeamsDropdown();
+
+        function onPlayerTournamentSelectChange() {
+            const tournamentName = document.getElementById('playerTournament').value;
+            // A team name can repeat within the same tournament if it
+            // registered under more than one city (IF5L Mumbai vs IF5L
+            // Ambernath) — dedupe by name+city, not just name.
+            const seen = new Set();
+            _currentTournamentTeams = _allRegisteredTeams.filter(t => {
+                if (t.tournament !== tournamentName) return false;
+                const key = t.teamName + '|' + (t.cityGroup||'');
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            renderPlayerTeamOptions('');
+            _currentTeamMatches = [];
+            refreshAgeCategoryOptions();
+            updatePlayerPaymentVisibility();
+        }
+
+        // A team name can repeat within the same tournament across different
+        // cities (IF5L Mumbai vs IF5L Ambernath) — the option value encodes
+        // both so selecting one can't be confused with the other.
+        function teamOptionValue(name, city) { return city ? name + '|||' + city : name; }
+        function parseTeamOptionValue(value) {
+            const idx = (value||'').indexOf('|||');
+            return idx === -1 ? { name: value, city: null } : { name: value.slice(0, idx), city: value.slice(idx + 3) };
+        }
+        function renderPlayerTeamOptions(query) {
+            const sel = document.getElementById('playerTeam');
+            const tournamentName = document.getElementById('playerTournament').value;
+            if (!tournamentName) {
+                sel.innerHTML = '<option value="">Select tournament first</option>';
+                return;
+            }
+            const matches = query
+                ? _currentTournamentTeams.filter(t => t.teamName.toLowerCase().includes(query))
+                : _currentTournamentTeams;
+            sel.innerHTML = '<option value="">Select your team</option>' +
+                (matches.length
+                    ? matches.map(t => `<option value="${teamOptionValue(t.teamName, t.cityGroup)}">${t.teamName}${t.cityGroup?' ('+t.cityGroup+')':''}</option>`).join('')
+                    : '<option value="" disabled>No teams match</option>') +
+                '<option value="__other__">Other / Not listed</option>';
+        }
+
+        // --- Payment details (set once by admin, read live here) ---
+        let _paymentSettings = { upiId: '', bankName: '', accountName: '', accountNumber: '', ifsc: '' };
+        _regDb.ref('settings/payment').once('value').then(snap => { if (snap.val()) _paymentSettings = snap.val(); });
+
+        function currentFee(type) {
+            const text = document.getElementById(type === 'team' ? 'teamFeeDisplayTotal' : 'playerFeeDisplayTotal').textContent;
+            return text.replace(/[^0-9]/g, '') || '0';
+        }
+
+        function updatePaymentPanel(type) {
+            const selected = document.querySelector(`input[name="${type}Payment"]:checked`);
+            const panel = document.getElementById(type + 'PaymentPanel');
+            if (!selected) { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+            const proofInputId = type + 'PaymentProof';
+            const proofBoxId = type + 'PaymentProofBox';
+            const proofPreviewId = type + 'PaymentProofPreview';
+
+            if (selected.value === 'UPI') {
+                const upiId = _paymentSettings.upiId || 'Not set up yet — contact us';
+                const amount = currentFee(type);
+                const qrData = _paymentSettings.upiId
+                    ? `upi://pay?pa=${encodeURIComponent(_paymentSettings.upiId)}&pn=Sportera%20Global&am=${amount}&cu=INR`
+                    : '';
+                panel.innerHTML = `
+                    <p style="font-weight:700; color:var(--primary); margin-bottom:12px;"><i class="fas fa-mobile-alt"></i> Pay via UPI</p>
+                    ${qrData ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrData)}" alt="UPI QR Code" style="display:block; margin-bottom:12px; border-radius:8px; border:1px solid #dde3f5;">` : ''}
+                    <p style="font-size:0.9rem; margin-bottom:14px;">UPI ID: <strong>${upiId}</strong> &nbsp;|&nbsp; Amount: <strong>₹${Number(amount).toLocaleString('en-IN')}</strong></p>
+                    <p class="form-section-label" style="margin-top:0;">Upload Payment Screenshot *</p>
+                    <div class="upload-box" id="${proofBoxId}">
+                        <input type="file" id="${proofInputId}" accept="image/*" onchange="handleFileUpload('${proofInputId}','${proofPreviewId}','${proofBoxId}')" required>
+                        <i class="fas fa-receipt"></i>
+                        <div class="up-label"><strong>Click to upload proof of payment</strong><br>Screenshot of the completed UPI transaction</div>
+                        <div class="upload-preview" id="${proofPreviewId}"></div>
+                    </div>`;
+            } else if (selected.value === 'Bank Transfer') {
+                const amount = currentFee(type);
+                panel.innerHTML = `
+                    <p style="font-weight:700; color:var(--primary); margin-bottom:12px;"><i class="fas fa-university"></i> Bank Transfer / NEFT Details</p>
+                    <table style="width:100%; font-size:0.88rem; margin-bottom:14px;">
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Account Name</td><td style="font-weight:700; text-align:right;">${_paymentSettings.accountName || 'Not set up yet — contact us'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Account Number</td><td style="font-weight:700; text-align:right;">${_paymentSettings.accountNumber || '—'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Bank Name</td><td style="font-weight:700; text-align:right;">${_paymentSettings.bankName || '—'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">IFSC Code</td><td style="font-weight:700; text-align:right;">${_paymentSettings.ifsc || '—'}</td></tr>
+                        <tr><td style="color:var(--text-light); padding:4px 0;">Amount</td><td style="font-weight:700; text-align:right;">₹${Number(amount).toLocaleString('en-IN')}</td></tr>
+                    </table>
+                    <p class="form-section-label" style="margin-top:0;">Upload Transfer Receipt / UTR Screenshot *</p>
+                    <div class="upload-box" id="${proofBoxId}">
+                        <input type="file" id="${proofInputId}" accept="image/*,.pdf" onchange="handleFileUpload('${proofInputId}','${proofPreviewId}','${proofBoxId}')" required>
+                        <i class="fas fa-receipt"></i>
+                        <div class="up-label"><strong>Click to upload proof of payment</strong><br>Bank receipt or screenshot showing the UTR number</div>
+                        <div class="upload-preview" id="${proofPreviewId}"></div>
+                    </div>`;
+            }
+        }
+
+        // --- Tournaments — single live source (admin's Tournaments panel) ---
+        // Drives the tournament dropdown, each tournament's fee display, and
+        // whether individual player payment is required — nothing here is
+        // hardcoded per-tournament anymore.
+        let _liveTournaments = [];
+        function findTournament(name) { return _liveTournaments.find(t => t.name === name); }
+
+        function applyLiveTournaments(list) {
+            _liveTournaments = list;
+            const sel = document.getElementById('tournament');
+            const prevValue = sel.value;
+            // Purely individual-entry tournaments don't have a team concept at
+            // all — only offer Team Registration for 'team' or 'both' (and
+            // legacy tournaments saved before entryType existed).
+            const openTournaments = _liveTournaments.filter(t => t.status === 'open' && t.entryType !== 'individual');
+            sel.innerHTML = '<option value="">Select tournament</option>' +
+                openTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            if (openTournaments.some(t => t.name === prevValue)) sel.value = prevValue;
+            updateTeamFeeDisplay();
+            populatePlayerIndivTournamentOptions();
+            populatePlayerTeamTournamentOptions();
+            updatePlayerPaymentVisibility();
+        }
+
+        // The Firebase JS SDK's realtime .on()/.once() reads have repeatedly
+        // been observed (across many real sessions) to return an incomplete
+        // tournament list on some connections/networks, while a plain REST
+        // fetch() to the same database always returns the full, correct
+        // data. Use fetch() as the source of truth for this list instead of
+        // trusting the SDK's local sync state.
+        function loadTournamentsViaRest() {
+            fetch('https://f5awebsite-default-rtdb.firebaseio.com/tournaments.json')
+                .then(r => r.json())
+                .then(data => {
+                    const list = Object.entries(data || {}).map(([key, val]) => ({ _key: key, ...val }));
+                    if (list.length >= _liveTournaments.length) applyLiveTournaments(list);
+                })
+                .catch(() => {});
+        }
+        loadTournamentsViaRest();
+
+        _regDb.ref('tournaments').on('value', snap => {
+            const list = [];
+            snap.forEach(child => list.push({ _key: child.key, ...child.val() }));
+            if (list.length >= _liveTournaments.length) applyLiveTournaments(list);
+        });
+
+        // Defensive follow-up re-checks via REST a couple of times after
+        // load, in case the admin changes a tournament's status while this
+        // page is already open and the SDK listener misses/delays the
+        // update.
+        setTimeout(loadTournamentsViaRest, 2500);
+        setTimeout(loadTournamentsViaRest, 8000);
+
+        // Player Registration's team-flow Tournament dropdown — same "team or
+        // both" tournaments as Team Registration (individual-only tournaments
+        // have no teams to pick from), and since only currently-open
+        // tournaments are listed at all, a team under one that later closes
+        // simply stops being selectable — no separate "is it closed" check
+        // needed once this is the entry point.
+        function populatePlayerTeamTournamentOptions() {
+            const sel = document.getElementById('playerTournament');
+            const prevValue = sel.value;
+            const openTournaments = _liveTournaments.filter(t => t.status === 'open' && t.entryType !== 'individual');
+            sel.innerHTML = '<option value="">Select tournament</option>' +
+                openTournaments.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            if (openTournaments.some(t => t.name === prevValue)) sel.value = prevValue;
+        }
+
+        // Individual-entry registration (no team) is only offered for
+        // tournaments the admin has explicitly opened up to it — entryType
+        // 'individual' or 'both'. A pure 'team' tournament never appears here,
+        // since there'd be no age-category-eligible team for it to attach to.
+        function populatePlayerIndivTournamentOptions() {
+            const sel = document.getElementById('playerIndivTournament');
+            const prevValue = sel.value;
+            const eligible = _liveTournaments.filter(t => t.status === 'open' && (t.entryType === 'individual' || t.entryType === 'both'));
+            sel.innerHTML = '<option value="">Select tournament</option>' + eligible.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            if (eligible.some(t => t.name === prevValue)) sel.value = prevValue;
+        }
+
+        function updateTeamFeeDisplay() {
+            const t = findTournament(document.getElementById('tournament').value);
+            const fee = t ? t.teamFee : 10000;
+            const count = Math.max(getSelectedAgeCategories().length, 1);
+            document.getElementById('teamFeeDisplay').textContent = '₹' + Number(fee||0).toLocaleString('en-IN') + (count > 1 ? ' × ' + count + ' categories' : '');
+            document.getElementById('teamFeeDisplayTotal').textContent = '₹' + Number((fee||0) * count).toLocaleString('en-IN');
+        }
+
+        // --- Payment only required for individual-entry tournaments ---
+        function updatePlayerPaymentVisibility() {
+            const noTeam = document.getElementById('playerNoTeam').checked;
+            const tournamentName = noTeam ? document.getElementById('playerIndivTournament').value : document.getElementById('playerTournament').value;
+            const t = findTournament(tournamentName);
+            const isIndividual = !!(t && (t.entryType === 'individual' || t.entryType === 'both'));
+            document.getElementById('playerPaymentSection').style.display = isIndividual ? 'block' : 'none';
+            document.getElementById('playerNoPaymentNotice').style.display = (tournamentName && !isIndividual) ? 'flex' : 'none';
+            document.querySelectorAll('input[name="playerPayment"]').forEach(r => r.required = isIndividual);
+            if (isIndividual) {
+                const fee = t.playerFee || 0;
+                document.getElementById('playerFeeLabel').textContent = tournamentName + ' — Individual Registration Fee';
+                document.getElementById('playerFeeDisplay').textContent = '₹' + Number(fee).toLocaleString('en-IN');
+                document.getElementById('playerFeeDisplayTotal').textContent = '₹' + Number(fee).toLocaleString('en-IN');
+            }
+        }
+        updatePlayerPaymentVisibility();
+
+        // Any category labeled "U<number>" (U8, U10, U14, ...) has an
+        // unambiguous cutoff even if the admin never explicitly set one: a
+        // player is eligible if born on/after Jan 1 of (this year - N). This
+        // is the same fallback the admin panel uses, so validation holds
+        // even for a category that was never given an explicit cutoff date.
+        function deriveDefaultCutoffDate(label) {
+            const m = /^U(\d+)$/i.exec((label || '').trim());
+            if (!m) return null;
+            const n = parseInt(m[1], 10);
+            return (new Date().getFullYear() - n) + '-01-01';
+        }
+
+        // Age-category eligibility (cutoff dates) is exactly the kind of read
+        // where the Firebase SDK has repeatedly been observed returning
+        // incomplete/stale data on some connections — the same issue fixed
+        // for the Tournament dropdown by reading via plain REST fetch()
+        // instead of the SDK's .once('value'). Age-category cutoffs get the
+        // same treatment here since they gate whether a real player can even
+        // register, and getting this wrong incorrectly blocks or admits players.
+        function fetchAgeCategories(tournamentName) {
+            return fetch('https://f5awebsite-default-rtdb.firebaseio.com/ageCategories/' + tournamentSlug(tournamentName) + '.json')
+                .then(r => r.json())
+                .catch(() => null);
+        }
+
+        // --- Validate the player's DOB actually falls under an age category's
+        // cutoff date (set by admin per tournament). Handles every format the
+        // admin panel may have written: a plain string (no cutoff), {label,
+        // cutoffDate} (current), or {label, cutoffYear} (legacy, treated as
+        // Jan 1 of that year) — falling back to the derived U<N> cutoff when
+        // none of those are present. ---
+        function getCutoffDate(cats, category) {
+            const entry = cats.find(c => (typeof c === 'object' ? c.label : c) === category);
+            if (entry && typeof entry === 'object') {
+                if (entry.cutoffDate) return entry.cutoffDate;
+                if (entry.cutoffYear) return entry.cutoffYear + '-01-01';
+            }
+            return deriveDefaultCutoffDate(category);
+        }
+
+        // Selecting a team auto-fills Tournament, and populates Age Category with
+        // every category that team actually registered under (a team that entered
+        // multiple age groups shows up once in the dropdown above, but offers all
+        // of its categories here). Once a DOB is entered, categories the player is
+        // overage for are removed from the list entirely — not just flagged —
+        // so there's no way to pick an ineligible one in the first place.
+        let _currentTeamMatches = [];
+        // Guards against a slower, now-superseded refresh (triggered by an
+        // earlier DOB/team change) resolving after a newer one and clobbering
+        // its correct result — only the response matching the most recent
+        // call is allowed to touch the DOM.
+        let _ageCatRefreshId = 0;
+        function refreshAgeCategoryOptions() {
+            const ageCatSel = document.getElementById('playerAgeCategory');
+            const hint = document.getElementById('playerAgeCategoryHint');
+            const tournamentName = document.getElementById('playerTournament').value;
+            const dob = document.getElementById('playerDOB').value;
+            const refreshId = ++_ageCatRefreshId;
+            if (!_currentTeamMatches.length) {
+                ageCatSel.innerHTML = '<option value="">Select a team first</option>';
+                return;
+            }
+            // A team's own registration doesn't disappear when the admin closes
+            // its tournament — the team dropdown above is populated from every
+            // team that ever registered, not just ones under still-open
+            // tournaments. Without this check, a closed tournament would keep
+            // silently accepting new players indefinitely through this team.
+            const t = findTournament(tournamentName);
+            if (t && t.status !== 'open') {
+                ageCatSel.innerHTML = '<option value="">Registration closed</option>';
+                hint.textContent = `${tournamentName} is no longer accepting registrations.`;
+                hint.style.color = '#c62828';
+                hint.style.display = 'block';
+                return;
+            }
+            if (!dob) {
+                ageCatSel.innerHTML = '<option value="">Select age category</option>' +
+                    _currentTeamMatches.map(t => `<option value="${ageCategoryOptionValue(t.ageCategory, t.cityGroup)}">${ageCategoryOptionLabel(t.ageCategory, t.cityGroup)}</option>`).join('');
+                return;
+            }
+            fetchAgeCategories(tournamentName).then(raw => {
+                if (refreshId !== _ageCatRefreshId) return;
+                const cats = raw || [];
+                const eligible = [];
+                const excludedLabels = [];
+                _currentTeamMatches.forEach(t => {
+                    const cutoffDate = getCutoffDate(cats, t.ageCategory);
+                    if (cutoffDate && new Date(dob) < new Date(cutoffDate)) excludedLabels.push(ageCategoryOptionLabel(t.ageCategory, t.cityGroup));
+                    else eligible.push(t);
+                });
+                if (!eligible.length) {
+                    ageCatSel.innerHTML = '<option value="">No eligible category</option>';
+                    hint.textContent = `Based on this date of birth, the player is overage for every category this team registered under (${excludedLabels.join(', ')}). Registration cannot proceed for this team.`;
+                    hint.style.color = '#c62828';
+                    hint.style.display = 'block';
+                } else {
+                    ageCatSel.innerHTML = '<option value="">Select age category</option>' +
+                        eligible.map(t => `<option value="${ageCategoryOptionValue(t.ageCategory, t.cityGroup)}">${ageCategoryOptionLabel(t.ageCategory, t.cityGroup)}</option>`).join('');
+                    if (excludedLabels.length) {
+                        hint.textContent = `${excludedLabels.join(', ')} not shown — this player is overage for ${excludedLabels.length > 1 ? 'those categories' : 'that category'} based on their date of birth.`;
+                        hint.style.color = '#5b6475';
+                        hint.style.display = 'block';
+                    } else {
+                        hint.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        document.getElementById('playerTeam').addEventListener('change', function() {
+            let existing = document.getElementById('playerTeamOther');
+            if (this.value === '__other__') {
+                if (!existing) {
+                    const inp = document.createElement('input');
+                    inp.type = 'text'; inp.id = 'playerTeamOther'; inp.placeholder = 'Enter your team name';
+                    inp.className = ''; inp.style.marginTop = '10px';
+                    inp.required = true;
+                    this.parentNode.appendChild(inp);
+                }
+                _currentTeamMatches = [];
+            } else {
+                if (existing) existing.remove();
+                const { name, city } = parseTeamOptionValue(this.value);
+                // Must filter the FULL registration list here, not the
+                // deduped _currentTournamentTeams (that list collapses a
+                // team down to one row per team+city for the dropdown, which
+                // silently discards its other age-category registrations —
+                // a team registered for U8/U10/U12 would only ever offer
+                // whichever one row survived the dedup).
+                const tournamentName = document.getElementById('playerTournament').value;
+                _currentTeamMatches = _allRegisteredTeams.filter(t => t.tournament === tournamentName && t.teamName === name && (t.cityGroup||null) === city);
+            }
+            // refreshAgeCategoryOptions() already fully recomputes and displays
+            // eligibility for every category this team offers, based on
+            // whatever DOB is currently entered — a separate
+            // checkAgeCategoryEligibility() call here raced against it (both
+            // fire their own async Firebase reads, and checkAgeCategoryEligibility
+            // reads the age-category <select>'s value synchronously, before
+            // refreshAgeCategoryOptions' async rebuild has replaced it). Whichever
+            // of the two finished last won the hint text, so re-selecting a team
+            // or changing DOB could flash a correct "eligible" message only to
+            // have it overwritten by a stale "overage"/"no eligible category"
+            // one a moment later. It's redundant here — dropped.
+            refreshAgeCategoryOptions();
+            updatePlayerPaymentVisibility();
+        });
+
+        document.getElementById('playerAgeCategory').addEventListener('change', checkAgeCategoryEligibility);
+        document.getElementById('playerDOB').addEventListener('change', function() {
+            refreshAgeCategoryOptions();
+            refreshIndivAgeCategoryOptions();
+        });
+
+        // --- Individual entry (no team) — only for tournaments the admin
+        // marked entryType 'individual' or 'both'. Age category comes straight
+        // from the tournament's own ageCategories/{slug} list (same source the
+        // Team Registration checkboxes use), not from any team's registration. ---
+        function onPlayerNoTeamToggle() {
+            const noTeam = document.getElementById('playerNoTeam').checked;
+            document.getElementById('playerTeamFields').style.display = noTeam ? 'none' : 'block';
+            document.getElementById('playerIndividualFields').style.display = noTeam ? 'block' : 'none';
+            document.getElementById('playerTeam').required = !noTeam;
+            document.getElementById('playerAgeCategory').required = !noTeam;
+            document.getElementById('playerIndivTournament').required = noTeam;
+            document.getElementById('playerIndivAgeCategory').required = noTeam;
+            if (noTeam) {
+                populatePlayerIndivTournamentOptions();
+                refreshIndivAgeCategoryOptions();
+            }
+            updatePlayerPaymentVisibility();
+        }
+
+        let _indivCityRequired = false;
+        document.getElementById('playerIndivTournament').addEventListener('change', function() {
+            const tournamentName = this.value;
+            const cityWrap = document.getElementById('playerIndivCityWrap');
+            const citySel = document.getElementById('playerIndivCity');
+            if (!tournamentName) {
+                cityWrap.style.display = 'none';
+                citySel.innerHTML = '<option value="">Select city</option>';
+                _indivCityRequired = false;
+            } else {
+                _regDb.ref('cities/' + tournamentSlug(tournamentName)).once('value').then(snap => {
+                    const cities = snap.val() || [];
+                    _indivCityRequired = cities.length > 0;
+                    if (_indivCityRequired) {
+                        cityWrap.style.display = 'block';
+                        citySel.innerHTML = '<option value="">Select city</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+                    } else {
+                        cityWrap.style.display = 'none';
+                        citySel.innerHTML = '<option value="">Select city</option>';
+                    }
+                });
+            }
+            refreshIndivAgeCategoryOptions();
+            updatePlayerPaymentVisibility();
+        });
+
+        let _indivAgeCatRefreshId = 0;
+        function refreshIndivAgeCategoryOptions() {
+            const sel = document.getElementById('playerIndivAgeCategory');
+            const hint = document.getElementById('playerIndivAgeCategoryHint');
+            const tournamentName = document.getElementById('playerIndivTournament').value;
+            const dob = document.getElementById('playerDOB').value;
+            const refreshId = ++_indivAgeCatRefreshId;
+            if (!tournamentName) {
+                sel.innerHTML = '<option value="">Select tournament first</option>';
+                hint.style.display = 'none';
+                return;
+            }
+            fetchAgeCategories(tournamentName).then(raw => {
+                if (refreshId !== _indivAgeCatRefreshId) return;
+                const cats = (raw && raw.length) ? raw : DEFAULT_AGE_CATEGORIES.map(o => o.value);
+                const labelOf = c => typeof c === 'object' ? c.label : c;
+                if (!dob) {
+                    sel.innerHTML = '<option value="">Select age category</option>' +
+                        cats.map(c => `<option value="${labelOf(c)}">${labelOf(c)}</option>`).join('');
+                    hint.style.display = 'none';
+                    return;
+                }
+                const eligible = [], excluded = [];
+                cats.forEach(c => {
+                    const label = labelOf(c);
+                    const cutoffDate = getCutoffDate(cats, label);
+                    if (cutoffDate && new Date(dob) < new Date(cutoffDate)) excluded.push(label);
+                    else eligible.push(label);
+                });
+                if (!eligible.length) {
+                    sel.innerHTML = '<option value="">No eligible category</option>';
+                    hint.textContent = `Based on this date of birth, the player is overage for every category in this tournament (${excluded.join(', ')}).`;
+                    hint.style.color = '#c62828';
+                    hint.style.display = 'block';
+                } else {
+                    sel.innerHTML = '<option value="">Select age category</option>' + eligible.map(c => `<option value="${c}">${c}</option>`).join('');
+                    if (excluded.length) {
+                        hint.textContent = `${excluded.join(', ')} not shown — overage based on date of birth.`;
+                        hint.style.color = '#5b6475';
+                        hint.style.display = 'block';
+                    } else {
+                        hint.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        let _ageCategoryEligible = true;
+        let _ageCategoryCheckId = 0;
+        function checkAgeCategoryEligibility() {
+            const hint = document.getElementById('playerAgeCategoryHint');
+            const tournamentName = document.getElementById('playerTournament').value;
+            const { category } = parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value);
+            const dob = document.getElementById('playerDOB').value;
+            const checkId = ++_ageCategoryCheckId;
+            _ageCategoryEligible = true;
+            hint.style.display = 'none';
+            if (!tournamentName || !category) return;
+            fetchAgeCategories(tournamentName).then(raw => {
+                if (checkId !== _ageCategoryCheckId) return;
+                const cats = raw || [];
+                const cutoffDate = getCutoffDate(cats, category);
+                if (!cutoffDate) return;
+                if (!dob) {
+                    // Category picked but no DOB yet — show the requirement upfront.
+                    hint.textContent = `${category} requires the player to be born on or after ${cutoffDate}.`;
+                    hint.style.color = '#5b6475';
+                    hint.style.display = 'block';
+                    return;
+                }
+                if (new Date(dob) < new Date(cutoffDate)) {
+                    _ageCategoryEligible = false;
+                    hint.textContent = `This player is overage for ${category} — they must be born on or after ${cutoffDate} to qualify. Please choose a different age category, or check with the team.`;
+                    hint.style.color = '#c62828';
+                    hint.style.display = 'block';
+                } else {
+                    hint.textContent = `Eligible for ${category} ✓ (requires born on or after ${cutoffDate})`;
+                    hint.style.color = '#2e7d32';
+                    hint.style.display = 'block';
+                }
+            });
+        }
+
+        const DEMO_OTP = '1234';
+        let pendingTeamDataList = null, pendingPlayerData = null;
+
+        // --- OTP digit auto-advance + backspace ---
+        function setupOtpInputs(prefix) {
+            const ids = [1,2,3,4].map(n => prefix + 'Otp' + n);
+            ids.forEach((id, i) => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', function() {
+                    this.value = this.value.replace(/\D/g,'').slice(-1);
+                    if (this.value && i < 3) document.getElementById(ids[i+1]).focus();
+                });
+                el.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !this.value && i > 0) document.getElementById(ids[i-1]).focus();
+                });
+            });
+        }
+        setupOtpInputs('t');
+        setupOtpInputs('p');
+
+        function getOtpValue(prefix) {
+            return [1,2,3,4].map(n => document.getElementById(prefix+'Otp'+n).value).join('');
+        }
+
+        function resetOtpInputs(type) {
+            const prefix = type === 'team' ? 't' : 'p';
+            [1,2,3,4].forEach(n => { document.getElementById(prefix+'Otp'+n).value = ''; document.getElementById(prefix+'Otp'+n).classList.remove('error'); });
+            document.getElementById(prefix+'OtpError').style.display = 'none';
+            document.getElementById(prefix+'Otp1').focus();
+        }
+
+        const CONFIRMATION_EMAIL_URL = 'https://script.google.com/macros/s/AKfycbxvHdn0WGZXe-iNBBESWBnlWMuHiUUD38BSzyuL_h8iAgZz2PjnzNkkKTkHBtOFh1fT/exec';
+
+        function sendConfirmationEmail(type, data) {
+            const email = type === 'team' ? data.teamEmail : data.playerEmail;
+            if (!email) return;
+            fetch(CONFIRMATION_EMAIL_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    email_type: 'confirmation',
+                    to_email: email,
+                    to_name: type === 'team' ? data.teamName : data.playerName,
+                    reg_type: type === 'team' ? 'team' : 'player',
+                    tournament: type === 'team' ? data.tournament : data.playerTournament
+                })
+            }).catch(() => {}); // best-effort, don't block the success flow
+        }
+
+        function verifyOtp(type) {
+            const prefix = type === 'team' ? 't' : 'p';
+            const entered = getOtpValue(prefix);
+            const errEl = document.getElementById(prefix + 'OtpError');
+            if (entered === DEMO_OTP) {
+                if (type === 'team') {
+                    pendingTeamDataList.forEach(data => _regDb.ref('registrations').push(data));
+                    sendConfirmationEmail('team', pendingTeamDataList[0]);
+                } else {
+                    _regDb.ref('registrations').push(pendingPlayerData);
+                    sendConfirmationEmail('player', pendingPlayerData);
+                }
+                document.getElementById(type === 'team' ? 'teamOtp' : 'playerOtp').style.display = 'none';
+                document.getElementById(type === 'team' ? 'teamSuccess' : 'playerSuccess').style.display = 'block';
+            } else {
+                [1,2,3,4].forEach(n => document.getElementById(prefix+'Otp'+n).classList.add('error'));
+                errEl.style.display = 'block';
+            }
+        }
+
+        // Age Category appears automatically once a tournament is selected.
+        // Categories are fetched per-tournament from Firebase (set by admin) —
+        // falls back to the default U9-Senior list if the admin hasn't set custom ones.
+        const DEFAULT_AGE_CATEGORIES = [
+            {value:'U9', label:'Under 9'}, {value:'U11', label:'Under 11'}, {value:'U13', label:'Under 13'},
+            {value:'U15', label:'Under 15'}, {value:'U17', label:'Under 17'}, {value:'U19', label:'Under 19'},
+            {value:'Senior', label:'Senior / Open'}
+        ];
+        function tournamentSlug(t) { return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
+
+        // A team can register the same age category once per city in a
+        // multi-city tournament (e.g. IF5L Mumbai U12 and IF5L Ambernath U12
+        // are two separate team registrations). So the player's age-category
+        // dropdown encodes city into the option value whenever a match has
+        // one, keeping the value plain "U12" (unchanged) for every
+        // single-city tournament.
+        function ageCategoryOptionValue(ageCategory, cityGroup) {
+            return cityGroup ? ageCategory + '|||' + cityGroup : ageCategory;
+        }
+        function ageCategoryOptionLabel(ageCategory, cityGroup) {
+            return cityGroup ? `${ageCategory} (${cityGroup})` : ageCategory;
+        }
+        function parseAgeCategoryOptionValue(value) {
+            const idx = (value||'').indexOf('|||');
+            return idx === -1 ? { category: value, cityGroup: null } : { category: value.slice(0, idx), cityGroup: value.slice(idx + 3) };
+        }
+
+        function getSelectedAgeCategories() {
+            return [...document.querySelectorAll('#ageCategoryChecks input[type="checkbox"]:checked')].map(c => c.value);
+        }
+
+        // Multi-city tournaments (e.g. IF5L — Mumbai / Ambernath / Hyderabad)
+        // add a required City step right after Tournament. A tournament with
+        // nothing at cities/{slug} is single-city — the field stays hidden
+        // and nothing about the rest of the form changes.
+        let _teamCityRequired = false;
+        document.getElementById('tournament').addEventListener('change', function() {
+            const group = document.getElementById('ageCategoryGroup');
+            const checksBox = document.getElementById('ageCategoryChecks');
+            const cityWrap = document.getElementById('teamCityGroupWrap');
+            const citySel = document.getElementById('teamCityGroup');
+            if (!this.value) {
+                group.style.display = 'none';
+                checksBox.innerHTML = '';
+                cityWrap.style.display = 'none';
+                citySel.innerHTML = '<option value="">Select city</option>';
+                _teamCityRequired = false;
+                updateTeamFeeDisplay();
+                return;
+            }
+            group.style.display = 'block';
+            checksBox.innerHTML = '<span style="color:var(--text-light);font-size:.88rem;">Loading age categories...</span>';
+            fetchAgeCategories(this.value).then(custom => {
+                const options = (custom && custom.length)
+                    ? custom.map(c => ({ value: typeof c === 'object' ? c.label : c, label: typeof c === 'object' ? c.label : c }))
+                    : DEFAULT_AGE_CATEGORIES;
+                checksBox.innerHTML = options.map((o, i) => `
+                    <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid #e0e4f0;border-radius:20px;cursor:pointer;font-size:.88rem;">
+                        <input type="checkbox" value="${o.value}" onchange="updateTeamFeeDisplay()" style="accent-color:var(--primary);">
+                        ${o.label}
+                    </label>`).join('');
+            });
+            _regDb.ref('cities/' + tournamentSlug(this.value)).once('value').then(snap => {
+                const cities = snap.val() || [];
+                _teamCityRequired = cities.length > 0;
+                if (_teamCityRequired) {
+                    cityWrap.style.display = 'block';
+                    citySel.innerHTML = '<option value="">Select city</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+                } else {
+                    cityWrap.style.display = 'none';
+                    citySel.innerHTML = '<option value="">Select city</option>';
+                }
+            });
+            updateTeamFeeDisplay();
+        });
+
+        let _teamSubmitInProgress = false;
+        document.getElementById('teamForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (_teamSubmitInProgress) return;
+            _teamSubmitInProgress = true;
+            handleTeamSubmit().finally(() => { _teamSubmitInProgress = false; });
+        });
+
+        async function handleTeamSubmit() {
+            if (!document.getElementById('teamConsent').checked) {
+                alert('Please read and accept the Team Consent Form to proceed.');
+                return;
+            }
+            const teamNameEntered = document.getElementById('teamName').value.trim();
+            const tournamentEntered = document.getElementById('tournament').value;
+            const cityGroupEntered = document.getElementById('teamCityGroup').value;
+            // The tournament dropdown only lists open tournaments at the moment
+            // it's populated — if the admin closes it while this form is still
+            // sitting open in someone's browser, re-check status right before
+            // writing to Firebase so a stale page can't sneak a registration in.
+            if (tournamentEntered) {
+                const statusSnap = await _regDb.ref('tournaments').orderByChild('name').equalTo(tournamentEntered).once('value');
+                let liveStatus = null;
+                statusSnap.forEach(child => { liveStatus = child.val().status; });
+                if (liveStatus !== 'open') {
+                    alert(tournamentEntered + ' is no longer accepting registrations. Please refresh the page and choose another tournament.');
+                    return;
+                }
+            }
+            if (_teamCityRequired && !cityGroupEntered) {
+                alert('Please select which city your team is entering — this tournament runs in multiple cities.');
+                return;
+            }
+            const selectedCategoriesPreCheck = getSelectedAgeCategories();
+            if (teamNameEntered && tournamentEntered && selectedCategoriesPreCheck.length) {
+                const snap = await _regDb.ref('registrations').orderByChild('type').equalTo('team').once('value');
+                const clash = [];
+                snap.forEach(child => {
+                    const d = child.val();
+                    if (d.status === 'rejected') return;
+                    // A team registering the same age category in a *different*
+                    // city (e.g. IF5L Mumbai and IF5L Ambernath) is not a clash —
+                    // only block re-registering the same tournament+city+category.
+                    if ((d.teamName||'').trim().toLowerCase() === teamNameEntered.toLowerCase()
+                        && d.tournament === tournamentEntered
+                        && (d.cityGroup||'') === (cityGroupEntered||'')
+                        && selectedCategoriesPreCheck.includes(d.ageCategory)) {
+                        clash.push(d.ageCategory);
+                    }
+                });
+                if (clash.length) {
+                    alert('"' + teamNameEntered + '" is already registered for ' + tournamentEntered + (cityGroupEntered ? ' (' + cityGroupEntered + ')' : '') + ' in: ' + clash.join(', ') + '. Please uncheck ' + (clash.length > 1 ? 'those categories' : 'that category') + ' — a team can only register once per age group' + (cityGroupEntered ? ' per city' : '') + '.');
+                    return;
+                }
+            }
+            const logoFile = document.getElementById('teamLogo').files[0];
+            const logoName = logoFile ? logoFile.name : '';
+            const logoUrl = _uploadedFileUrls['teamLogo'] || '';
+            if (!logoFile) {
+                alert('Please upload your team logo before submitting.');
+                return;
+            }
+            if (!logoUrl) {
+                alert('Your team logo is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            const teamPaymentMethod = document.querySelector('input[name="teamPayment"]:checked')?.value || '';
+            const teamProofFile = document.getElementById('teamPaymentProof');
+            const teamProofUrl = _uploadedFileUrls['teamPaymentProof'] || '';
+            if ((teamPaymentMethod === 'UPI' || teamPaymentMethod === 'Bank Transfer') && (!teamProofFile || !teamProofFile.files[0])) {
+                alert('Please upload your payment screenshot before submitting.');
+                return;
+            }
+            if ((teamPaymentMethod === 'UPI' || teamPaymentMethod === 'Bank Transfer') && !teamProofUrl) {
+                alert('Your payment screenshot is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            const selectedCategories = getSelectedAgeCategories();
+            if (!selectedCategories.length) {
+                alert('Please select at least one age category.');
+                return;
+            }
+            // One registration record per age category selected — everything
+            // else (logo, consent, payment proof) is shared across all of them.
+            pendingTeamDataList = selectedCategories.map((cat, i) => ({
+                id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000) + '-' + i,
+                type: 'team', status: 'pending',
+                submittedAt: new Date().toISOString(),
+                teamName: document.getElementById('teamName').value,
+                teamCity: document.getElementById('teamCity').value,
+                coachName: document.getElementById('coachName').value,
+                coachPhone: document.getElementById('coachPhone').value,
+                managerName: document.getElementById('managerName').value,
+                managerPhone: document.getElementById('managerPhone').value,
+                teamEmail: document.getElementById('teamEmail').value,
+                tournament: document.getElementById('tournament').value,
+                cityGroup: cityGroupEntered || null,
+                ageCategory: cat,
+                teamLogoFile: logoName,
+                teamLogoUrl: logoUrl,
+                consent: {
+                    accepted: true,
+                    signedBy: document.getElementById('teamSignature').value,
+                    signedAt: new Date().toISOString(),
+                    formVersion: 'Team Consent Form - F5A 2025'
+                },
+                paymentMethod: teamPaymentMethod,
+                paymentProofUrl: teamProofUrl,
+                paymentVerified: false
+            }));
+            document.getElementById('teamForm').style.display = 'none';
+            resetOtpInputs('team');
+            document.getElementById('teamOtp').style.display = 'block';
+            document.getElementById('tOtp1').focus();
+        }
+
+        let _playerSubmitInProgress = false;
+        document.getElementById('playerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (_playerSubmitInProgress) return;
+            _playerSubmitInProgress = true;
+            handlePlayerSubmit().finally(() => { _playerSubmitInProgress = false; });
+        });
+
+        async function handlePlayerSubmit() {
+            if (!document.getElementById('playerConsent').checked) {
+                alert('Please read and accept the Parent/Guardian Consent Form to proceed.');
+                return;
+            }
+            const _noTeam = document.getElementById('playerNoTeam').checked;
+            const _tournamentForCheck = _noTeam
+                ? document.getElementById('playerIndivTournament').value
+                : document.getElementById('playerTournament').value;
+            const _categoryForCheck = _noTeam
+                ? document.getElementById('playerIndivAgeCategory').value
+                : parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value).category;
+            const _cityGroupForCheck = _noTeam
+                ? (_indivCityRequired ? document.getElementById('playerIndivCity').value : null)
+                : parseAgeCategoryOptionValue(document.getElementById('playerAgeCategory').value).cityGroup;
+            const _dobForCheck = document.getElementById('playerDOB').value;
+            if (_tournamentForCheck) {
+                const statusSnap = await _regDb.ref('tournaments').orderByChild('name').equalTo(_tournamentForCheck).once('value');
+                let liveStatus = null;
+                statusSnap.forEach(child => { liveStatus = child.val().status; });
+                if (liveStatus !== 'open') {
+                    alert(_tournamentForCheck + ' is no longer accepting registrations. Please refresh the page and choose another tournament.');
+                    return;
+                }
+            }
+            if (_noTeam && !_tournamentForCheck) {
+                alert('Please select a tournament.');
+                return;
+            }
+            if (_noTeam && !_categoryForCheck) {
+                alert('Please select an age category.');
+                return;
+            }
+            if (_noTeam && _indivCityRequired && !_cityGroupForCheck) {
+                alert('Please select a city — this tournament runs in multiple cities.');
+                return;
+            }
+            if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
+                const cats = (await fetchAgeCategories(_tournamentForCheck)) || [];
+                const cutoffDate = getCutoffDate(cats, _categoryForCheck);
+                if (cutoffDate && new Date(_dobForCheck) < new Date(cutoffDate)) {
+                    alert(`This player is overage for ${_categoryForCheck} — they must be born on or after ${cutoffDate} to qualify. Please choose a different age category before submitting.`);
+                    return;
+                }
+            }
+            const teamSel = document.getElementById('playerTeam');
+            const teamVal = _noTeam ? '' : (teamSel.value === '__other__'
+                ? (document.getElementById('playerTeamOther')?.value || '')
+                : teamSel.value);
+            const ageDocFile = document.getElementById('ageDoc').files[0];
+            const ageDocUrl = _uploadedFileUrls['ageDoc'] || '';
+            const photoFile = document.getElementById('playerPhoto').files[0];
+            const photoUrl = _uploadedFileUrls['playerPhoto'] || '';
+            if (ageDocFile && !ageDocUrl) {
+                alert('Your age proof document is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            if (photoFile && !photoUrl) {
+                alert('Your photo is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            const playerPaymentMethod = document.querySelector('input[name="playerPayment"]:checked')?.value || '';
+            const playerProofFile = document.getElementById('playerPaymentProof');
+            const playerProofUrl = _uploadedFileUrls['playerPaymentProof'] || '';
+            if ((playerPaymentMethod === 'UPI' || playerPaymentMethod === 'Bank Transfer') && (!playerProofFile || !playerProofFile.files[0])) {
+                alert('Please upload your payment screenshot before submitting.');
+                return;
+            }
+            if ((playerPaymentMethod === 'UPI' || playerPaymentMethod === 'Bank Transfer') && !playerProofUrl) {
+                alert('Your payment screenshot is still uploading. Please wait a moment and try again.');
+                return;
+            }
+            const dob = document.getElementById('playerDOB').value;
+            const today = new Date(); const birth = new Date(dob);
+            let age = today.getFullYear() - birth.getFullYear();
+            if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+            pendingPlayerData = {
+                id: 'SG-PLY-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
+                type: 'player', status: 'pending',
+                submittedAt: new Date().toISOString(),
+                playerName: document.getElementById('playerName').value,
+                playerDOB: dob,
+                playerAge: age,
+                playerPhone: document.getElementById('playerPhone').value,
+                playerEmail: document.getElementById('playerEmail').value,
+                playerPosition: document.getElementById('playerPosition').value,
+                playerJerseyNumber: document.getElementById('playerJerseyNumber').value,
+                playerCity: document.getElementById('playerCity').value,
+                playerTeam: teamVal,
+                playerTournament: _tournamentForCheck,
+                playerAgeCategory: _categoryForCheck,
+                playerCityGroup: _cityGroupForCheck || null,
+                playerEntryMode: _noTeam ? 'individual' : 'team',
+                guardianName: document.getElementById('guardianName').value,
+                guardianPhone: document.getElementById('guardianPhone').value,
+                guardianRelation: document.getElementById('guardianRelation').value,
+                guardianEmail: document.getElementById('guardianEmail').value,
+                ageDocFile: ageDocFile ? ageDocFile.name : '',
+                ageDocUrl: ageDocUrl,
+                playerPhotoUrl: photoUrl,
+                docVerified: false,
+                consent: {
+                    accepted: true,
+                    signedBy: document.getElementById('playerSignature').value,
+                    signedAt: new Date().toISOString(),
+                    formVersion: 'Parent/Guardian Consent Form - F5A 2025'
+                },
+                paymentMethod: playerPaymentMethod,
+                paymentProofUrl: playerProofUrl,
+                paymentVerified: false
+            };
+            document.getElementById('playerForm').style.display = 'none';
+            resetOtpInputs('player');
+            document.getElementById('playerOtp').style.display = 'block';
+            document.getElementById('pOtp1').focus();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sportera Global News - Latest updates, announcements, and news from Football 5 Association and IF5L.">
+    <title>News &amp; Updates | Sportera Global</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../logo.png" type="image/png">
+    <style>
+        .news-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+        .news-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            margin-bottom: 30px;
+        }
+        .news-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+        .news-card-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-size: 3rem;
+        }
+        .news-card-body {
+            padding: 24px;
+        }
+        .news-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .news-category {
+            background: var(--primary);
+            color: var(--white);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .news-date {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .news-card-body h3 {
+            font-size: 1.2rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .news-card-body p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+        .news-read-more {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .news-read-more:hover {
+            color: var(--primary-light);
+            gap: 10px;
+        }
+
+        /* Sidebar */
+        .news-sidebar {
+            position: sticky;
+            top: 100px;
+        }
+        .sidebar-widget {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        .sidebar-widget h4 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--gold);
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .sidebar-link:last-child { border-bottom: none; }
+        .sidebar-link:hover { color: var(--primary); padding-left: 5px; }
+        .sidebar-link i { color: var(--gold); width: 16px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        .empty-state i {
+            font-size: 3.5rem;
+            color: #ddd;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .empty-state h3 {
+            color: var(--text-light);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .news-filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 20px;
+            border-radius: 25px;
+            border: 2px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            .news-sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader"><div class="loader-spinner"></div></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="../" class="logo">
+                <img src="../Media (51).png" onerror="this.onerror=null;this.style.height=&#39;96px&#39;;this.style.width=&#39;auto&#39;" alt="Sportera Global Logo">
+                <span class="logo-text">Sportera<span>Global</span></span>
+            </a>
+            <nav class="nav-menu">
+                <a href="../" class="nav-link">Home</a>
+                <a href="../about/" class="nav-link">About</a>
+                <a href="../football5/" class="nav-link">Football 5</a>
+                <a href="../if5l/" class="nav-link">IF5L</a>
+                <a href="../tournaments/" class="nav-link">Tournaments</a>
+                <a href="../live/" class="nav-link">Live</a>
+                <a href="../exposure/" class="nav-link">International</a>
+                <a href="../gallery/" class="nav-link">Gallery</a>
+                <a href="../registration/" class="nav-link">Register</a>
+                <a href="./" class="nav-link">News</a>
+                <a href="../contact/" class="nav-link">Contact</a>
+            </nav>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <h1>News &amp; Updates</h1>
+            <p>Latest Announcements from Sportera Global</p>
+            <div class="breadcrumb">
+                <a href="../">Home</a> <span>/</span> <span>News</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- News Section -->
+    <section class="section">
+        <div class="container">
+            <div class="news-filter-bar fade-in">
+                <button class="filter-btn active">All</button>
+                <button class="filter-btn">Tournaments</button>
+                <button class="filter-btn">IF5L</button>
+                <button class="filter-btn">Football 5</button>
+                <button class="filter-btn">Announcements</button>
+            </div>
+
+            <div class="news-grid">
+                <!-- News Feed -->
+                <div id="newsArticlesFeed">
+                    <div class="news-card fade-in" data-category="announcements">
+                        <div class="news-card-image" style="height: 220px;">
+                            <i class="fas fa-futbol"></i>
+                        </div>
+                        <div class="news-card-body">
+                            <div class="news-meta">
+                                <span class="news-category">Announcement</span>
+                                <span class="news-date"><i class="fas fa-calendar"></i> June 2026</span>
+                            </div>
+                            <h3>Sportera Global Officially Launches at sporteraglobal.com</h3>
+                            <p>We are thrilled to announce the official launch of the Sportera Global website — your one-stop destination for Football 5 development, the Indian Football 5 League, tournaments, and international opportunities for athletes across India.</p>
+                            <a href="../about/" class="news-read-more">Learn More <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="news-card fade-in" data-category="if5l">
+                        <div class="news-card-image" style="height: 220px;">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="news-card-body">
+                            <div class="news-meta">
+                                <span class="news-category" style="background: #e65100;">IF5L</span>
+                                <span class="news-date"><i class="fas fa-calendar"></i> August 2026</span>
+                            </div>
+                            <h3>IF5L Season 2 – Registrations Now Open</h3>
+                            <p>The Indian Football 5 League Season 2 is set to kick off in August 2026. Teams from across India are invited to register and compete for the coveted IF5L Championship title. Register now to secure your franchise spot.</p>
+                            <a href="../registration/" class="news-read-more">Register Your Team <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="news-card fade-in" data-category="tournaments">
+                        <div class="news-card-image" style="height: 220px;">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <div class="news-card-body">
+                            <div class="news-meta">
+                                <span class="news-category" style="background: #2e7d32;">Tournament</span>
+                                <span class="news-date"><i class="fas fa-calendar"></i> October 2026</span>
+                            </div>
+                            <h3>Football 5 National Club Championship 2026 – Save the Date</h3>
+                            <p>The Football 5 National Level Club Championship 2026 is coming. More details including venue, format, and eligibility criteria will be announced soon. Follow us on Instagram for the latest updates.</p>
+                            <a href="../tournaments/" class="news-read-more">View Tournaments <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <aside class="news-sidebar fade-in">
+                    <div class="sidebar-widget">
+                        <h4>Quick Links</h4>
+                        <a href="../registration/" class="sidebar-link"><i class="fas fa-clipboard-list"></i> Register a Team</a>
+                        <a href="../registration/" class="sidebar-link"><i class="fas fa-user-plus"></i> Register as Player</a>
+                        <a href="../tournaments/" class="sidebar-link"><i class="fas fa-calendar-alt"></i> Tournament Calendar</a>
+                        <a href="../downloads/" class="sidebar-link"><i class="fas fa-download"></i> Downloads</a>
+                        <a href="../gallery/" class="sidebar-link"><i class="fas fa-images"></i> Photo Gallery</a>
+                    </div>
+
+                    <div class="sidebar-widget">
+                        <h4>Upcoming Events</h4>
+                        <a href="../tournaments/" class="sidebar-link"><i class="fas fa-futbol"></i> IF5L Season 2 – Aug 2026</a>
+                        <a href="../tournaments/" class="sidebar-link"><i class="fas fa-trophy"></i> National Championship – Oct 2026</a>
+                    </div>
+
+                    <div class="sidebar-widget">
+                        <h4>Follow Us</h4>
+                        <a href="https://instagram.com/sportera.global" target="_blank" class="sidebar-link"><i class="fab fa-instagram"></i> @football5association</a>
+                        <a href="#" class="sidebar-link"><i class="fab fa-facebook-f"></i> Facebook</a>
+                        <a href="#" class="sidebar-link"><i class="fab fa-youtube"></i> YouTube</a>
+                    </div>
+
+                    <div class="sidebar-widget" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: var(--white);">
+                        <h4 style="color: var(--gold); border-bottom-color: var(--gold);">Contact Us</h4>
+                        <p style="font-size: 0.9rem; margin-bottom: 15px; opacity: 0.9;">Have a news tip or press inquiry?</p>
+                        <a href="mailto:football5association@gmail.com" class="btn btn-secondary" style="display: block; text-align: center; font-size: 0.85rem;">Email Us</a>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo-text">Sportera <span>Global</span></div>
+                    <p>A sports development and event management platform dedicated to creating opportunities for athletes through competitions, leagues, and international exposure.</p>
+                    <div class="footer-social">
+                        <a href="https://instagram.com/sportera.global" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.facebook.com/football5association" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.youtube.com/football5association" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="../about/">About Us</a></li>
+                        <li><a href="../football5/">Football 5</a></li>
+                        <li><a href="../if5l/">IF5L</a></li>
+                        <li><a href="../tournaments/">Tournaments</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="../registration/">Registration</a></li>
+                        <li><a href="../gallery/">Gallery</a></li>
+                        <li><a href="../downloads/">Downloads</a></li>
+                        <li><a href="./">News</a></li>
+                        <li><a href="../contact/">Contact</a></li>
+                        <li><a href="../portal/login.html" style="color:#ffd700; font-weight:600;"><i class="fas fa-user-circle"></i> Player &amp; Team Portal</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:football5association@gmail.com"><i class="fas fa-envelope"></i> football5association@gmail.com</a></li>
+                        <li><a href="https://instagram.com/sportera.global" target="_blank"><i class="fab fa-instagram"></i> @football5association</a></li>
+                        <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="../admin/" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Sportera Global. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const filter = this.textContent.trim().toLowerCase().replace(' ', '');
+                document.querySelectorAll('#newsArticlesFeed .news-card').forEach(card => {
+                    if (filter === 'all' || card.dataset.category === filter) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
