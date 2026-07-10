@@ -180,12 +180,14 @@ header.scrolled .logo-text {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 24px;
 }
 
 .logo {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 .logo img {
