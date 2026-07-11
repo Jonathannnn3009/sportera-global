@@ -2325,6 +2325,7 @@ function renderTeams(){
     <td class="actions">
       <button class="btn btn-gold btn-xs" onclick="exportTeamWelcomePoster('${t._key}')" title="Download welcome poster to share"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editTeam('${t._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="addToTournament('team','${(t.teamEmail||'').replace(/'/g,"\\'")}','${(t.teamName||'').replace(/'/g,"\\'")}')" title="Add this team's existing portal login to another tournament"><i class="fas fa-plus"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTeamReg('${t._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`;
   }).join('');
@@ -2406,6 +2407,28 @@ async function exportTeamWelcomePoster(teamKey){
     poster.remove();
   }
 }
+// Manual "add existing player/team to another tournament" — same effect as
+// the automatic re-registration merge in createPortalAccount(), but for
+// cases where the admin wants to link them into a tournament directly
+// instead of making them submit a whole new registration form.
+async function addToTournament(type, email, displayName){
+  if(!email){ alert('This '+type+' has no email on file, so their portal login cannot be looked up.'); return; }
+  const names = (_fbTournaments||[]).map(t=>t.name).filter(Boolean);
+  const promptText = 'Add '+displayName+' to which tournament?'+(names.length?('\n\nExisting tournaments:\n'+names.join('\n')):'');
+  const tournament = prompt(promptText);
+  if(!tournament) return;
+  const collection = type==='team' ? 'teams' : 'players';
+  const emailField = type==='team' ? 'teamEmail' : 'email';
+  try {
+    const q = await _fbFs.collection(collection).where(emailField,'==',email).limit(1).get();
+    if(q.empty){ alert('No existing portal login found for '+email+' — they need to be approved once first before tournaments can be added manually.'); return; }
+    await q.docs[0].ref.update({ tournaments: firebase.firestore.FieldValue.arrayUnion(tournament) });
+    alert(displayName+' has been added to "'+tournament+'". They can see it next time they log into the portal with their existing email/password.');
+  } catch(e) {
+    alert('Could not add tournament: '+e.message);
+  }
+}
+
 function clearTeamForm(){ ['team-edit-id','t-name','t-city','t-coach','t-cphone','t-mgr','t-mphone','t-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('t-agecat').innerHTML='<option value="">Select age category</option>'; }
 
 // ── PLAYERS ───────────────────────────────────────────────────────────────
@@ -2427,6 +2450,7 @@ function renderPlayers(){
     <td>${badge(p.status)}</td>
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editPlayer('${p._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="addToTournament('player','${(p.playerEmail||'').replace(/'/g,"\\'")}','${(p.playerName||'').replace(/'/g,"\\'")}')" title="Add this player's existing portal login to another tournament"><i class="fas fa-plus"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deletePlayerReg('${p._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
 }
@@ -3856,13 +3880,46 @@ function removeResultScorer(fxKey, side, idx){
   renderResultScorersList(fxKey, side);
 }
 
+// Which players actually took the field — separate from "who scored", since
+// stats like matchesPlayed need to count everyone who played, not just
+// scorers. Fetched from the players collection by team name (Firestore
+// where() can't combine a second field cheaply here without a composite
+// index, so the tournament match is just skipped — same team name playing
+// two tournaments at once is not a case this app supports elsewhere either).
+let _resultLineupState = {};
+async function loadLineupCandidates(fxKey, side, teamName){
+  const el = document.getElementById(side.charAt(0)+'lineup-'+fxKey);
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:.75rem;color:var(--muted);">Loading squad…</div>';
+  const q = await _fbFs.collection('players').where('playerTeam','==',teamName).get();
+  const names = []; q.forEach(d => names.push(d.data().playerName));
+  if (!names.length) { el.innerHTML = '<div style="font-size:.75rem;color:var(--muted);">No players found for this team — matchesPlayed won\'t be tracked for them.</div>'; return; }
+  if (!_resultLineupState[fxKey]) _resultLineupState[fxKey] = {home:[],away:[]};
+  if (!_resultLineupState[fxKey][side].length) _resultLineupState[fxKey][side] = names.slice(); // default: everyone on the roster played
+  const checked = _resultLineupState[fxKey][side];
+  el.innerHTML = names.map(n=>`<label style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;margin:2px 8px 2px 0;">
+    <input type="checkbox" onchange="toggleLineupPlayer('${fxKey}','${side}','${n.replace(/'/g,"\\'")}',this.checked)" ${checked.includes(n)?'checked':''}> ${n}
+  </label>`).join('');
+}
+function toggleLineupPlayer(fxKey, side, name, checked){
+  if (!_resultLineupState[fxKey]) _resultLineupState[fxKey] = {home:[],away:[]};
+  const list = _resultLineupState[fxKey][side];
+  const idx = list.indexOf(name);
+  if (checked && idx===-1) list.push(name);
+  if (!checked && idx>-1) list.splice(idx,1);
+}
+
 function resultScoreForm(f, r, saveLabel){
   // Shared form for both entering a new result (r is undefined) and
   // correcting an already-saved one (r is that fixture's existing result) —
   // same fields either way, just pre-filled when editing.
   r = r || {};
   initResultScorers(f._key, r);
-  setTimeout(()=>{ renderResultScorersList(f._key,'home'); renderResultScorersList(f._key,'away'); }, 0);
+  if (!_resultLineupState[f._key]) _resultLineupState[f._key] = { home: r.homeLineup||[], away: r.awayLineup||[] };
+  setTimeout(()=>{
+    renderResultScorersList(f._key,'home'); renderResultScorersList(f._key,'away');
+    loadLineupCandidates(f._key,'home',f.home); loadLineupCandidates(f._key,'away',f.away);
+  }, 0);
   // Yellow/red cards and MOTM are entered per-team, not as one shared field —
   // jersey numbers can repeat across the two teams (e.g. both teams field a
   // #7), so a single combined "jersey #s" input made it impossible to tell
@@ -3896,11 +3953,13 @@ function resultScoreForm(f, r, saveLabel){
         <input type="number" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;margin-bottom:6px;">
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (name + minute)</label>
         <div id="hscorersList-${f._key}" style="margin-bottom:4px;"></div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
           <input type="text" id="hscname-${f._key}" placeholder="Player name" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
           <input type="number" id="hscmin-${f._key}" placeholder="Min" min="0" style="width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;">
           <button type="button" onclick="addResultScorer('${f._key}','home')" class="btn btn-ghost btn-xs"><i class="fas fa-plus"></i></button>
         </div>
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Who Played? (for matchesPlayed stats)</label>
+        <div id="hlineup-${f._key}" style="max-height:90px;overflow-y:auto;"></div>
       </div>
       <div style="border:1.5px solid var(--border);border-radius:8px;padding:10px;">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:6px;">${f.away} (Away)</div>
@@ -3914,11 +3973,13 @@ function resultScoreForm(f, r, saveLabel){
         <input type="number" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;margin-bottom:6px;">
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (name + minute)</label>
         <div id="ascorersList-${f._key}" style="margin-bottom:4px;"></div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
           <input type="text" id="ascname-${f._key}" placeholder="Player name" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
           <input type="number" id="ascmin-${f._key}" placeholder="Min" min="0" style="width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;">
           <button type="button" onclick="addResultScorer('${f._key}','away')" class="btn btn-ghost btn-xs"><i class="fas fa-plus"></i></button>
         </div>
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Who Played? (for matchesPlayed stats)</label>
+        <div id="alineup-${f._key}" style="max-height:90px;overflow-y:auto;"></div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px;padding:0 4px;">
@@ -4083,16 +4144,19 @@ function saveResult(fxKey){
   const afoul=parseInt(document.getElementById('afoul-'+fxKey).value)||0;
   const fx=(_fbFixtures||[]).find(f=>f._key===fxKey); if(!fx) return;
   const scorersState = _resultScorersState[fxKey] || {home:[],away:[]};
+  const lineupState = _resultLineupState[fxKey] || {home:[],away:[]};
   _fbDb.ref('fixtures/'+fxKey).update({status:'played', homeScore:hs, awayScore:as});
   _fbDb.ref('results/'+fxKey).set({
     home:fx.home, away:fx.away, homeScore:hs, awayScore:as, scorer,
     homeMotm, awayMotm, homeYellow, awayYellow, homeRed, awayRed, homeFouls:hfoul, awayFouls:afoul,
     homeScorers: scorersState.home||[], awayScorers: scorersState.away||[],
+    homeLineup: lineupState.home||[], awayLineup: lineupState.away||[],
     tournament:fx.tournament, ageCategory:fx.ageCategory, cityGroup:fx.cityGroup||null, matchNumber:fx.matchNumber, round:fx.round,
     dt:new Date().toISOString()
   });
   delete _resultScorersState[fxKey];
-  syncPortalStats(fx, hs, as, scorersState).catch(e => console.error('Portal stats sync failed for', fx.home, 'vs', fx.away, e));
+  delete _resultLineupState[fxKey];
+  syncPortalStats(fx, hs, as, scorersState, lineupState).catch(e => console.error('Portal stats sync failed for', fx.home, 'vs', fx.away, e));
   logActivity('Saved result', fx.home+' vs '+fx.away+' ('+hs+'-'+as+')');
   closeModal('modal-edit-result');
   renderResultsFixtures();
@@ -4108,7 +4172,8 @@ function saveResult(fxKey){
 // don't carry portal UIDs directly — matches are added to a match log
 // rather than overwritten, so re-saving a corrected score double-counts;
 // acceptable for now since results are rarely re-scored after being right.
-async function syncPortalStats(fx, hs, as, scorersState){
+async function syncPortalStats(fx, hs, as, scorersState, lineupState){
+  lineupState = lineupState || {home:[],away:[]};
   const matchInfo = { tournament: fx.tournament, ageCategory: fx.ageCategory, round: fx.round||'', dt: new Date().toISOString(), matchNumber: fx.matchNumber||null };
   async function updateTeam(teamName, gf, ga){
     const q = await _fbFs.collection('teams').where('teamName','==',teamName).where('tournament','==',fx.tournament).limit(1).get();
@@ -4136,11 +4201,26 @@ async function syncPortalStats(fx, hs, as, scorersState){
     stats.goals = (stats.goals||0) + 1;
     await ref.update({ stats, matches: firebase.firestore.FieldValue.arrayUnion({ ...matchInfo, vs: teamName===fx.home?fx.away:fx.home }) });
   }
+  // Everyone checked in "Who Played?" gets matchesPlayed +1 — separate from
+  // creditGoal (which only bumps goals), so a non-scoring player who played
+  // still gets their appearance counted instead of showing 0 forever.
+  async function creditAppearance(playerName, teamName){
+    if (!playerName) return;
+    const q = await _fbFs.collection('players').where('playerName','==',playerName).where('playerTeam','==',teamName).limit(1).get();
+    if (q.empty) return;
+    const ref = q.docs[0].ref;
+    const data = q.docs[0].data();
+    const stats = data.stats || { matchesPlayed:0, goals:0, assists:0, yellowCards:0, redCards:0, cleanSheets:0 };
+    stats.matchesPlayed = (stats.matchesPlayed||0) + 1;
+    await ref.update({ stats });
+  }
   await Promise.all([
     updateTeam(fx.home, hs, as),
     updateTeam(fx.away, as, hs),
     ...((scorersState.home||[]).map(s => creditGoal(s.name, fx.home))),
-    ...((scorersState.away||[]).map(s => creditGoal(s.name, fx.away)))
+    ...((scorersState.away||[]).map(s => creditGoal(s.name, fx.away))),
+    ...((lineupState.home||[]).map(n => creditAppearance(n, fx.home))),
+    ...((lineupState.away||[]).map(n => creditAppearance(n, fx.away)))
   ]);
 }
 function renderResultsLog(){
