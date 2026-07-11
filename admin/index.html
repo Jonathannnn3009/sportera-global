@@ -1415,6 +1415,31 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
+<!-- Edit Existing Admin Access -->
+<div class="modal-bg" id="modal-edit-admin">
+  <div class="modal">
+    <div class="modal-head"><h3>Edit Admin Access</h3><button class="modal-close" onclick="closeModal('modal-edit-admin')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-admin-uid">
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">Editing access for <strong id="edit-admin-email"></strong></p>
+      <div class="fg"><label>Access Level *</label>
+        <select id="edit-admin-level">
+          <option value="delete">Full Access — view, edit, and delete</option>
+          <option value="write">Read &amp; Write — view and edit, cannot delete</option>
+          <option value="read">Read Only — view only, no changes</option>
+        </select>
+      </div>
+      <div class="fg"><label>Tournament Access</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" id="edit-admin-all-tourn" onchange="onEditAdminAllTournToggle()" style="width:auto;"> All tournaments
+        </label>
+        <div id="edit-admin-tourn-list" style="display:none;grid-gap:8px;margin-bottom:6px;"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-edit-admin')">Cancel</button><button class="btn btn-primary" onclick="saveAdminEdit()">Save Changes</button></div>
+  </div>
+</div>
+
 <!-- Correct an Already-Saved Match Result -->
 <div class="modal-bg" id="modal-edit-result">
   <div class="modal">
@@ -2253,7 +2278,9 @@ function renderAdmins() {
     <td>${a.role==='root' ? '—' : (ACCESS_LEVEL_LABEL[a.level]||ACCESS_LEVEL_LABEL.delete)}</td>
     <td style="font-size:.82rem;color:var(--muted);">${a.role==='root' ? '—' : (!a.tournaments || a.tournaments==='all' ? 'All' : a.tournaments.join(', ')||'None')}</td>
     <td>${a.createdAt && a.createdAt.toDate ? fmtDate(a.createdAt.toDate().toISOString()) : '—'}</td>
-    <td class="actions">${a.role==='root' ? '' : `<button class="btn btn-danger btn-xs" onclick="removeAdmin('${a.uid}')" title="Remove admin access (does not delete their login)"><i class="fas fa-user-slash"></i></button>`}</td>
+    <td class="actions">${a.role==='root' ? '' : `
+      <button class="btn btn-ghost btn-xs" onclick="openEditAdminModal('${a.uid}')" title="Change access level / tournaments"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="removeAdmin('${a.uid}')" title="Remove admin access (does not delete their login)"><i class="fas fa-user-slash"></i></button>`}</td>
   </tr>`).join('');
 }
 
@@ -2262,6 +2289,43 @@ function removeAdmin(uid) {
   const a=(_admins||[]).find(x=>x.uid===uid);
   _fbFs.collection('admins').doc(uid).delete();
   logActivity('Removed admin access', a?a.email:uid);
+}
+
+// ── EDIT EXISTING ADMIN ACCESS ──────────────────────────────────────────
+function openEditAdminModal(uid){
+  const a = (_admins||[]).find(x=>x.uid===uid); if(!a) return;
+  document.getElementById('edit-admin-uid').value = uid;
+  document.getElementById('edit-admin-email').textContent = a.email;
+  document.getElementById('edit-admin-level').value = a.level || 'delete';
+  const allTourn = !a.tournaments || a.tournaments === 'all';
+  document.getElementById('edit-admin-all-tourn').checked = allTourn;
+  onEditAdminAllTournToggle(a.tournaments);
+  openModal('modal-edit-admin');
+}
+function onEditAdminAllTournToggle(preselected){
+  const all = document.getElementById('edit-admin-all-tourn').checked;
+  const list = document.getElementById('edit-admin-tourn-list');
+  list.style.display = all ? 'none' : 'grid';
+  const selected = Array.isArray(preselected) ? preselected : [];
+  list.innerHTML = _fbTournaments.map(t => `
+    <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;">
+      <input type="checkbox" class="edit-admin-tourn-check" value="${t.name}" style="width:auto;" ${selected.includes(t.name)?'checked':''}> ${t.name}
+    </label>`).join('') || '<p style="color:var(--muted);font-size:.85rem;">No tournaments yet.</p>';
+}
+async function saveAdminEdit(){
+  const uid = document.getElementById('edit-admin-uid').value;
+  const level = document.getElementById('edit-admin-level').value;
+  const allTourn = document.getElementById('edit-admin-all-tourn').checked;
+  const tournaments = allTourn ? 'all' : [...document.querySelectorAll('.edit-admin-tourn-check:checked')].map(cb=>cb.value);
+  if (!allTourn && !tournaments.length) { alert('Pick at least one tournament, or check "All tournaments".'); return; }
+  const email = document.getElementById('edit-admin-email').textContent;
+  try {
+    await _fbFs.collection('admins').doc(uid).update({ level, tournaments });
+    logActivity('Updated admin access', email+' ('+ACCESS_LEVEL_LABEL[level]+')');
+    closeModal('modal-edit-admin');
+  } catch(e) {
+    alert('Could not update admin access: '+e.message);
+  }
 }
 
 function onNewAdminAllTournToggle(){
