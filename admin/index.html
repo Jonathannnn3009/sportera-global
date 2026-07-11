@@ -1532,6 +1532,7 @@ const _fbConfig = {
 firebase.initializeApp(_fbConfig);
 const _fbDb = firebase.database();
 const _fbFs = firebase.firestore();
+const _fbAuth = firebase.auth();
 let _fbRegs = [];
 
 // Keep only the most recent 500 activity-log entries client-side so this
@@ -1984,8 +1985,22 @@ function renderApprovals(){
       ${r.status!=='approved'?`<button class="btn btn-success btn-xs" onclick="setStatus('${r.id}','approved')"><i class="fas fa-check"></i></button>`:''}
       ${r.status!=='rejected'?`<button class="btn btn-danger btn-xs" onclick="setStatus('${r.id}','rejected')"><i class="fas fa-times"></i></button>`:''}
       ${r.status==='rejected'?`<button class="btn btn-danger btn-xs" onclick="deleteRegistration('${r._key}')" title="Delete permanently"><i class="fas fa-trash"></i></button>`:''}
+      ${r.status==='approved'&&r.portalAccountCreated?`<button class="btn btn-ghost btn-xs" onclick="resendCredentials('${r.type==='team'?(r.teamEmail||''):(r.playerEmail||'')}')" title="Send portal login reset link to this email"><i class="fas fa-key"></i></button>`:''}
     </td>
   </tr>`).join('');
+}
+
+// Manual fallback for "how will they get their credentials" — instead of us
+// ever knowing/storing their portal password, this sends Firebase's own
+// password-reset email so the player/team can set a new one themselves.
+// Works even if the original account-creation email never arrived or the
+// team lost the password.
+function resendCredentials(email){
+  if(!email){ alert('No email on file for this registration.'); return; }
+  if(!confirm('Send a password reset link to '+email+'?')) return;
+  _fbAuth.sendPasswordResetEmail(email)
+    .then(()=>alert('Reset link sent to '+email+'. They can use it to set a new portal password and log in at the Player/Team Portal with the same email.'))
+    .catch(e=>alert('Could not send reset email: '+e.message));
 }
 
 function deleteRegistration(key){
