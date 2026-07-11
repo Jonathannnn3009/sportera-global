@@ -512,6 +512,18 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <button class="btn" style="display:none;margin-left:8px;" id="trn-cancel-edit" onclick="resetTournamentForm()">Cancel Edit</button>
     </div>
   </div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3><i class="fas fa-eye"></i> Live Page Visibility</h3></div>
+    <div class="card-body">
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Controls which tournaments show up in the dropdown on the public Live Fixtures &amp; Points Table page. Useful when two tournaments share the same name — pick exactly the one(s) you want teams looking at right now instead of showing everything at once.</p>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;margin-bottom:10px;cursor:pointer;">
+        <input type="checkbox" id="live-vis-all" onchange="onLiveVisAllToggle()" style="width:auto;"> Show all tournaments (default)
+      </label>
+      <div id="live-vis-list" style="display:grid;gap:8px;margin-bottom:14px;"></div>
+      <button class="btn btn-primary btn-sm" onclick="saveLiveVisibility()"><i class="fas fa-save"></i> Save Live Visibility</button>
+      <span id="live-vis-status" style="font-size:.85rem;margin-left:12px;color:#2e7d32;"></span>
+    </div>
+  </div>
   <div class="card">
     <div class="card-head"><h3><i class="fas fa-trophy"></i> All Tournaments</h3></div>
     <div class="card-body" style="padding:0;">
@@ -1574,6 +1586,48 @@ function renderTournaments() {
       <button class="btn btn-danger btn-xs" onclick="deleteTournament('${t._key}')"><i class="fas fa-trash"></i></button>
     </td>
   </tr>`).join('');
+  renderLiveVisList();
+}
+
+// ── LIVE PAGE VISIBILITY ─────────────────────────────────────────────────
+// Which tournaments show up in the public Live page's dropdown. Keyed by
+// tournament _key rather than name — two tournaments can share the same
+// name (e.g. re-running "IF5L Season 1" style names across years), and
+// matching on name alone would show/hide the wrong one.
+let _liveVisSelected = null; // null = not loaded yet; [] or array of keys once loaded; 'all' = show everything
+_fbDb.ref('settings/liveVisibleTournaments').on('value', snap => {
+  const val = snap.val();
+  _liveVisSelected = (val === null || val === undefined || val === 'all') ? 'all' : val;
+  renderLiveVisList();
+});
+function renderLiveVisList(){
+  const list = document.getElementById('live-vis-list');
+  const allCb = document.getElementById('live-vis-all');
+  if (!list || !allCb || _liveVisSelected === null) return;
+  const showAll = _liveVisSelected === 'all';
+  allCb.checked = showAll;
+  list.style.opacity = showAll ? '.45' : '1';
+  list.style.pointerEvents = showAll ? 'none' : 'auto';
+  if (!_fbTournaments.length) { list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No tournaments yet.</p>'; return; }
+  const selectedKeys = showAll ? [] : (_liveVisSelected||[]);
+  list.innerHTML = _fbTournaments.map(t => `
+    <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:8px 12px;background:#f8f9ff;border-radius:8px;cursor:pointer;">
+      <input type="checkbox" class="live-vis-check" value="${t._key}" ${selectedKeys.includes(t._key)?'checked':''} style="width:auto;">
+      <strong>${t.name}</strong>
+      <span style="color:var(--muted);">${t.startDate?fmtDate(t.startDate):'no date'} &bull; ${t.status||'draft'}${t.location?' &bull; '+t.location:''}</span>
+    </label>`).join('');
+}
+function onLiveVisAllToggle(){
+  renderLiveVisList();
+}
+function saveLiveVisibility(){
+  const showAll = document.getElementById('live-vis-all').checked;
+  const value = showAll ? 'all' : [...document.querySelectorAll('.live-vis-check:checked')].map(cb=>cb.value);
+  _fbDb.ref('settings/liveVisibleTournaments').set(value).then(() => {
+    const s = document.getElementById('live-vis-status');
+    s.textContent = 'Saved ✓';
+    setTimeout(() => s.textContent = '', 2500);
+  });
 }
 
 function resetTournamentForm() {

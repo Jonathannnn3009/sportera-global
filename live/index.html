@@ -188,11 +188,17 @@
     }
 
     async function init() {
-        const [tournaments, fixtures, results, regs] = await Promise.all([
-            restGet('tournaments'), restGet('fixtures'), restGet('results'), restGet('registrations')
+        const [tournaments, fixtures, results, regs, liveVis] = await Promise.all([
+            restGet('tournaments'), restGet('fixtures'), restGet('results'), restGet('registrations'), restGet('settings/liveVisibleTournaments')
         ]);
         _liveTournaments = Object.entries(tournaments || {}).map(([k, v]) => ({ _key: k, ...v }))
             .filter(t => t.status === 'open' || t.status === 'closed');
+        // Admin can curate exactly which tournaments show up here (by _key,
+        // not name — two tournaments can share a display name) instead of
+        // always showing every open/closed one at once.
+        if (Array.isArray(liveVis)) {
+            _liveTournaments = _liveTournaments.filter(t => liveVis.includes(t._key));
+        }
         _liveFixtures = Object.entries(fixtures || {}).map(([k, v]) => ({ _key: k, ...v }));
         _liveResults = Object.entries(results || {}).map(([k, v]) => ({ _key: k, ...v }));
         _liveRegs = Object.entries(regs || {}).map(([k, v]) => ({ _key: k, ...v })).filter(r => r.type === 'team');
