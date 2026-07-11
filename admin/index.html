@@ -1680,7 +1680,14 @@ function renderTournaments() {
       <button class="btn btn-danger btn-xs" onclick="deleteTournament('${t._key}')"><i class="fas fa-trash"></i></button>
     </td>
   </tr>`).join('');
-  renderLiveVisList();
+  // Deliberately NOT calling renderLiveVisList() here — this function runs
+  // on every tournaments data refresh (which fires far more often than the
+  // admin actually adds/edits a tournament), and rebuilding the checkbox
+  // list from the last *saved* selection wiped out any boxes the admin had
+  // just unchecked but not saved yet, making them look "stuck" checked.
+  // The list only needs rebuilding when the saved setting itself changes
+  // (below) or a brand new tournament shows up (renderLiveVisListIfNeeded).
+  renderLiveVisListIfNeeded();
 }
 
 // ── LIVE PAGE VISIBILITY ─────────────────────────────────────────────────
@@ -1710,6 +1717,15 @@ function renderLiveVisList(){
       <strong>${t.name}</strong>
       <span style="color:var(--muted);">${t.startDate?fmtDate(t.startDate):'no date'} &bull; ${t.status||'draft'}${t.location?' &bull; '+t.location:''}</span>
     </label>`).join('');
+  _liveVisRenderedCount = _fbTournaments.length;
+}
+// Only rebuilds the list when the number of tournaments actually changed
+// (e.g. a new one was created) — anything else touching the tournaments
+// node shouldn't be allowed to blow away checkboxes the admin is mid-edit
+// on. First render (count starts at -1) always goes through.
+let _liveVisRenderedCount = -1;
+function renderLiveVisListIfNeeded(){
+  if (_fbTournaments.length !== _liveVisRenderedCount) renderLiveVisList();
 }
 function onLiveVisAllToggle(){
   renderLiveVisList();
