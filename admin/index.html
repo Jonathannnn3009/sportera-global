@@ -309,17 +309,18 @@ body.perm-read .btn-primary,
 body.perm-read .btn-success,
 body.perm-read .btn-danger,
 body.perm-read button[onclick*="save" i],
-body.perm-read button[onclick*="Save" i],
 body.perm-read button[onclick*="add" i],
-body.perm-read button[onclick*="Add" i],
+body.perm-read button[onclick*="edit" i],
 body.perm-read button[onclick*="delete" i],
-body.perm-read button[onclick*="Delete" i],
 body.perm-read button[onclick*="approve" i],
-body.perm-read button[onclick*="reject" i] { display:none !important; }
+body.perm-read button[onclick*="reject" i],
+body.perm-read button[onclick*="set" i],
+body.perm-read button[onclick*="invite" i],
+body.perm-read button[onclick*="remove" i] { display:none !important; }
 body.perm-write .btn-danger,
 body.perm-write button[onclick*="delete" i],
-body.perm-write button[onclick*="Delete" i],
-body.perm-write button[onclick*="reject" i] { display:none !important; }
+body.perm-write button[onclick*="reject" i],
+body.perm-write button[onclick*="remove" i] { display:none !important; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
