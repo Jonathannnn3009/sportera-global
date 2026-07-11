@@ -388,8 +388,9 @@
         const [hU, hP] = await Promise.all([sha256(enteredUser), sha256(enteredPass)]);
 
         let loginOk = false;
+        let adminProfile = null; // permission profile for invited (non-root) admins — read/write scoping in index.html
         if (hU === H_USER && hP === H_PASS) {
-            // Legacy hardcoded credentials
+            // Legacy hardcoded credentials — always full, unrestricted access
             loginOk = true;
         } else if (enteredUser.includes('@')) {
             // Try it as an invited admin's Firebase account
@@ -400,6 +401,7 @@
                 const adminDoc = await fbFs.collection('admins').doc(cred.user.uid).get();
                 if (adminDoc.exists) {
                     loginOk = true;
+                    adminProfile = adminDoc.data();
                 } else {
                     await fbAuth.signOut();
                 }
@@ -414,6 +416,15 @@
             saveState({ attempts: 0, lockedUntil: 0 });
             sessionStorage.setItem('sg_admin', 'authenticated');
             sessionStorage.setItem('sg_admin_time', Date.now().toString());
+            if (adminProfile) {
+                sessionStorage.setItem('sg_admin_profile', JSON.stringify({
+                    role: adminProfile.role || 'admin',
+                    level: adminProfile.level || 'delete',
+                    tournaments: adminProfile.tournaments || 'all'
+                }));
+            } else {
+                sessionStorage.removeItem('sg_admin_profile');
+            }
             window.location.href = 'index.html';
         } else {
             // ❌ Failed

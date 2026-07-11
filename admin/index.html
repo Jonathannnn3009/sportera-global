@@ -299,6 +299,27 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
   .topbar{left:0;}
   .two-col,.three-col,.form-row{grid-template-columns:1fr;}
 }
+
+/* ── PERMISSION ENFORCEMENT ── set on <body> from the signed-in admin's
+   profile (see _adminProfile above). "read" hides every save/add/edit
+   action; "write" additionally allows those but still hides delete. Root
+   admins and the legacy login never get either class, so they're
+   unaffected. Search/filter inputs are deliberately left alone. */
+body.perm-read .btn-primary,
+body.perm-read .btn-success,
+body.perm-read .btn-danger,
+body.perm-read button[onclick*="save" i],
+body.perm-read button[onclick*="Save" i],
+body.perm-read button[onclick*="add" i],
+body.perm-read button[onclick*="Add" i],
+body.perm-read button[onclick*="delete" i],
+body.perm-read button[onclick*="Delete" i],
+body.perm-read button[onclick*="approve" i],
+body.perm-read button[onclick*="reject" i] { display:none !important; }
+body.perm-write .btn-danger,
+body.perm-write button[onclick*="delete" i],
+body.perm-write button[onclick*="Delete" i],
+body.perm-write button[onclick*="reject" i] { display:none !important; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -1289,8 +1310,21 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
       <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">Enter the email address of the person you want to give admin access to. A secure temporary password will be generated automatically and emailed to them along with a link to the admin login page.</p>
       <div class="form-row">
         <div class="fg"><label>Admin Email *</label><input type="email" id="new-admin-email" placeholder="name@example.com"></div>
-        <div class="fg" style="display:flex;align-items:flex-end;"><button class="btn btn-primary" style="width:100%;" onclick="inviteAdmin()" id="invite-admin-btn"><i class="fas fa-paper-plane"></i> Send Invite</button></div>
+        <div class="fg"><label>Access Level *</label>
+          <select id="new-admin-level">
+            <option value="delete">Full Access — view, edit, and delete</option>
+            <option value="write">Read &amp; Write — view and edit, cannot delete</option>
+            <option value="read">Read Only — view only, no changes</option>
+          </select>
+        </div>
       </div>
+      <div class="fg"><label>Tournament Access</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" id="new-admin-all-tourn" checked onchange="onNewAdminAllTournToggle()" style="width:auto;"> All tournaments
+        </label>
+        <div id="new-admin-tourn-list" style="display:none;grid-gap:8px;margin-bottom:6px;"></div>
+      </div>
+      <button class="btn btn-primary" onclick="inviteAdmin()" id="invite-admin-btn"><i class="fas fa-paper-plane"></i> Send Invite</button>
       <div id="invite-admin-status" style="font-size:.85rem;margin-top:6px;"></div>
     </div>
   </div>
@@ -1299,8 +1333,8 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
-          <tbody id="admins-body"><tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
+          <thead><tr><th>Email</th><th>Role</th><th>Access Level</th><th>Tournaments</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="admins-body"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1434,7 +1468,25 @@ const _lastActive = parseInt(sessionStorage.getItem('sg_admin_time') || Date.now
 if (Date.now() - _lastActive > SESSION_TIMEOUT) { logout(); }
 _resetTimer();
 
-function logout(){ sessionStorage.removeItem('sg_admin'); sessionStorage.removeItem('sg_admin_time'); location.href='login.html'; }
+function logout(){ sessionStorage.removeItem('sg_admin'); sessionStorage.removeItem('sg_admin_time'); sessionStorage.removeItem('sg_admin_profile'); location.href='login.html'; }
+
+// ── ADMIN PERMISSIONS ────────────────────────────────────────────────────
+// Set by login.html after checking the signed-in Firebase Auth user's
+// admins/{uid} doc. The legacy hardcoded login and the root admin never
+// write this key, which is exactly the "full, unrestricted access" default
+// this falls back to — only accounts explicitly invited with a level/scope
+// (via Manage Admins) get restricted.
+let _adminProfile = null;
+try { _adminProfile = JSON.parse(sessionStorage.getItem('sg_admin_profile') || 'null'); } catch(e) {}
+const _isRootAdmin = !_adminProfile || _adminProfile.role === 'root';
+const _permLevel = (_adminProfile && _adminProfile.level) || 'delete'; // 'read' | 'write' | 'delete'
+const _permTournaments = (_adminProfile && _adminProfile.tournaments) || 'all'; // 'all' or array of tournament names
+function scopedToTournament(name){ return _permTournaments === 'all' || _permTournaments.includes(name); }
+document.body.classList.add('perm-' + _permLevel);
+if (!_isRootAdmin) {
+  const adminsNav = document.querySelector('[data-panel="admins"]');
+  if (adminsNav) adminsNav.style.display = 'none';
+}
 
 // ── FIREBASE INIT ─────────────────────────────────────────────────────────
 const _fbConfig = {
@@ -1482,6 +1534,7 @@ function _generatePassword() {
 _fbDb.ref('registrations').on('value', snap => {
   _fbRegs = [];
   snap.forEach(child => { _fbRegs.push({ _key: child.key, ...child.val() }); });
+  if (_permTournaments !== 'all') _fbRegs = _fbRegs.filter(r => scopedToTournament(r.tournament));
   _fbRegs.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
   refreshDashboard();
   renderApprovals();
@@ -1510,6 +1563,7 @@ const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true
 _fbDb.ref('tournaments').on('value', snap => {
   _fbTournaments = [];
   snap.forEach(child => { _fbTournaments.push({ _key: child.key, ...child.val() }); });
+  if (_permTournaments !== 'all') _fbTournaments = _fbTournaments.filter(t => scopedToTournament(t.name));
   _fbTournaments.sort((a,b) => (a.name||'').localeCompare(b.name||''));
   renderTournaments();
   refreshAllTournamentSelects();
@@ -1948,24 +2002,39 @@ _fbFs.collection('admins').onSnapshot(snap => {
   renderAdmins();
 });
 
+const ACCESS_LEVEL_LABEL = { delete: 'Full Access', write: 'Read & Write', read: 'Read Only' };
 function renderAdmins() {
   const tbody = document.getElementById('admins-body');
   if (!tbody) return;
   if (!_admins.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No admins yet — invite the first one above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No admins yet — invite the first one above.</td></tr>';
     return;
   }
   tbody.innerHTML = _admins.map(a => `<tr>
     <td>${a.email}</td>
     <td><span class="badge b-approved">${a.role||'admin'}</span></td>
+    <td>${a.role==='root' ? '—' : (ACCESS_LEVEL_LABEL[a.level]||ACCESS_LEVEL_LABEL.delete)}</td>
+    <td style="font-size:.82rem;color:var(--muted);">${a.role==='root' ? '—' : (!a.tournaments || a.tournaments==='all' ? 'All' : a.tournaments.join(', ')||'None')}</td>
     <td>${a.createdAt && a.createdAt.toDate ? fmtDate(a.createdAt.toDate().toISOString()) : '—'}</td>
-    <td class="actions"><button class="btn btn-danger btn-xs" onclick="removeAdmin('${a.uid}')" title="Remove admin access (does not delete their login)"><i class="fas fa-user-slash"></i></button></td>
+    <td class="actions">${a.role==='root' ? '' : `<button class="btn btn-danger btn-xs" onclick="removeAdmin('${a.uid}')" title="Remove admin access (does not delete their login)"><i class="fas fa-user-slash"></i></button>`}</td>
   </tr>`).join('');
 }
 
 function removeAdmin(uid) {
   if (!confirm('Remove admin access for this account? Their login will stop working for the admin panel (their Firebase Auth account itself is not deleted).')) return;
   _fbFs.collection('admins').doc(uid).delete();
+}
+
+function onNewAdminAllTournToggle(){
+  const all = document.getElementById('new-admin-all-tourn').checked;
+  const list = document.getElementById('new-admin-tourn-list');
+  list.style.display = all ? 'none' : 'grid';
+  if (!all && !list.innerHTML) {
+    list.innerHTML = _fbTournaments.map(t => `
+      <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" class="new-admin-tourn-check" value="${t.name}" style="width:auto;"> ${t.name}
+      </label>`).join('') || '<p style="color:var(--muted);font-size:.85rem;">No tournaments yet.</p>';
+  }
 }
 
 async function inviteAdmin() {
@@ -1975,6 +2044,11 @@ async function inviteAdmin() {
   const btn = document.getElementById('invite-admin-btn');
   if (!email) { statusEl.textContent = 'Enter an email address first.'; statusEl.style.color = '#c62828'; return; }
 
+  const level = document.getElementById('new-admin-level').value;
+  const allTourn = document.getElementById('new-admin-all-tourn').checked;
+  const tournaments = allTourn ? 'all' : [...document.querySelectorAll('.new-admin-tourn-check:checked')].map(cb=>cb.value);
+  if (!allTourn && !tournaments.length) { statusEl.textContent = 'Pick at least one tournament, or check "All tournaments".'; statusEl.style.color = '#c62828'; return; }
+
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
   statusEl.textContent = ''; statusEl.style.color = '';
 
@@ -1982,7 +2056,7 @@ async function inviteAdmin() {
   try {
     const uid = await _createUserIsolated(email, password);
     await _fbFs.collection('admins').doc(uid).set({
-      email, role: 'admin', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     fetch(EMAIL_WEBHOOK_URL, {
       method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
@@ -1991,6 +2065,8 @@ async function inviteAdmin() {
     statusEl.textContent = 'Invite sent to ' + email + '.';
     statusEl.style.color = '#2e7d32';
     emailInput.value = '';
+    document.getElementById('new-admin-all-tourn').checked = true;
+    onNewAdminAllTournToggle();
   } catch (e) {
     statusEl.textContent = e.code === 'auth/email-already-in-use'
       ? 'An account with this email already exists.'
@@ -2931,6 +3007,7 @@ let _fbFixtures = [];
 _fbDb.ref('fixtures').on('value', snap => {
   _fbFixtures = [];
   snap.forEach(child => { _fbFixtures.push({ _key: child.key, ...child.val() }); });
+  if (_permTournaments !== 'all') _fbFixtures = _fbFixtures.filter(f => scopedToTournament(f.tournament));
   renderFixtures(); renderResultsFixtures();
 });
 
@@ -3593,6 +3670,7 @@ let _fbResults = [];
 _fbDb.ref('results').on('value', snap => {
   _fbResults = [];
   snap.forEach(child => { _fbResults.push({ _key: child.key, ...child.val() }); });
+  if (_permTournaments !== 'all') _fbResults = _fbResults.filter(r => scopedToTournament(r.tournament));
   renderResultsLog(); renderLeagueTable();
 });
 
