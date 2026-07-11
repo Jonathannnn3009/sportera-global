@@ -1339,6 +1339,18 @@ body.perm-write button[onclick*="reject" i] { display:none !important; }
       </div>
     </div>
   </div>
+  <div class="card" style="margin-top:20px;">
+    <div class="card-head"><h3><i class="fas fa-history"></i> Activity Log</h3></div>
+    <div class="card-body" style="padding:0;">
+      <p style="font-size:.82rem;color:var(--muted);padding:14px 20px 0;">Who approved, edited, or deleted what — most recent first.</p>
+      <div class="tbl-wrap">
+        <table class="dt">
+          <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead>
+          <tbody id="activity-log-body"><tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 </main>
@@ -1468,7 +1480,35 @@ const _lastActive = parseInt(sessionStorage.getItem('sg_admin_time') || Date.now
 if (Date.now() - _lastActive > SESSION_TIMEOUT) { logout(); }
 _resetTimer();
 
-function logout(){ sessionStorage.removeItem('sg_admin'); sessionStorage.removeItem('sg_admin_time'); sessionStorage.removeItem('sg_admin_profile'); location.href='login.html'; }
+function logout(){ sessionStorage.removeItem('sg_admin'); sessionStorage.removeItem('sg_admin_time'); sessionStorage.removeItem('sg_admin_profile'); sessionStorage.removeItem('sg_admin_email'); location.href='login.html'; }
+
+// ── ACTIVITY LOG ──────────────────────────────────────────────────────────
+// Who approved/edited/deleted what — a lightweight audit trail, not a full
+// diff/undo system. Called from the handful of actions that actually change
+// or remove real data (approvals, deletes, tournament/result edits, admin
+// management) rather than every UI interaction.
+const _currentAdminEmail = sessionStorage.getItem('sg_admin_email') || 'Admin';
+function logActivity(action, entity){
+  _fbDb.ref('activityLog').push({
+    action, entity: entity || '', admin: _currentAdminEmail, ts: new Date().toISOString()
+  });
+}
+// Keep only the most recent 500 entries client-side so this table doesn't
+// grow unbounded in memory over a long-running project.
+_fbDb.ref('activityLog').limitToLast(500).on('value', snap => {
+  const entries = [];
+  snap.forEach(child => entries.push({ _key: child.key, ...child.val() }));
+  entries.reverse();
+  const tbody = document.getElementById('activity-log-body');
+  if (!tbody) return;
+  if (!entries.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No activity logged yet.</td></tr>'; return; }
+  tbody.innerHTML = entries.map(e => `<tr>
+    <td style="font-size:.82rem;color:var(--muted);white-space:nowrap;">${fmtDateTime ? fmtDateTime(e.ts) : new Date(e.ts).toLocaleString()}</td>
+    <td>${e.admin||'—'}</td>
+    <td><strong>${e.action||'—'}</strong></td>
+    <td style="font-size:.85rem;">${e.entity||'—'}</td>
+  </tr>`).join('');
+});
 
 // ── ADMIN PERMISSIONS ────────────────────────────────────────────────────
 // Set by login.html after checking the signed-in Firebase Auth user's
@@ -1728,7 +1768,9 @@ function editTournament(key) {
 
 function deleteTournament(key) {
   if (!confirm('Delete this tournament? Existing registrations under it are not affected, but it will disappear from all dropdowns.')) return;
+  const t = (_fbTournaments||[]).find(x=>x._key===key);
   _fbDb.ref('tournaments/'+key).remove();
+  logActivity('Deleted tournament', t?t.name:key);
 }
 
 const DEFAULT_AGE_CATEGORY_LIST = ['U9','U11','U13','U15','U17','U19','Senior'];
@@ -1763,6 +1805,7 @@ function saveTournament() {
 
   const ref = editId ? _fbDb.ref('tournaments/'+editId) : _fbDb.ref('tournaments').push();
   ref.update(data).then(() => {
+    logActivity(editId?'Edited tournament':'Created tournament', name);
     // Keep the existing per-tournament age-category lookup (used by the
     // public registration form) in sync automatically. Seed every category
     // with its cutoff up front (derived from the U<N> label when possible)
@@ -1931,6 +1974,7 @@ function setStatus(id, status){
   if(i>-1){
     const reg=regs[i];
     _fbDb.ref('registrations/'+reg._key).update({ status });
+    logActivity(status==='approved'?'Approved':status==='rejected'?'Rejected':'Status changed to '+status, (reg.teamName||reg.playerName||reg.id)+' ('+(reg.type||'registration')+')');
     if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg);
     if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
       emailIDCardToPlayer(reg)
@@ -2022,7 +2066,9 @@ function renderAdmins() {
 
 function removeAdmin(uid) {
   if (!confirm('Remove admin access for this account? Their login will stop working for the admin panel (their Firebase Auth account itself is not deleted).')) return;
+  const a=(_admins||[]).find(x=>x.uid===uid);
   _fbFs.collection('admins').doc(uid).delete();
+  logActivity('Removed admin access', a?a.email:uid);
 }
 
 function onNewAdminAllTournToggle(){
@@ -2062,6 +2108,7 @@ async function inviteAdmin() {
       method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ email_type: 'admin_invite', to_email: email, to_name: email, login_email: email, login_password: password })
     }).catch(() => {});
+    logActivity('Invited admin', email+' ('+ACCESS_LEVEL_LABEL[level]+')');
     statusEl.textContent = 'Invite sent to ' + email + '.';
     statusEl.style.color = '#2e7d32';
     emailInput.value = '';
@@ -2229,7 +2276,12 @@ function saveTeam(){
   };
   _fbDb.ref('registrations/'+editKey).update(updates).then(()=>{ closeModal('modal-team'); renderTeams(); refreshDashboard(); });
 }
-function deleteTeamReg(key){ if(!confirm('Permanently delete this team registration?')) return; _fbDb.ref('registrations/'+key).remove(); }
+function deleteTeamReg(key){
+  if(!confirm('Permanently delete this team registration?')) return;
+  const t=(_fbRegs||[]).find(x=>x._key===key);
+  _fbDb.ref('registrations/'+key).remove();
+  logActivity('Deleted team registration', t?t.teamName:key);
+}
 
 // Shareable "Welcome to the tournament" poster for a newly-approved team —
 // same header/footer branding as the fixture/points-table posters, built
@@ -2325,7 +2377,12 @@ function savePlayer(){
   };
   _fbDb.ref('registrations/'+editKey).update(updates).then(()=>{ closeModal('modal-player'); renderPlayers(); refreshDashboard(); });
 }
-function deletePlayerReg(key){ if(!confirm('Permanently delete this player registration?')) return; _fbDb.ref('registrations/'+key).remove(); }
+function deletePlayerReg(key){
+  if(!confirm('Permanently delete this player registration?')) return;
+  const p=(_fbRegs||[]).find(x=>x._key===key);
+  _fbDb.ref('registrations/'+key).remove();
+  logActivity('Deleted player registration', p?p.playerName:key);
+}
 function clearPlayerForm(){ ['player-edit-id','p-name','p-dob','p-team','p-jersey','p-city','p-guard','p-gphone','p-email'].forEach(id=>document.getElementById(id).value=''); document.getElementById('p-agecat').innerHTML='<option value="">Select age category</option>'; }
 
 // ── ID CARDS ──────────────────────────────────────────────────────────────
@@ -2793,7 +2850,9 @@ function renderSavedLineups(){
 
 function deleteLineup(fixtureKey){
   if(!confirm('Delete this saved lineup? The fixture itself is not affected.')) return;
+  const l=(_fbLineups||[]).find(x=>x._key===fixtureKey);
   _fbDb.ref('lineups/'+fixtureKey).remove();
+  logActivity('Deleted lineup', l?l.matchLabel:fixtureKey);
   if (_luFixtureId === fixtureKey) { clearLineup(); document.getElementById('lu-form-wrap').style.display='none'; }
 }
 
@@ -3315,8 +3374,10 @@ function renderFixtures(){
 // league table) with no fixture to point back to — clean that up too.
 function deleteFixture(key){
   if(!confirm('Delete fixture? Its result (if any) will be deleted too.')) return;
+  const f=(_fbFixtures||[]).find(x=>x._key===key);
   _fbDb.ref('fixtures/'+key).remove();
   _fbDb.ref('results/'+key).remove();
+  logActivity('Deleted fixture', f?(f.home+' vs '+f.away):key);
 }
 
 // Exports the currently-filtered fixtures table as an image — the Actions
@@ -3950,6 +4011,7 @@ function saveResult(fxKey){
     dt:new Date().toISOString()
   });
   delete _resultScorersState[fxKey];
+  logActivity('Saved result', fx.home+' vs '+fx.away+' ('+hs+'-'+as+')');
   closeModal('modal-edit-result');
   renderResultsFixtures();
 }
@@ -3991,7 +4053,9 @@ function renderResultsLog(){
 // instead of being stuck "played" with no result behind it.
 function deleteResult(key){
   if(!confirm('Delete this result? The fixture will return to "upcoming" and its score will be cleared.')) return;
+  const r=(_fbResults||[]).find(x=>x._key===key);
   _fbDb.ref('results/'+key).remove();
+  logActivity('Deleted result', r?(r.home+' vs '+r.away+' ('+r.homeScore+'-'+r.awayScore+')'):key);
   // If the fixture itself was already deleted (e.g. via deleteFixture(),
   // which removes both), .update() on a path that doesn't exist creates a
   // new orphaned stub node with only these fields — guard against that.

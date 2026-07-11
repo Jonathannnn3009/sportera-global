@@ -416,6 +416,7 @@
             saveState({ attempts: 0, lockedUntil: 0 });
             sessionStorage.setItem('sg_admin', 'authenticated');
             sessionStorage.setItem('sg_admin_time', Date.now().toString());
+            sessionStorage.setItem('sg_admin_email', (adminProfile && adminProfile.email) || enteredUser || 'Admin');
             if (adminProfile) {
                 sessionStorage.setItem('sg_admin_profile', JSON.stringify({
                     role: adminProfile.role || 'admin',
