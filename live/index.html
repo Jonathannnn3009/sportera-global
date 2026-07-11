@@ -78,6 +78,9 @@
                 <select id="live-agecat" class="live-select" onchange="onFilterChange()">
                     <option value="">Select tournament first</option>
                 </select>
+                <select id="live-pool" class="live-select" style="display:none;" onchange="onFilterChange()">
+                    <option value="">All Pools</option>
+                </select>
             </div>
 
             <div id="live-banner-wrap"></div>
@@ -88,9 +91,9 @@
             <div style="overflow-x:auto;">
                 <table class="fx-table">
                     <thead><tr>
-                        <th>Match#</th><th>Home</th><th>Away</th><th>Date &amp; Time</th><th>Venue</th><th>Ground</th><th>Round</th><th>Result</th>
+                        <th>Match#</th><th>Home</th><th>Away</th><th>Pool</th><th>Date &amp; Time</th><th>Venue</th><th>Ground</th><th>Round</th><th>Result</th>
                     </tr></thead>
-                    <tbody id="live-fixtures-body"><tr><td colspan="8" class="empty-note">Select a tournament and age category above.</td></tr></tbody>
+                    <tbody id="live-fixtures-body"><tr><td colspan="9" class="empty-note">Select a tournament and age category above.</td></tr></tbody>
                 </table>
             </div>
 
@@ -251,20 +254,44 @@
         const tourn = document.getElementById('live-tournament').value;
         const city = document.getElementById('live-city').value;
         const ageCat = document.getElementById('live-agecat').value;
-        renderFixtures(tourn, city, ageCat);
-        renderPointsTable(tourn, city, ageCat);
+        updatePoolOptions(tourn, city, ageCat);
+        const pool = document.getElementById('live-pool').value;
+        renderFixtures(tourn, city, ageCat, pool);
+        renderPointsTable(tourn, city, ageCat, pool);
     }
 
-    function renderFixtures(tourn, city, ageCat) {
+    // Pool options are derived from the fixtures themselves (each fixture
+    // carries its own pool, set by the admin when creating it) — same
+    // source of truth the admin panel's fixtures list uses, so there's no
+    // separate "which pools exist" config to keep in sync here.
+    function updatePoolOptions(tourn, city, ageCat) {
+        const poolSel = document.getElementById('live-pool');
+        if (!tourn || !ageCat) { poolSel.style.display = 'none'; poolSel.value = ''; return; }
+        let fx = _liveFixtures.filter(f => f.tournament === tourn && f.ageCategory === ageCat);
+        if (city) fx = fx.filter(f => f.cityGroup === city);
+        const pools = [...new Set(fx.map(f => f.pool).filter(Boolean))].sort();
+        if (pools.length) {
+            const prev = poolSel.value;
+            poolSel.style.display = '';
+            poolSel.innerHTML = '<option value="">All Pools</option>' + pools.map(p => `<option value="${p}">Pool ${p}</option>`).join('');
+            if (pools.includes(prev)) poolSel.value = prev;
+        } else {
+            poolSel.style.display = 'none';
+            poolSel.value = '';
+        }
+    }
+
+    function renderFixtures(tourn, city, ageCat, pool) {
         const tbody = document.getElementById('live-fixtures-body');
         if (!tourn || !ageCat) {
-            tbody.innerHTML = '<tr><td colspan="8" class="empty-note">Select a tournament and age category above.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-note">Select a tournament and age category above.</td></tr>';
             return;
         }
         let fx = _liveFixtures.filter(f => f.tournament === tourn && f.ageCategory === ageCat);
         if (city) fx = fx.filter(f => f.cityGroup === city);
+        if (pool) fx = fx.filter(f => f.pool === pool);
         if (!fx.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="empty-note">No fixtures yet for this selection.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-note">No fixtures yet for this selection.</td></tr>';
             return;
         }
         fx = [...fx].sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
@@ -284,6 +311,7 @@
                 <td>${f.matchNumber || '—'}</td>
                 <td><strong>${f.home}</strong></td>
                 <td><strong>${f.away}</strong></td>
+                <td>${f.pool ? 'Pool ' + f.pool : '—'}</td>
                 <td>${fmtDateTime(f.dt)}</td>
                 <td>${f.venue || '—'}</td>
                 <td>${f.ground || '—'}</td>
@@ -322,7 +350,7 @@
             </table></div>`;
     }
 
-    function renderPointsTable(tourn, city, ageCat) {
+    function renderPointsTable(tourn, city, ageCat, pool) {
         const container = document.getElementById('live-points-container');
         if (!tourn || !ageCat) {
             container.innerHTML = '<p class="empty-note">Select a tournament and age category above.</p>';
@@ -335,7 +363,8 @@
             return;
         }
         const teams = _liveRegs.filter(r => r.tournament === tourn && r.ageCategory === ageCat && (!city || r.cityGroup === city));
-        const pools = [...new Set(teams.map(t => t.pool).filter(Boolean))].sort();
+        let pools = [...new Set(teams.map(t => t.pool).filter(Boolean))].sort();
+        if (pool) pools = pools.filter(p => p === pool);
         if (pools.length) {
             container.innerHTML = pools.map(p => {
                 const poolTeamNames = new Set(teams.filter(t => t.pool === p).map(t => t.teamName));
