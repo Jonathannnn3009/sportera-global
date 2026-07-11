@@ -2027,49 +2027,81 @@ async function createPortalAccount(reg) {
   const email = reg.type === 'team' ? reg.teamEmail : reg.playerEmail;
   const name = reg.type === 'team' ? reg.teamName : reg.playerName;
   if (!email) return;
+  const collection = reg.type === 'team' ? 'teams' : 'players';
+  const emailField = reg.type === 'team' ? 'teamEmail' : 'email';
 
   const password = _generatePassword();
-  let uid;
+  let uid, isNewAccount = true;
   try {
     uid = await _createUserIsolated(email, password);
   } catch (e) {
     if (e.code === 'auth/email-already-in-use') {
-      console.warn('Portal account already exists for', email, '— skipping creation.');
+      // Same email registering under another tournament — this must reuse
+      // their existing login (that's the whole point: one set of
+      // credentials sees every tournament they're in), not silently do
+      // nothing. Firebase Auth doesn't hand back a UID for an email it
+      // already knows, so find their existing profile doc by the email
+      // field stored on it and merge this tournament into it instead.
+      isNewAccount = false;
+      const q = await _fbFs.collection(collection).where(emailField, '==', email).limit(1).get();
+      if (q.empty) {
+        console.error('Email already has an Auth login but no matching', collection, 'profile — cannot merge for', email);
+        return;
+      }
+      uid = q.docs[0].id;
     } else {
       console.error('Could not create portal account for', email, e);
+      return;
     }
-    return;
   }
 
-  const collection = reg.type === 'team' ? 'teams' : 'players';
-  const profile = reg.type === 'team'
-    ? { teamName: reg.teamName, teamCity: reg.teamCity, teamEmail: reg.teamEmail, coachName: reg.coachName,
-        coachPhone: reg.coachPhone, managerName: reg.managerName||'', managerPhone: reg.managerPhone||'',
-        tournament: reg.tournament, ageCategory: reg.ageCategory||'', regId: reg.id,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        squad: [], stats: { goalsScored: 0, goalsConceded: 0, wins: 0, losses: 0 }, tournaments: [], matches: [] }
-    : { playerName: reg.playerName, playerCity: reg.playerCity, playerPosition: reg.playerPosition||'',
-        playerTeam: reg.playerTeam||'', playerDOB: reg.playerDOB||'', email: reg.playerEmail, regId: reg.id,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        stats: { matchesPlayed: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, cleanSheets: 0 },
-        tournaments: [], matches: [], awards: [] };
-
-  try {
-    await _fbFs.collection(collection).doc(uid).set(profile);
-  } catch (e) {
-    console.error('Could not write portal profile for', email, e);
-    return;
+  if (isNewAccount) {
+    const profile = reg.type === 'team'
+      ? { teamName: reg.teamName, teamCity: reg.teamCity, teamEmail: reg.teamEmail, coachName: reg.coachName,
+          coachPhone: reg.coachPhone, managerName: reg.managerName||'', managerPhone: reg.managerPhone||'',
+          tournament: reg.tournament, ageCategory: reg.ageCategory||'', regId: reg.id,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          squad: [], stats: { goalsScored: 0, goalsConceded: 0, wins: 0, losses: 0 },
+          tournaments: [reg.tournament], matches: [] }
+      : { playerName: reg.playerName, playerCity: reg.playerCity, playerPosition: reg.playerPosition||'',
+          playerTeam: reg.playerTeam||'', playerDOB: reg.playerDOB||'', email: reg.playerEmail, regId: reg.id,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          stats: { matchesPlayed: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, cleanSheets: 0 },
+          tournaments: [reg.tournament], matches: [], awards: [] };
+    try {
+      await _fbFs.collection(collection).doc(uid).set(profile);
+    } catch (e) {
+      console.error('Could not write portal profile for', email, e);
+      return;
+    }
+  } else {
+    // Existing account, new tournament — just fold it into their
+    // tournaments list (dedup) so their one login shows every tournament,
+    // without touching their existing stats/squad/matches history.
+    try {
+      await _fbFs.collection(collection).doc(uid).update({
+        tournaments: firebase.firestore.FieldValue.arrayUnion(reg.tournament)
+      });
+    } catch (e) {
+      console.error('Could not add tournament to existing portal profile for', email, e);
+      return;
+    }
   }
 
   if (reg._key) _fbDb.ref('registrations/'+reg._key).update({ portalAccountCreated: true });
 
-  fetch(EMAIL_WEBHOOK_URL, {
-    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      email_type: 'portal_credentials', to_email: email, to_name: name,
-      login_email: email, login_password: password, reg_type: reg.type
-    })
-  }).catch(() => {});
+  // Only a brand-new account needs the "here's your login" email — an
+  // existing account re-registering under another tournament keeps using
+  // the password they already have.
+  if (isNewAccount) {
+    fetch(EMAIL_WEBHOOK_URL, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        email_type: 'portal_credentials', to_email: email, to_name: name,
+        login_email: email, login_password: password, reg_type: reg.type
+      })
+    }).catch(() => {});
+  }
 }
 
 // ── MANAGE ADMINS ──────────────────────────────────────────────────────────
@@ -4045,9 +4077,56 @@ function saveResult(fxKey){
     dt:new Date().toISOString()
   });
   delete _resultScorersState[fxKey];
+  syncPortalStats(fx, hs, as, scorersState).catch(e => console.error('Portal stats sync failed for', fx.home, 'vs', fx.away, e));
   logActivity('Saved result', fx.home+' vs '+fx.away+' ('+hs+'-'+as+')');
   closeModal('modal-edit-result');
   renderResultsFixtures();
+}
+
+// Pushes this result into the team/player portal dashboards — this is what
+// actually answers "do stats update automatically when I save a score":
+// before this, saving a result only wrote to the admin's own results/
+// node; the Firestore docs the Team & Player Portal dashboards read from
+// were never touched after account creation, so every dashboard showed
+// 0 for everything forever. Best-effort by name match (teamName+tournament
+// for teams, playerName+playerTeam for the scorer credits) since fixtures
+// don't carry portal UIDs directly — matches are added to a match log
+// rather than overwritten, so re-saving a corrected score double-counts;
+// acceptable for now since results are rarely re-scored after being right.
+async function syncPortalStats(fx, hs, as, scorersState){
+  const matchInfo = { tournament: fx.tournament, ageCategory: fx.ageCategory, round: fx.round||'', dt: new Date().toISOString(), matchNumber: fx.matchNumber||null };
+  async function updateTeam(teamName, gf, ga){
+    const q = await _fbFs.collection('teams').where('teamName','==',teamName).where('tournament','==',fx.tournament).limit(1).get();
+    if (q.empty) return;
+    const ref = q.docs[0].ref;
+    const data = q.docs[0].data();
+    const stats = data.stats || { goalsScored:0, goalsConceded:0, wins:0, losses:0, draws:0 };
+    stats.goalsScored = (stats.goalsScored||0) + gf;
+    stats.goalsConceded = (stats.goalsConceded||0) + ga;
+    if (gf > ga) stats.wins = (stats.wins||0) + 1;
+    else if (gf < ga) stats.losses = (stats.losses||0) + 1;
+    else stats.draws = (stats.draws||0) + 1;
+    await ref.update({
+      stats,
+      matches: firebase.firestore.FieldValue.arrayUnion({ ...matchInfo, opponent: teamName===fx.home?fx.away:fx.home, goalsFor: gf, goalsAgainst: ga, result: gf>ga?'W':gf<ga?'L':'D' })
+    });
+  }
+  async function creditGoal(playerName, teamName){
+    if (!playerName) return;
+    const q = await _fbFs.collection('players').where('playerName','==',playerName).where('playerTeam','==',teamName).limit(1).get();
+    if (q.empty) return;
+    const ref = q.docs[0].ref;
+    const data = q.docs[0].data();
+    const stats = data.stats || { matchesPlayed:0, goals:0, assists:0, yellowCards:0, redCards:0, cleanSheets:0 };
+    stats.goals = (stats.goals||0) + 1;
+    await ref.update({ stats, matches: firebase.firestore.FieldValue.arrayUnion({ ...matchInfo, vs: teamName===fx.home?fx.away:fx.home }) });
+  }
+  await Promise.all([
+    updateTeam(fx.home, hs, as),
+    updateTeam(fx.away, as, hs),
+    ...((scorersState.home||[]).map(s => creditGoal(s.name, fx.home))),
+    ...((scorersState.away||[]).map(s => creditGoal(s.name, fx.away)))
+  ]);
 }
 function renderResultsLog(){
   const t=(document.getElementById('reslog-tournament')||{}).value||'';
