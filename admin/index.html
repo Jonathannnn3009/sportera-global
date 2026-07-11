@@ -1493,22 +1493,12 @@ function logActivity(action, entity){
     action, entity: entity || '', admin: _currentAdminEmail, ts: new Date().toISOString()
   });
 }
-// Keep only the most recent 500 entries client-side so this table doesn't
-// grow unbounded in memory over a long-running project.
-_fbDb.ref('activityLog').limitToLast(500).on('value', snap => {
-  const entries = [];
-  snap.forEach(child => entries.push({ _key: child.key, ...child.val() }));
-  entries.reverse();
-  const tbody = document.getElementById('activity-log-body');
-  if (!tbody) return;
-  if (!entries.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No activity logged yet.</td></tr>'; return; }
-  tbody.innerHTML = entries.map(e => `<tr>
-    <td style="font-size:.82rem;color:var(--muted);white-space:nowrap;">${fmtDateTime ? fmtDateTime(e.ts) : new Date(e.ts).toLocaleString()}</td>
-    <td>${e.admin||'—'}</td>
-    <td><strong>${e.action||'—'}</strong></td>
-    <td style="font-size:.85rem;">${e.entity||'—'}</td>
-  </tr>`).join('');
-});
+// The activity-log listener itself is registered further down, right after
+// _fbDb is initialized (see FIREBASE INIT section) — it was originally
+// placed here, but this whole block runs immediately at script load, before
+// _fbDb exists yet, which threw "Cannot access '_fbDb' before
+// initialization" and silently killed the rest of the script (including the
+// tab-click bindings), making every nav tab unresponsive.
 
 // ── ADMIN PERMISSIONS ────────────────────────────────────────────────────
 // Set by login.html after checking the signed-in Firebase Auth user's
@@ -1542,6 +1532,23 @@ firebase.initializeApp(_fbConfig);
 const _fbDb = firebase.database();
 const _fbFs = firebase.firestore();
 let _fbRegs = [];
+
+// Keep only the most recent 500 activity-log entries client-side so this
+// table doesn't grow unbounded in memory over a long-running project.
+_fbDb.ref('activityLog').limitToLast(500).on('value', snap => {
+  const entries = [];
+  snap.forEach(child => entries.push({ _key: child.key, ...child.val() }));
+  entries.reverse();
+  const tbody = document.getElementById('activity-log-body');
+  if (!tbody) return;
+  if (!entries.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No activity logged yet.</td></tr>'; return; }
+  tbody.innerHTML = entries.map(e => `<tr>
+    <td style="font-size:.82rem;color:var(--muted);white-space:nowrap;">${fmtDateTime ? fmtDateTime(e.ts) : new Date(e.ts).toLocaleString()}</td>
+    <td>${e.admin||'—'}</td>
+    <td><strong>${e.action||'—'}</strong></td>
+    <td style="font-size:.85rem;">${e.entity||'—'}</td>
+  </tr>`).join('');
+});
 
 // ── SECONDARY FIREBASE APP ────────────────────────────────────────────────
 // Creating a new Auth user (player/team/admin) with the client SDK signs the
