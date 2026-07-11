@@ -268,6 +268,15 @@
                   <div class="form-group"><label>Date of Birth</label><input type="date" id="newPlayerDOB"></div>
                   <div class="form-group"><label>Contact Number</label><input type="tel" id="newPlayerPhone" placeholder="10-digit number"></div>
                 </div>
+                <div class="form-row">
+                  <div class="form-group"><label>Email Address *</label><input type="email" id="newPlayerEmail" placeholder="Player's email — used for their own portal login"></div>
+                  <div class="form-group"><label>City *</label><input type="text" id="newPlayerCity" placeholder="City / State"></div>
+                  <div class="form-group"><label>Jersey Number *</label><input type="number" id="newPlayerJersey" min="0" max="99" placeholder="e.g. 7"></div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group"><label>Guardian Name <span style="font-weight:400; color:var(--text-light);">(if player is a minor)</span></label><input type="text" id="newPlayerGuardianName" placeholder="Parent / Guardian full name"></div>
+                  <div class="form-group"><label>Guardian Phone</label><input type="tel" id="newPlayerGuardianPhone" placeholder="Guardian contact number"></div>
+                </div>
                 <div class="form-group" style="margin-top:10px;">
                   <label>Age Verification Document * <span style="font-weight:400; color:var(--text-light);">(Aadhaar Card, Birth Certificate, or Passport)</span></label>
                   <input type="file" id="newPlayerAgeDoc" accept=".pdf,.jpg,.jpeg,.png" onchange="uploadNewPlayerDoc()">
@@ -464,6 +473,12 @@
       if (!editingOpen) { alert('Squad editing is currently closed.'); return; }
       const name = document.getElementById('newPlayerName').value.trim();
       if (!name) { alert('Player name is required.'); return; }
+      const email = document.getElementById('newPlayerEmail').value.trim();
+      if (!email) { alert('Player email is required — it becomes their own portal login.'); return; }
+      const city = document.getElementById('newPlayerCity').value.trim();
+      if (!city) { alert('City is required.'); return; }
+      const jersey = document.getElementById('newPlayerJersey').value;
+      if (!jersey) { alert('Jersey number is required.'); return; }
       const docFile = document.getElementById('newPlayerAgeDoc').files[0];
       if (!docFile) { alert('Please upload an age verification document (Aadhaar, Birth Certificate, or Passport).'); return; }
       if (docFile && !newPlayerDocUrl) { alert('The age document is still uploading. Please wait a moment and try again.'); return; }
@@ -472,9 +487,14 @@
           teamId: teamData.id,
           teamName: teamData.teamName,
           playerName: name,
+          email,
+          city,
+          jerseyNumber: jersey,
           position: document.getElementById('newPlayerPosition').value,
           dob: document.getElementById('newPlayerDOB').value,
           phone: document.getElementById('newPlayerPhone').value,
+          guardianName: document.getElementById('newPlayerGuardianName').value,
+          guardianPhone: document.getElementById('newPlayerGuardianPhone').value,
           ageDocUrl: newPlayerDocUrl,
           docVerified: false,
           status: 'pending',
@@ -482,7 +502,7 @@
         });
         alert('Player addition request submitted! Admin will review the document and approve shortly.');
         document.getElementById('addPlayerForm').classList.remove('open');
-        ['newPlayerName','newPlayerPhone','newPlayerDOB','newPlayerAgeDoc'].forEach(id => document.getElementById(id).value = '');
+        ['newPlayerName','newPlayerPhone','newPlayerDOB','newPlayerAgeDoc','newPlayerEmail','newPlayerCity','newPlayerJersey','newPlayerGuardianName','newPlayerGuardianPhone'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('newPlayerPosition').value = '';
         document.getElementById('newPlayerDocStatus').innerHTML = '';
         newPlayerDocUrl = '';

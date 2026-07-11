@@ -590,6 +590,21 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
+<div class="card" style="margin-top:20px;">
+  <div class="card-head">
+    <h3><i class="fas fa-user-plus"></i> Squad Requests <span class="badge-count" id="sb-squadreq">0</span></h3>
+    <p style="font-size:.8rem;color:var(--muted);margin:0;">Players teams have added themselves via their Team Portal — approving creates a full player portal login for them.</p>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <div class="tbl-wrap">
+      <table class="dt">
+        <thead><tr><th>Player</th><th>Team</th><th>Position</th><th>Jersey</th><th>Email</th><th>City</th><th>Age Doc</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="squadreq-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ── TEAMS ──────────────────────────────────────────── -->
 <div class="panel" id="panel-teams">
   <div class="card">
@@ -2127,6 +2142,103 @@ _fbFs.collection('admins').onSnapshot(snap => {
   renderAdmins();
 });
 
+// ── SQUAD REQUESTS ───────────────────────────────────────────────────────
+// Players a team adds themselves via the Team Portal (portal/team-dashboard.html
+// "Add Player" form) land here as squadRequests, not in registrations — this
+// was previously only handled by the separate, disconnected portal/admin-portal.html
+// tool, which just appended a bare {name,position,dob,phone} object into the
+// team's squad array and never created the player their own portal login.
+// This block gives the player a real players/{uid} account (same shape as
+// createPortalAccount) so they show up in Manage Players, get individual
+// stats tracking, and can log into the Player Portal themselves.
+let _squadRequests = [];
+_fbFs.collection('squadRequests').onSnapshot(snap => {
+  _squadRequests = [];
+  snap.forEach(doc => _squadRequests.push({ _key: doc.id, ...doc.data() }));
+  _squadRequests.sort((a,b) => (a.requestedAt&&a.requestedAt.seconds||0) - (b.requestedAt&&b.requestedAt.seconds||0));
+  renderSquadRequests();
+});
+function renderSquadRequests(){
+  const tbody = document.getElementById('squadreq-body');
+  if (!tbody) return;
+  const pendingCount = _squadRequests.filter(r=>r.status==='pending').length;
+  const badgeEl = document.getElementById('sb-squadreq');
+  if (badgeEl) badgeEl.textContent = pendingCount;
+  if (!_squadRequests.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No squad requests yet.</td></tr>'; return; }
+  tbody.innerHTML = _squadRequests.map(r => `<tr>
+    <td><strong>${r.playerName||'—'}</strong></td>
+    <td>${r.teamName||'—'}</td>
+    <td>${r.position||'—'}</td>
+    <td>${r.jerseyNumber||'—'}</td>
+    <td>${r.email||'—'}</td>
+    <td>${r.city||'—'}</td>
+    <td>${r.ageDocUrl?`<a href="${r.ageDocUrl}" target="_blank" rel="noopener">View</a>`:'—'}</td>
+    <td>${badge(r.status||'pending')}</td>
+    <td class="actions">
+      ${r.status!=='approved'?`<button class="btn btn-success btn-xs" onclick="approveSquadRequest('${r._key}')"><i class="fas fa-check"></i></button>`:''}
+      ${r.status!=='rejected'?`<button class="btn btn-danger btn-xs" onclick="rejectSquadRequest('${r._key}')"><i class="fas fa-times"></i></button>`:''}
+    </td>
+  </tr>`).join('');
+}
+function rejectSquadRequest(key){
+  if(!confirm('Reject this player addition request?')) return;
+  _fbFs.collection('squadRequests').doc(key).update({ status: 'rejected' });
+}
+async function approveSquadRequest(key){
+  const r = _squadRequests.find(x => x._key === key);
+  if (!r) return;
+  if (!r.email) { alert('This request has no email on file, so a portal login cannot be created for them.'); return; }
+  try {
+    const teamDoc = await _fbFs.collection('teams').doc(r.teamId).get();
+    const team = teamDoc.exists ? teamDoc.data() : {};
+    const password = _generatePassword();
+    let uid, isNewAccount = true;
+    try {
+      uid = await _createUserIsolated(r.email, password);
+    } catch (e) {
+      if (e.code === 'auth/email-already-in-use') {
+        isNewAccount = false;
+        const q = await _fbFs.collection('players').where('email','==',r.email).limit(1).get();
+        if (q.empty) { alert('This email already has a portal login, but no matching player profile was found — cannot link it automatically.'); return; }
+        uid = q.docs[0].id;
+      } else { throw e; }
+    }
+    const tournament = team.tournament || (team.tournaments && team.tournaments[0]) || '';
+    if (isNewAccount) {
+      await _fbFs.collection('players').doc(uid).set({
+        playerName: r.playerName, playerCity: r.city||'', playerPosition: r.position||'',
+        playerTeam: r.teamName||'', playerDOB: r.dob||'', playerJerseyNumber: r.jerseyNumber||'',
+        email: r.email, guardianName: r.guardianName||'', guardianPhone: r.guardianPhone||'', phone: r.phone||'',
+        regId: 'squad-'+key,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        stats: { matchesPlayed: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, cleanSheets: 0 },
+        tournaments: tournament ? [tournament] : [], matches: [], awards: []
+      });
+    } else if (tournament) {
+      await _fbFs.collection('players').doc(uid).update({ tournaments: firebase.firestore.FieldValue.arrayUnion(tournament) });
+    }
+    if (teamDoc.exists) {
+      await teamDoc.ref.update({
+        squad: firebase.firestore.FieldValue.arrayUnion({ name: r.playerName, position: r.position||'', dob: r.dob||'', phone: r.phone||'', status: 'approved' })
+      });
+    }
+    await _fbFs.collection('squadRequests').doc(key).update({ status: 'approved' });
+    if (isNewAccount) {
+      fetch(EMAIL_WEBHOOK_URL, {
+        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          email_type: 'portal_credentials', to_email: r.email, to_name: r.playerName,
+          login_email: r.email, login_password: password, reg_type: 'player'
+        })
+      }).catch(() => {});
+    }
+    logActivity('Approved squad request', r.playerName+' ('+r.teamName+')');
+    alert(r.playerName + ' approved' + (isNewAccount ? ' — portal login emailed to '+r.email : ' — added to their existing portal login') + '.');
+  } catch(e) {
+    alert('Could not approve: ' + e.message);
+  }
+}
+
 const ACCESS_LEVEL_LABEL = { delete: 'Full Access', write: 'Read & Write', read: 'Read Only' };
 function renderAdmins() {
   const tbody = document.getElementById('admins-body');
@@ -2181,24 +2293,47 @@ async function inviteAdmin() {
 
   const password = _generatePassword();
   try {
-    const uid = await _createUserIsolated(email, password);
+    let uid, isNewAccount = true, reusedFrom = '';
+    try {
+      uid = await _createUserIsolated(email, password);
+    } catch (e) {
+      if (e.code !== 'auth/email-already-in-use') throw e;
+      // This email already has a real Firebase account — almost always
+      // because it was used to register a player or team earlier (that's
+      // exactly what happened with pandeynarendra661@gmail.com). We can't
+      // create a second account for the same email, and without the Admin
+      // SDK we can't look up an arbitrary email's UID directly — but if it's
+      // a known player/team, their portal profile doc IS keyed by that UID,
+      // so find it and grant admin on the existing account instead of
+      // failing outright.
+      isNewAccount = false;
+      const [teamQ, playerQ] = await Promise.all([
+        _fbFs.collection('teams').where('teamEmail','==',email).limit(1).get(),
+        _fbFs.collection('players').where('email','==',email).limit(1).get()
+      ]);
+      if (!teamQ.empty) { uid = teamQ.docs[0].id; reusedFrom = 'team'; }
+      else if (!playerQ.empty) { uid = playerQ.docs[0].id; reusedFrom = 'player'; }
+      else { throw new Error('An account with this email already exists, but it is not a known player/team profile, so admin access cannot be linked to it automatically. They may already be an admin, or the account was created outside this app.'); }
+    }
     await _fbFs.collection('admins').doc(uid).set({
       email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    fetch(EMAIL_WEBHOOK_URL, {
-      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ email_type: 'admin_invite', to_email: email, to_name: email, login_email: email, login_password: password })
-    }).catch(() => {});
-    logActivity('Invited admin', email+' ('+ACCESS_LEVEL_LABEL[level]+')');
-    statusEl.textContent = 'Invite sent to ' + email + '.';
+    if (isNewAccount) {
+      fetch(EMAIL_WEBHOOK_URL, {
+        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ email_type: 'admin_invite', to_email: email, to_name: email, login_email: email, login_password: password })
+      }).catch(() => {});
+    }
+    logActivity('Invited admin', email+' ('+ACCESS_LEVEL_LABEL[level]+')'+(reusedFrom?' — linked to existing '+reusedFrom+' account':''));
+    statusEl.textContent = isNewAccount
+      ? ('Invite sent to ' + email + '.')
+      : ('Admin access granted to the existing ' + reusedFrom + ' account for ' + email + '. They should log in with their existing password (or use "Forgot password?" if they don\'t remember it).');
     statusEl.style.color = '#2e7d32';
     emailInput.value = '';
     document.getElementById('new-admin-all-tourn').checked = true;
     onNewAdminAllTournToggle();
   } catch (e) {
-    statusEl.textContent = e.code === 'auth/email-already-in-use'
-      ? 'An account with this email already exists.'
-      : 'Could not create admin account: ' + e.message;
+    statusEl.textContent = 'Could not create admin account: ' + e.message;
     statusEl.style.color = '#c62828';
   }
   btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Invite';
