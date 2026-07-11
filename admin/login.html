@@ -398,7 +398,23 @@
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
             try {
                 const cred = await fbAuth.signInWithEmailAndPassword(enteredUser, enteredPass);
-                const adminDoc = await fbFs.collection('admins').doc(cred.user.uid).get();
+                let adminDoc = await fbFs.collection('admins').doc(cred.user.uid).get();
+                if (!adminDoc.exists) {
+                    // Not (yet) a real admin doc — check whether Manage Admins
+                    // left a pending re-invite for this exact email (this is
+                    // the case where a removed admin's Firestore doc was
+                    // deleted but their login itself wasn't, then someone
+                    // re-invited the same email). If so, promote it into a
+                    // real admins/{uid} doc now that they've proven they own
+                    // this login by successfully signing in.
+                    const pending = await fbFs.collection('pendingAdminInvites').doc(enteredUser).get();
+                    if (pending.exists) {
+                        const profile = pending.data();
+                        await fbFs.collection('admins').doc(cred.user.uid).set(profile);
+                        await fbFs.collection('pendingAdminInvites').doc(enteredUser).delete();
+                        adminDoc = await fbFs.collection('admins').doc(cred.user.uid).get();
+                    }
+                }
                 if (adminDoc.exists) {
                     loginOk = true;
                     adminProfile = adminDoc.data();

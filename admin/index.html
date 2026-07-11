@@ -2293,19 +2293,15 @@ async function inviteAdmin() {
 
   const password = _generatePassword();
   try {
-    let uid, isNewAccount = true, reusedFrom = '';
+    let uid, isNewAccount = true, reusedFrom = '', pendingInvite = false;
     try {
       uid = await _createUserIsolated(email, password);
     } catch (e) {
       if (e.code !== 'auth/email-already-in-use') throw e;
-      // This email already has a real Firebase account — almost always
-      // because it was used to register a player or team earlier (that's
-      // exactly what happened with pandeynarendra661@gmail.com). We can't
-      // create a second account for the same email, and without the Admin
-      // SDK we can't look up an arbitrary email's UID directly — but if it's
-      // a known player/team, their portal profile doc IS keyed by that UID,
-      // so find it and grant admin on the existing account instead of
-      // failing outright.
+      // This email already has a real Firebase account. Without the Admin
+      // SDK we can't look up an arbitrary email's UID directly — but if
+      // it's a known player/team, their portal profile doc IS keyed by
+      // that UID, so find it and grant admin on the existing account.
       isNewAccount = false;
       const [teamQ, playerQ] = await Promise.all([
         _fbFs.collection('teams').where('teamEmail','==',email).limit(1).get(),
@@ -2313,21 +2309,39 @@ async function inviteAdmin() {
       ]);
       if (!teamQ.empty) { uid = teamQ.docs[0].id; reusedFrom = 'team'; }
       else if (!playerQ.empty) { uid = playerQ.docs[0].id; reusedFrom = 'player'; }
-      else { throw new Error('An account with this email already exists, but it is not a known player/team profile, so admin access cannot be linked to it automatically. They may already be an admin, or the account was created outside this app.'); }
+      else {
+        // No known profile either — almost always a previously-removed
+        // admin whose Firestore admins doc was deleted but whose actual
+        // Firebase login was never deleted (that requires Console access,
+        // see removeAdmin()'s warning). We still don't know their UID, so
+        // instead of failing outright, stash the intended admin profile
+        // under their email and let login.html promote it into a real
+        // admins/{uid} doc the moment they successfully sign back in —
+        // paired with a password reset since we don't know their old one.
+        pendingInvite = true;
+        await _fbFs.collection('pendingAdminInvites').doc(email).set({
+          email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await _fbAuth.sendPasswordResetEmail(email);
+      }
     }
-    await _fbFs.collection('admins').doc(uid).set({
-      email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    if (!pendingInvite) {
+      await _fbFs.collection('admins').doc(uid).set({
+        email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
     if (isNewAccount) {
       fetch(EMAIL_WEBHOOK_URL, {
         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ email_type: 'admin_invite', to_email: email, to_name: email, login_email: email, login_password: password })
       }).catch(() => {});
     }
-    logActivity('Invited admin', email+' ('+ACCESS_LEVEL_LABEL[level]+')'+(reusedFrom?' — linked to existing '+reusedFrom+' account':''));
+    logActivity('Invited admin', email+' ('+ACCESS_LEVEL_LABEL[level]+')'+(reusedFrom?' — linked to existing '+reusedFrom+' account':'')+(pendingInvite?' — pending re-invite, password reset sent':''));
     statusEl.textContent = isNewAccount
       ? ('Invite sent to ' + email + '.')
-      : ('Admin access granted to the existing ' + reusedFrom + ' account for ' + email + '. They should log in with their existing password (or use "Forgot password?" if they don\'t remember it).');
+      : pendingInvite
+        ? ('This email already has a login but no linked profile — sent them a password-reset link. Admin access will activate automatically the next time they sign in.')
+        : ('Admin access granted to the existing ' + reusedFrom + ' account for ' + email + '. They should log in with their existing password (or use "Forgot password?" if they don\'t remember it).');
     statusEl.style.color = '#2e7d32';
     emailInput.value = '';
     document.getElementById('new-admin-all-tourn').checked = true;
