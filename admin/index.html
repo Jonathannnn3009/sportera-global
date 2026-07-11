@@ -2461,6 +2461,7 @@ function renderTeams(){
       <button class="btn btn-gold btn-xs" onclick="exportTeamWelcomePoster('${t._key}')" title="Download welcome poster to share"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editTeam('${t._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="addToTournament('team','${(t.teamEmail||'').replace(/'/g,"\\'")}','${(t.teamName||'').replace(/'/g,"\\'")}')" title="Add this team's existing portal login to another tournament"><i class="fas fa-plus"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="addAgeCategoryToTeam('${t._key}')" title="Field this same team in another age category within this tournament"><i class="fas fa-layer-group"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTeamReg('${t._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`;
   }).join('');
@@ -2561,6 +2562,44 @@ async function addToTournament(type, email, displayName){
     alert(displayName+' has been added to "'+tournament+'". They can see it next time they log into the portal with their existing email/password.');
   } catch(e) {
     alert('Could not add tournament: '+e.message);
+  }
+}
+
+// A team is one entity that can field a squad in more than one age category
+// within the same tournament (e.g. a club sending both a U12 and U14 side).
+// Fixtures/tables/filters are keyed off individual registration rows, not
+// the team's portal profile, so the correct way to add a second age
+// category is a second approved registration row for the same team name —
+// this clones the existing one, swaps the age category, and reuses the same
+// portal login via createPortalAccount's existing email-merge (no second
+// account, no second password).
+async function addAgeCategoryToTeam(regKey){
+  const t = (_fbRegs||[]).find(x=>x._key===regKey); if(!t) return;
+  const tour = _fbTournaments.find(x=>x.name===t.tournament);
+  const cats = (tour && tour.ageCategories && tour.ageCategories.length) ? tour.ageCategories : DEFAULT_AGE_CATEGORY_LIST;
+  const available = cats.filter(c => c !== t.ageCategory);
+  if (!available.length) { alert('No other age categories are set up for '+t.tournament+' yet.'); return; }
+  const cat = prompt('Field '+t.teamName+' in which additional age category?\n\nAvailable:\n'+available.join('\n'));
+  if (!cat) return;
+  if (!available.includes(cat)) { alert('"'+cat+'" is not one of this tournament\'s age categories.'); return; }
+  const already = (_fbRegs||[]).some(r => r.type==='team' && r.teamName===t.teamName && r.tournament===t.tournament && r.ageCategory===cat);
+  if (already) { alert(t.teamName+' is already registered for '+cat+' in this tournament.'); return; }
+  const clone = {
+    ...t, _key: undefined,
+    id: 'SG-TEAM-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000),
+    ageCategory: cat, status: 'approved', portalAccountCreated: false,
+    submittedAt: new Date().toISOString()
+  };
+  delete clone._key;
+  try {
+    const ref = await _fbDb.ref('registrations').push(clone);
+    const newReg = { ...clone, _key: ref.key };
+    await createPortalAccount(newReg);
+    await _fbDb.ref('registrations/'+ref.key).update({ portalAccountCreated: true });
+    logActivity('Added age category', t.teamName+' → '+cat+' ('+t.tournament+')');
+    alert(t.teamName+' is now registered for '+cat+' as well — same login, shows as a separate entry in fixtures/tables for that age category.');
+  } catch(e) {
+    alert('Could not add age category: '+e.message);
   }
 }
 
