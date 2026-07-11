@@ -1736,7 +1736,17 @@ function renderLiveVisListIfNeeded(){
   if (_fbTournaments.length !== _liveVisRenderedCount) renderLiveVisList();
 }
 function onLiveVisAllToggle(){
-  renderLiveVisList();
+  // Deliberately NOT calling renderLiveVisList() here — that function syncs
+  // allCb.checked from the last *saved* Firebase value (_liveVisSelected),
+  // which immediately forced this checkbox back to checked and re-disabled
+  // the list the moment the admin unchecked "Show all", making it look like
+  // the list was permanently stuck disabled. This just toggles the list's
+  // enabled/disabled look based on the checkbox's own current state.
+  const allCb = document.getElementById('live-vis-all');
+  const list = document.getElementById('live-vis-list');
+  const showAll = allCb.checked;
+  list.style.opacity = showAll ? '.45' : '1';
+  list.style.pointerEvents = showAll ? 'none' : 'auto';
 }
 function saveLiveVisibility(){
   const showAll = document.getElementById('live-vis-all').checked;
