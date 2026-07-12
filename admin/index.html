@@ -341,7 +341,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="nav-label">Overview</div>
   <div class="nav-item active" data-panel="dashboard"><i class="fas fa-th-large"></i> Dashboard</div>
 
-  <div class="nav-group-root-only">
+  <div class="nav-group-section" data-section="registrations">
   <div class="nav-label">Registrations</div>
   <div class="nav-item" data-panel="tournaments"><i class="fas fa-trophy"></i> Tournaments</div>
   <div class="nav-item" data-panel="approvals"><i class="fas fa-clipboard-check"></i> Approve Registrations <span class="badge-count" id="sb-pending">0</span></div>
@@ -352,20 +352,22 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="nav-item" data-panel="reports"><i class="fas fa-file-export"></i> Export Reports</div>
   </div>
 
+  <div class="nav-group-section" data-section="fixtures">
   <div class="nav-label">League & Fixtures</div>
   <div class="nav-item" data-panel="fixtures"><i class="fas fa-calendar-alt"></i> Fixtures</div>
   <div class="nav-item" data-panel="lineup"><i class="fas fa-clipboard-list"></i> Match Lineup</div>
   <div class="nav-item" data-panel="results"><i class="fas fa-futbol"></i> Update Results</div>
   <div class="nav-item" data-panel="tables"><i class="fas fa-table"></i> League Tables</div>
+  </div>
 
-  <div class="nav-group-root-only">
+  <div class="nav-group-section" data-section="content">
   <div class="nav-label">Content</div>
   <div class="nav-item" data-panel="news"><i class="fas fa-newspaper"></i> Publish News</div>
   <div class="nav-item" data-panel="media"><i class="fas fa-images"></i> Photos & Videos</div>
   <div class="nav-item" data-panel="downloads-mgr"><i class="fas fa-download"></i> Manage Downloads</div>
   </div>
 
-  <div class="nav-group-root-only">
+  <div class="nav-group-section" data-section="messages">
   <div class="nav-label">Messages</div>
   <div class="nav-item" data-panel="messages"><i class="fas fa-envelope"></i> Contact Messages <span class="badge-count" id="sb-messages">0</span></div>
   </div>
@@ -1348,6 +1350,17 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         </label>
         <div id="new-admin-tourn-list" style="display:none;grid-gap:8px;margin-bottom:6px;"></div>
       </div>
+      <div class="fg"><label>Section Access <span style="font-weight:400;color:var(--muted);">— which sidebar sections they can see</span></label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" id="new-admin-all-sections" checked onchange="onNewAdminAllSectionsToggle()" style="width:auto;"> Everything
+        </label>
+        <div id="new-admin-sections-list" style="display:none;grid-gap:8px;margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="new-admin-section-check" value="registrations" style="width:auto;"> Registrations</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="new-admin-section-check" value="fixtures" style="width:auto;"> League &amp; Fixtures</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="new-admin-section-check" value="content" style="width:auto;"> Content</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="new-admin-section-check" value="messages" style="width:auto;"> Messages</label>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="inviteAdmin()" id="invite-admin-btn"><i class="fas fa-paper-plane"></i> Send Invite</button>
       <div id="invite-admin-status" style="font-size:.85rem;margin-top:6px;"></div>
     </div>
@@ -1357,8 +1370,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>Email</th><th>Role</th><th>Access Level</th><th>Tournaments</th><th>Created</th><th>Actions</th></tr></thead>
-          <tbody id="admins-body"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
+          <thead><tr><th>Email</th><th>Role</th><th>Access Level</th><th>Sections</th><th>Tournaments</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="admins-body"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1442,6 +1455,17 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
           <input type="checkbox" id="edit-admin-all-tourn" onchange="onEditAdminAllTournToggle()" style="width:auto;"> All tournaments
         </label>
         <div id="edit-admin-tourn-list" style="display:none;grid-gap:8px;margin-bottom:6px;"></div>
+      </div>
+      <div class="fg"><label>Section Access <span style="font-weight:400;color:var(--muted);">— which sidebar sections they can see</span></label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" id="edit-admin-all-sections" onchange="onEditAdminAllSectionsToggle()" style="width:auto;"> Everything
+        </label>
+        <div id="edit-admin-sections-list" style="display:none;grid-gap:8px;margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="edit-admin-section-check" value="registrations" style="width:auto;"> Registrations</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="edit-admin-section-check" value="fixtures" style="width:auto;"> League &amp; Fixtures</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="edit-admin-section-check" value="content" style="width:auto;"> Content</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:6px 10px;background:#f8f9ff;border-radius:8px;cursor:pointer;"><input type="checkbox" class="edit-admin-section-check" value="messages" style="width:auto;"> Messages</label>
+        </div>
       </div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-edit-admin')">Cancel</button><button class="btn btn-primary" onclick="saveAdminEdit()">Save Changes</button></div>
@@ -1560,16 +1584,21 @@ try { _adminProfile = JSON.parse(sessionStorage.getItem('sg_admin_profile') || '
 const _isRootAdmin = !_adminProfile || _adminProfile.role === 'root';
 const _permLevel = (_adminProfile && _adminProfile.level) || 'delete'; // 'read' | 'write' | 'delete'
 const _permTournaments = (_adminProfile && _adminProfile.tournaments) || 'all'; // 'all' or array of tournament names
+const _permSections = (_adminProfile && _adminProfile.sections) || 'all'; // 'all' or array of: registrations, fixtures, content, messages
 function scopedToTournament(name){ return _permTournaments === 'all' || _permTournaments.includes(name); }
 document.body.classList.add('perm-' + _permLevel);
-if (!_isRootAdmin) {
+function applyNavPermissions(){
+  if (_isRootAdmin) return;
   const adminsNav = document.querySelector('[data-panel="admins"]');
   if (adminsNav) adminsNav.style.display = 'none';
-  // Registrations, Content, and Messages are root-only sections for invited
-  // admins — they can still see League & Fixtures (fixtures/results/tables),
-  // scoped to whichever tournaments they were granted.
+  // "Administration" is a trust-boundary, not a content section — never
+  // grantable to invited admins, regardless of their section picks.
   document.querySelectorAll('.nav-group-root-only').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.nav-group-section').forEach(el => {
+    el.style.display = (_permSections === 'all' || _permSections.includes(el.dataset.section)) ? '' : 'none';
+  });
 }
+applyNavPermissions();
 
 // ── FIREBASE INIT ─────────────────────────────────────────────────────────
 const _fbConfig = {
@@ -1586,6 +1615,30 @@ const _fbDb = firebase.database();
 const _fbFs = firebase.firestore();
 const _fbAuth = firebase.auth();
 let _fbRegs = [];
+
+// An invited admin's session caches their permission profile at login time
+// (see login.html) — without this, a level/section change made in Manage
+// Admins would silently not apply until they explicitly logged out and back
+// in, since nothing here ever re-checked Firestore afterwards. This
+// quietly re-fetches their own admins/{uid} doc once Firebase Auth
+// resolves, and reloads the page if it's actually changed.
+if (!_isRootAdmin && _adminProfile) {
+  _fbAuth.onAuthStateChanged(async user => {
+    if (!user) return;
+    try {
+      const fresh = await _fbFs.collection('admins').doc(user.uid).get();
+      if (fresh.exists) {
+        const f = fresh.data();
+        const freshProfile = { role: f.role||'admin', level: f.level||'delete', tournaments: f.tournaments||'all', sections: f.sections||'all' };
+        const cached = { role: _adminProfile.role||'admin', level: _adminProfile.level||'delete', tournaments: _adminProfile.tournaments||'all', sections: _adminProfile.sections||'all' };
+        if (JSON.stringify(freshProfile) !== JSON.stringify(cached)) {
+          sessionStorage.setItem('sg_admin_profile', JSON.stringify(freshProfile));
+          location.reload();
+        }
+      }
+    } catch(e) { /* best-effort refresh only — stale session just persists till next login */ }
+  });
+}
 
 // Keep only the most recent 500 activity-log entries client-side so this
 // table doesn't grow unbounded in memory over a long-running project.
@@ -2281,13 +2334,15 @@ function renderAdmins() {
   const tbody = document.getElementById('admins-body');
   if (!tbody) return;
   if (!_admins.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">No admins yet — invite the first one above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">No admins yet — invite the first one above.</td></tr>';
     return;
   }
+  const sectionLabel = { registrations: 'Registrations', fixtures: 'League & Fixtures', content: 'Content', messages: 'Messages' };
   tbody.innerHTML = _admins.map(a => `<tr>
     <td>${a.email}</td>
     <td><span class="badge b-approved">${a.role||'admin'}</span></td>
     <td>${a.role==='root' ? '—' : (ACCESS_LEVEL_LABEL[a.level]||ACCESS_LEVEL_LABEL.delete)}</td>
+    <td style="font-size:.82rem;color:var(--muted);">${a.role==='root' ? '—' : (!a.sections || a.sections==='all' ? 'Everything' : a.sections.map(s=>sectionLabel[s]||s).join(', ')||'None')}</td>
     <td style="font-size:.82rem;color:var(--muted);">${a.role==='root' ? '—' : (!a.tournaments || a.tournaments==='all' ? 'All' : a.tournaments.join(', ')||'None')}</td>
     <td>${a.createdAt && a.createdAt.toDate ? fmtDate(a.createdAt.toDate().toISOString()) : '—'}</td>
     <td class="actions">${a.role==='root' ? '' : `
@@ -2312,6 +2367,9 @@ function openEditAdminModal(uid){
   const allTourn = !a.tournaments || a.tournaments === 'all';
   document.getElementById('edit-admin-all-tourn').checked = allTourn;
   onEditAdminAllTournToggle(a.tournaments);
+  const allSections = !a.sections || a.sections === 'all';
+  document.getElementById('edit-admin-all-sections').checked = allSections;
+  onEditAdminAllSectionsToggle(a.sections);
   openModal('modal-edit-admin');
 }
 function onEditAdminAllTournToggle(preselected){
@@ -2324,15 +2382,25 @@ function onEditAdminAllTournToggle(preselected){
       <input type="checkbox" class="edit-admin-tourn-check" value="${t.name}" style="width:auto;" ${selected.includes(t.name)?'checked':''}> ${t.name}
     </label>`).join('') || '<p style="color:var(--muted);font-size:.85rem;">No tournaments yet.</p>';
 }
+function onEditAdminAllSectionsToggle(preselected){
+  const all = document.getElementById('edit-admin-all-sections').checked;
+  const list = document.getElementById('edit-admin-sections-list');
+  list.style.display = all ? 'none' : 'grid';
+  const selected = Array.isArray(preselected) ? preselected : [];
+  document.querySelectorAll('.edit-admin-section-check').forEach(cb => cb.checked = selected.includes(cb.value));
+}
 async function saveAdminEdit(){
   const uid = document.getElementById('edit-admin-uid').value;
   const level = document.getElementById('edit-admin-level').value;
   const allTourn = document.getElementById('edit-admin-all-tourn').checked;
   const tournaments = allTourn ? 'all' : [...document.querySelectorAll('.edit-admin-tourn-check:checked')].map(cb=>cb.value);
   if (!allTourn && !tournaments.length) { alert('Pick at least one tournament, or check "All tournaments".'); return; }
+  const allSections = document.getElementById('edit-admin-all-sections').checked;
+  const sections = allSections ? 'all' : [...document.querySelectorAll('.edit-admin-section-check:checked')].map(cb=>cb.value);
+  if (!allSections && !sections.length) { alert('Pick at least one section, or check "Everything".'); return; }
   const email = document.getElementById('edit-admin-email').textContent;
   try {
-    await _fbFs.collection('admins').doc(uid).update({ level, tournaments });
+    await _fbFs.collection('admins').doc(uid).update({ level, tournaments, sections });
     logActivity('Updated admin access', email+' ('+ACCESS_LEVEL_LABEL[level]+')');
     closeModal('modal-edit-admin');
   } catch(e) {
@@ -2351,6 +2419,10 @@ function onNewAdminAllTournToggle(){
       </label>`).join('') || '<p style="color:var(--muted);font-size:.85rem;">No tournaments yet.</p>';
   }
 }
+function onNewAdminAllSectionsToggle(){
+  const all = document.getElementById('new-admin-all-sections').checked;
+  document.getElementById('new-admin-sections-list').style.display = all ? 'none' : 'grid';
+}
 
 async function inviteAdmin() {
   const emailInput = document.getElementById('new-admin-email');
@@ -2363,6 +2435,9 @@ async function inviteAdmin() {
   const allTourn = document.getElementById('new-admin-all-tourn').checked;
   const tournaments = allTourn ? 'all' : [...document.querySelectorAll('.new-admin-tourn-check:checked')].map(cb=>cb.value);
   if (!allTourn && !tournaments.length) { statusEl.textContent = 'Pick at least one tournament, or check "All tournaments".'; statusEl.style.color = '#c62828'; return; }
+  const allSections = document.getElementById('new-admin-all-sections').checked;
+  const sections = allSections ? 'all' : [...document.querySelectorAll('.new-admin-section-check:checked')].map(cb=>cb.value);
+  if (!allSections && !sections.length) { statusEl.textContent = 'Pick at least one section, or check "Everything".'; statusEl.style.color = '#c62828'; return; }
 
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
   statusEl.textContent = ''; statusEl.style.color = '';
@@ -2396,14 +2471,14 @@ async function inviteAdmin() {
         // paired with a password reset since we don't know their old one.
         pendingInvite = true;
         await _fbFs.collection('pendingAdminInvites').doc(email).set({
-          email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          email, role: 'admin', level, tournaments, sections, createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         await _fbAuth.sendPasswordResetEmail(email);
       }
     }
     if (!pendingInvite) {
       await _fbFs.collection('admins').doc(uid).set({
-        email, role: 'admin', level, tournaments, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        email, role: 'admin', level, tournaments, sections, createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     }
     if (isNewAccount) {
@@ -2422,6 +2497,8 @@ async function inviteAdmin() {
     emailInput.value = '';
     document.getElementById('new-admin-all-tourn').checked = true;
     onNewAdminAllTournToggle();
+    document.getElementById('new-admin-all-sections').checked = true;
+    onNewAdminAllSectionsToggle();
   } catch (e) {
     statusEl.textContent = 'Could not create admin account: ' + e.message;
     statusEl.style.color = '#c62828';
