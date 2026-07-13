@@ -1328,9 +1328,10 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
 <div class="panel" id="panel-teammembers">
   <div class="two-col" style="align-items:start;">
     <div class="card">
-      <div class="card-head"><h3><i class="fas fa-user-plus"></i> Add Team Member</h3></div>
+      <div class="card-head"><h3 id="tm-form-title"><i class="fas fa-user-plus"></i> Add Team Member</h3></div>
       <div class="card-body">
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Each page (About, Football 5 Association) has its own separate team list.</p>
+        <input type="hidden" id="tm-edit-id">
         <div class="fg"><label>Which Page *</label>
           <select id="tm-page">
             <option value="about">About Page (Sportera Global)</option>
@@ -1339,8 +1340,11 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         </div>
         <div class="fg"><label>Name *</label><input type="text" id="tm-name" placeholder="Full name"></div>
         <div class="fg"><label>Role / Position *</label><input type="text" id="tm-role" placeholder="e.g. Founder & CEO"></div>
-        <div class="fg"><label>Photo</label><input type="file" id="tm-photo" accept=".jpg,.jpeg,.png" onchange="uploadTeamMemberPhoto()"><div id="tm-photo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
-        <button class="btn btn-primary" onclick="addTeamMember()"><i class="fas fa-save"></i> Add Member</button>
+        <div class="fg"><label>Photo <span style="font-weight:400;color:var(--muted);">(leave blank to keep existing when editing)</span></label><input type="file" id="tm-photo" accept=".jpg,.jpeg,.png" onchange="uploadTeamMemberPhoto()"><div id="tm-photo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="addTeamMember()" id="tm-save-btn"><i class="fas fa-save"></i> Add Member</button>
+          <button class="btn btn-ghost" onclick="clearTeamMemberForm()" id="tm-cancel-btn" style="display:none;">Cancel</button>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -1361,14 +1365,18 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
 <div class="panel" id="panel-partners">
   <div class="two-col" style="align-items:start;">
     <div class="card">
-      <div class="card-head"><h3><i class="fas fa-handshake"></i> Add Partner / Sponsor</h3></div>
+      <div class="card-head"><h3 id="pt-form-title"><i class="fas fa-handshake"></i> Add Partner / Sponsor</h3></div>
       <div class="card-body">
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up in the sponsor strip on posters and site pages.</p>
+        <input type="hidden" id="pt-edit-id">
         <div class="fg"><label>Name *</label><input type="text" id="pt-name" placeholder="Partner / sponsor name"></div>
         <div class="fg"><label>Type / Category</label><input type="text" id="pt-type" placeholder="e.g. Security Partner"></div>
         <div class="fg"><label>Website Link</label><input type="text" id="pt-link" placeholder="https:// (optional)"></div>
-        <div class="fg"><label>Logo *</label><input type="file" id="pt-logo" accept=".jpg,.jpeg,.png" onchange="uploadPartnerLogo()"><div id="pt-logo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
-        <button class="btn btn-primary" onclick="addPartner()"><i class="fas fa-save"></i> Add Partner</button>
+        <div class="fg"><label>Logo <span style="font-weight:400;color:var(--muted);">(leave blank to keep existing when editing)</span></label><input type="file" id="pt-logo" accept=".jpg,.jpeg,.png" onchange="uploadPartnerLogo()"><div id="pt-logo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="addPartner()" id="pt-save-btn"><i class="fas fa-save"></i> Add Partner</button>
+          <button class="btn btn-ghost" onclick="clearPartnerForm()" id="pt-cancel-btn" style="display:none;">Cancel</button>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -5266,11 +5274,37 @@ function addTeamMember(){
   const name = document.getElementById('tm-name').value.trim();
   const role = document.getElementById('tm-role').value.trim();
   const page = document.getElementById('tm-page').value;
+  const editKey = document.getElementById('tm-edit-id').value;
   if (!name || !role) { alert('Name and role are both required.'); return; }
-  _fbDb.ref('teamMembers').push({ name, role, page, photoUrl: _tmPhotoUrl, order: _teamMembers.filter(m=>m.page===page).length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshTeamMembers, 500));
-  logActivity('Added team member', name+' ('+role+') — '+TEAM_PAGE_LABEL[page]);
+  if (editKey) {
+    const existing = _teamMembers.find(m=>m._key===editKey);
+    const obj = { name, role, page, photoUrl: _tmPhotoUrl || (existing?existing.photoUrl:'') || '' };
+    _fbDb.ref('teamMembers/'+editKey).update(obj).then(() => setTimeout(refreshTeamMembers, 500));
+    logActivity('Updated team member', name+' ('+role+') — '+TEAM_PAGE_LABEL[page]);
+  } else {
+    _fbDb.ref('teamMembers').push({ name, role, page, photoUrl: _tmPhotoUrl, order: _teamMembers.filter(m=>m.page===page).length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshTeamMembers, 500));
+    logActivity('Added team member', name+' ('+role+') — '+TEAM_PAGE_LABEL[page]);
+  }
+  clearTeamMemberForm();
+}
+function editTeamMember(key){
+  const m = _teamMembers.find(x=>x._key===key); if (!m) return;
+  document.getElementById('tm-edit-id').value = key;
+  document.getElementById('tm-page').value = m.page||'about';
+  document.getElementById('tm-name').value = m.name;
+  document.getElementById('tm-role').value = m.role;
+  document.getElementById('tm-form-title').innerHTML = '<i class="fas fa-edit"></i> Edit Team Member';
+  document.getElementById('tm-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  document.getElementById('tm-cancel-btn').style.display = '';
+  document.getElementById('panel-teammembers').scrollIntoView({behavior:'smooth'});
+}
+function clearTeamMemberForm(){
+  document.getElementById('tm-edit-id').value = '';
   document.getElementById('tm-name').value = ''; document.getElementById('tm-role').value = '';
   document.getElementById('tm-photo').value = ''; document.getElementById('tm-photo-status').innerHTML = '';
+  document.getElementById('tm-form-title').innerHTML = '<i class="fas fa-user-plus"></i> Add Team Member';
+  document.getElementById('tm-save-btn').innerHTML = '<i class="fas fa-save"></i> Add Member';
+  document.getElementById('tm-cancel-btn').style.display = 'none';
   _tmPhotoUrl = '';
 }
 function deleteTeamMember(key){
@@ -5290,7 +5324,10 @@ function renderTeamMembers(){
     <td>${m.photoUrl?`<img src="${m.photoUrl}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">`:'—'}</td>
     <td><strong>${m.name}</strong></td>
     <td>${m.role}</td>
-    <td class="actions"><button class="btn btn-danger btn-xs" onclick="deleteTeamMember('${m._key}')"><i class="fas fa-trash"></i></button></td>
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editTeamMember('${m._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteTeamMember('${m._key}')"><i class="fas fa-trash"></i></button>
+    </td>
   </tr>`).join('');
 }
 
@@ -5324,12 +5361,38 @@ function addPartner(){
   const name = document.getElementById('pt-name').value.trim();
   const type = document.getElementById('pt-type').value.trim();
   const link = document.getElementById('pt-link').value.trim();
+  const editKey = document.getElementById('pt-edit-id').value;
   if (!name) { alert('Partner name is required.'); return; }
-  if (!_ptLogoUrl) { alert('Upload a logo first.'); return; }
-  _fbDb.ref('partners').push({ name, type: type||'', link: link||null, logoUrl: _ptLogoUrl, order: _partners.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshPartners, 500));
-  logActivity('Added partner', name);
+  if (!editKey && !_ptLogoUrl) { alert('Upload a logo first.'); return; }
+  if (editKey) {
+    const existing = _partners.find(p=>p._key===editKey);
+    const obj = { name, type: type||'', link: link||null, logoUrl: _ptLogoUrl || (existing?existing.logoUrl:'') };
+    _fbDb.ref('partners/'+editKey).update(obj).then(() => setTimeout(refreshPartners, 500));
+    logActivity('Updated partner', name);
+  } else {
+    _fbDb.ref('partners').push({ name, type: type||'', link: link||null, logoUrl: _ptLogoUrl, order: _partners.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshPartners, 500));
+    logActivity('Added partner', name);
+  }
+  clearPartnerForm();
+}
+function editPartner(key){
+  const p = _partners.find(x=>x._key===key); if (!p) return;
+  document.getElementById('pt-edit-id').value = key;
+  document.getElementById('pt-name').value = p.name;
+  document.getElementById('pt-type').value = p.type||'';
+  document.getElementById('pt-link').value = p.link||'';
+  document.getElementById('pt-form-title').innerHTML = '<i class="fas fa-edit"></i> Edit Partner / Sponsor';
+  document.getElementById('pt-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  document.getElementById('pt-cancel-btn').style.display = '';
+  document.getElementById('panel-partners').scrollIntoView({behavior:'smooth'});
+}
+function clearPartnerForm(){
+  document.getElementById('pt-edit-id').value = '';
   document.getElementById('pt-name').value = ''; document.getElementById('pt-type').value = ''; document.getElementById('pt-link').value = '';
   document.getElementById('pt-logo').value = ''; document.getElementById('pt-logo-status').innerHTML = '';
+  document.getElementById('pt-form-title').innerHTML = '<i class="fas fa-handshake"></i> Add Partner / Sponsor';
+  document.getElementById('pt-save-btn').innerHTML = '<i class="fas fa-save"></i> Add Partner';
+  document.getElementById('pt-cancel-btn').style.display = 'none';
   _ptLogoUrl = '';
 }
 function deletePartner(key){
@@ -5346,7 +5409,10 @@ function renderPartners(){
     <td><img src="${p.logoUrl}" style="width:60px;height:36px;object-fit:contain;background:#fff;border-radius:4px;"></td>
     <td><strong>${p.name}</strong>${p.type?`<br><span style="font-size:.78rem;color:var(--muted);">${p.type}</span>`:''}</td>
     <td>${p.link?`<a href="${p.link}" target="_blank" rel="noopener">${p.link}</a>`:'—'}</td>
-    <td class="actions"><button class="btn btn-danger btn-xs" onclick="deletePartner('${p._key}')"><i class="fas fa-trash"></i></button></td>
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editPartner('${p._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deletePartner('${p._key}')"><i class="fas fa-trash"></i></button>
+    </td>
   </tr>`).join('');
 }
 
