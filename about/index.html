@@ -135,37 +135,7 @@
                 <p>The team driving Sportera Global's vision forward</p>
             </div>
             <div class="team-grid fade-in">
-                <div class="team-card">
-                    <img src="../Media (18).jpg" alt="Uttam Sah" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:center 20%;margin:0 auto 12px;display:block;">
-                    <h4>Uttam Sah</h4>
-                    <p class="role">Founder</p>
-                </div>
-                <div class="team-card">
-                    <img src="../Media (44).jpg" alt="Anupriya Pillai" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:center 20%;margin:0 auto 12px;display:block;">
-                    <h4>Anupriya Pillai</h4>
-                    <p class="role">President &amp; CEO</p>
-                </div>
-                <div class="team-card">
-                    <img src="../Media (41).jpg" alt="Sachin Verma" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:center 20%;margin:0 auto 12px;display:block;">
-                    <h4>Sachin Verma</h4>
-                    <p class="role">Operations Team</p>
-                </div>
-                <div class="team-card">
-                    <img src="../Media (43).jpg" alt="Narendra Pandey" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:center 20%;margin:0 auto 12px;display:block;">
-                    <h4>Narendra Pandey</h4>
-                    <p class="role">Operations Team</p>
-                </div>
-                <div class="team-card">
-                    <img src="../anand-pandey-v2.jpg" alt="Anand Pandey" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:center 20%;margin:0 auto 12px;display:block;">
-                    <h4>Anand Pandey</h4>
-                    <p class="role">Operations Team</p>
-                </div>
-                <div class="team-card">
-                    <img src="../Media (39).jpg" alt="Aditya Pillai" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:center 20%;margin:0 auto 12px;display:block;">
-                    <h4>Aditya Pillai</h4>
-                    <p class="role">Operations Team</p>
-                </div>
-                <!-- Additional members added via admin's Manage Team panel render here -->
+                <!-- All team members now managed via admin's Manage Team panel and rendered here -->
                 <div id="dynamicTeamGrid" style="display:contents;"></div>
             </div>
             <div class="fade-in" style="margin-top:40px; text-align:center;">
@@ -182,17 +152,7 @@
                 <p>Organizations and brands supporting Sportera Global</p>
             </div>
             <div class="fade-in" style="display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:60px; max-width:700px; margin:0 auto;">
-                <div style="text-align:center;">
-                    <img src="../Media (48).png" alt="Ashok Security Force" style="height:100px; width:auto; object-fit:contain; margin-bottom:10px;">
-                    <p style="font-weight:700; color:var(--primary); font-size:0.95rem;">Ashok Security Force</p>
-                    <p style="color:var(--text-light); font-size:0.85rem;">Security Partner</p>
-                </div>
-                <div style="text-align:center;">
-                    <img src="../Media (49).png" alt="Sportify" style="height:100px; width:auto; object-fit:contain; margin-bottom:10px;">
-                    <p style="font-weight:700; color:var(--primary); font-size:0.95rem;">Sportify</p>
-                    <p style="color:var(--text-light); font-size:0.85rem;">Management Partner</p>
-                </div>
-                <!-- Additional partners added via admin's Manage Partners panel render here -->
+                <!-- All partners now managed via admin's Manage Partners panel and rendered here -->
                 <div id="dynamicPartnersGrid" style="display:contents;"></div>
             </div>
         </div>
@@ -266,28 +226,20 @@
     </footer>
 
     <script src="../js/main.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script>
       // Team members / partners added via the admin's Manage Team / Manage
-      // Partners panels render here, additively alongside the hand-coded
-      // ones above — nothing existing gets touched or replaced.
-      firebase.initializeApp({
-        apiKey: "AIzaSyCi3Xd8gzJlVzkUQJAwttUBnwp_dzjIGpw",
-        authDomain: "f5awebsite.firebaseapp.com",
-        databaseURL: "https://f5awebsite-default-rtdb.firebaseio.com",
-        projectId: "f5awebsite",
-        storageBucket: "f5awebsite.firebasestorage.app",
-        messagingSenderId: "751370782333",
-        appId: "1:751370782333:web:16637ab22e324a2fa25314"
-      });
-      const _rtdb = firebase.database();
+      // Partners panels render here. Fetched via the plain REST endpoint
+      // rather than the Firebase JS SDK — the SDK was found to intermittently
+      // return incomplete reads for this project's Realtime Database (same
+      // issue diagnosed and fixed for the admin panel's Activity Log), while
+      // the REST endpoint has always returned complete, correct data.
+      const RTDB_URL = "https://f5awebsite-default-rtdb.firebaseio.com";
 
-      _rtdb.ref('teamMembers').once('value').then(snap => {
+      fetch(RTDB_URL + '/teamMembers.json').then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicTeamGrid');
-        if (!el || !snap.exists()) return;
-        const members = [];
-        snap.forEach(c => members.push(c.val()));
+        if (!el || !data) return;
+        const members = Object.values(data);
+        members.sort((a,b) => (a.order||0) - (b.order||0));
         el.innerHTML = members.map(m => `
           <div class="team-card">
             <img src="${m.photoUrl || '../logo.png'}" alt="${m.name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;">
@@ -296,15 +248,16 @@
           </div>`).join('');
       }).catch(()=>{});
 
-      _rtdb.ref('partners').once('value').then(snap => {
+      fetch(RTDB_URL + '/partners.json').then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicPartnersGrid');
-        if (!el || !snap.exists()) return;
-        const partners = [];
-        snap.forEach(c => partners.push(c.val()));
+        if (!el || !data) return;
+        const partners = Object.values(data);
+        partners.sort((a,b) => (a.order||0) - (b.order||0));
         el.innerHTML = partners.map(p => `
           <div style="text-align:center;">
             <img src="${p.logoUrl}" alt="${p.name}" style="height:100px; width:auto; object-fit:contain; margin-bottom:10px;">
             <p style="font-weight:700; color:var(--primary); font-size:0.95rem;">${p.link?`<a href="${p.link}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">${p.name}</a>`:p.name}</p>
+            ${p.type?`<p style="color:var(--text-light); font-size:0.85rem;">${p.type}</p>`:''}
           </div>`).join('');
       }).catch(()=>{});
     </script>

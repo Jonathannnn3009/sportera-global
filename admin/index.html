@@ -1352,6 +1352,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       <div class="card-body">
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up in the sponsor strip on posters and site pages.</p>
         <div class="fg"><label>Name *</label><input type="text" id="pt-name" placeholder="Partner / sponsor name"></div>
+        <div class="fg"><label>Type / Category</label><input type="text" id="pt-type" placeholder="e.g. Security Partner"></div>
         <div class="fg"><label>Website Link</label><input type="text" id="pt-link" placeholder="https:// (optional)"></div>
         <div class="fg"><label>Logo *</label><input type="file" id="pt-logo" accept=".jpg,.jpeg,.png" onchange="uploadPartnerLogo()"><div id="pt-logo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
         <button class="btn btn-primary" onclick="addPartner()"><i class="fas fa-save"></i> Add Partner</button>
@@ -5191,12 +5192,22 @@ function deleteDownload(id){ if(!confirm('Remove document?')) return; DB.set('sg
 // Stored in RTDB (not localStorage like Downloads above) since the public
 // About page needs to read this from every visitor's browser, not just the
 // admin's own — same reasoning as everything else Firebase-backed here.
+// Fetched via REST, not the SDK's .on('value') listener — that listener was
+// found to intermittently return incomplete data for this database (same
+// issue diagnosed and fixed for the Activity Log). Refreshed on load, after
+// every local add/delete, and on a slow poll.
 let _teamMembers = [];
-_fbDb.ref('teamMembers').on('value', snap => {
-  _teamMembers = [];
-  snap.forEach(c => _teamMembers.push({ _key: c.key, ...c.val() }));
+async function refreshTeamMembers(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/teamMembers.json');
+    const data = await res.json();
+    _teamMembers = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _teamMembers.sort((a,b) => (a.order||0) - (b.order||0));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
   renderTeamMembers();
-});
+}
+refreshTeamMembers();
+setInterval(refreshTeamMembers, 15000);
 let _tmPhotoUrl = '';
 function uploadTeamMemberPhoto(){
   const file = document.getElementById('tm-photo').files[0];
@@ -5214,7 +5225,7 @@ function addTeamMember(){
   const name = document.getElementById('tm-name').value.trim();
   const role = document.getElementById('tm-role').value.trim();
   if (!name || !role) { alert('Name and role are both required.'); return; }
-  _fbDb.ref('teamMembers').push({ name, role, photoUrl: _tmPhotoUrl, order: _teamMembers.length, addedAt: new Date().toISOString() });
+  _fbDb.ref('teamMembers').push({ name, role, photoUrl: _tmPhotoUrl, order: _teamMembers.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshTeamMembers, 500));
   logActivity('Added team member', name+' ('+role+')');
   document.getElementById('tm-name').value = ''; document.getElementById('tm-role').value = '';
   document.getElementById('tm-photo').value = ''; document.getElementById('tm-photo-status').innerHTML = '';
@@ -5223,7 +5234,7 @@ function addTeamMember(){
 function deleteTeamMember(key){
   if (!confirm('Remove this team member from the About page?')) return;
   const m = _teamMembers.find(x=>x._key===key);
-  _fbDb.ref('teamMembers/'+key).remove();
+  _fbDb.ref('teamMembers/'+key).remove().then(() => setTimeout(refreshTeamMembers, 500));
   logActivity('Removed team member', m?m.name:key);
 }
 function renderTeamMembers(){
@@ -5240,11 +5251,17 @@ function renderTeamMembers(){
 
 // ── MANAGE PARTNERS ───────────────────────────────────────────────────────
 let _partners = [];
-_fbDb.ref('partners').on('value', snap => {
-  _partners = [];
-  snap.forEach(c => _partners.push({ _key: c.key, ...c.val() }));
+async function refreshPartners(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/partners.json');
+    const data = await res.json();
+    _partners = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _partners.sort((a,b) => (a.order||0) - (b.order||0));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
   renderPartners();
-});
+}
+refreshPartners();
+setInterval(refreshPartners, 15000);
 let _ptLogoUrl = '';
 function uploadPartnerLogo(){
   const file = document.getElementById('pt-logo').files[0];
@@ -5260,19 +5277,20 @@ function uploadPartnerLogo(){
 }
 function addPartner(){
   const name = document.getElementById('pt-name').value.trim();
+  const type = document.getElementById('pt-type').value.trim();
   const link = document.getElementById('pt-link').value.trim();
   if (!name) { alert('Partner name is required.'); return; }
   if (!_ptLogoUrl) { alert('Upload a logo first.'); return; }
-  _fbDb.ref('partners').push({ name, link: link||null, logoUrl: _ptLogoUrl, order: _partners.length, addedAt: new Date().toISOString() });
+  _fbDb.ref('partners').push({ name, type: type||'', link: link||null, logoUrl: _ptLogoUrl, order: _partners.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshPartners, 500));
   logActivity('Added partner', name);
-  document.getElementById('pt-name').value = ''; document.getElementById('pt-link').value = '';
+  document.getElementById('pt-name').value = ''; document.getElementById('pt-type').value = ''; document.getElementById('pt-link').value = '';
   document.getElementById('pt-logo').value = ''; document.getElementById('pt-logo-status').innerHTML = '';
   _ptLogoUrl = '';
 }
 function deletePartner(key){
   if (!confirm('Remove this partner?')) return;
   const p = _partners.find(x=>x._key===key);
-  _fbDb.ref('partners/'+key).remove();
+  _fbDb.ref('partners/'+key).remove().then(() => setTimeout(refreshPartners, 500));
   logActivity('Removed partner', p?p.name:key);
 }
 function renderPartners(){
@@ -5281,7 +5299,7 @@ function renderPartners(){
   if (!_partners.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No partners added yet.</td></tr>'; return; }
   tbody.innerHTML = _partners.map(p => `<tr>
     <td><img src="${p.logoUrl}" style="width:60px;height:36px;object-fit:contain;background:#fff;border-radius:4px;"></td>
-    <td><strong>${p.name}</strong></td>
+    <td><strong>${p.name}</strong>${p.type?`<br><span style="font-size:.78rem;color:var(--muted);">${p.type}</span>`:''}</td>
     <td>${p.link?`<a href="${p.link}" target="_blank" rel="noopener">${p.link}</a>`:'—'}</td>
     <td class="actions"><button class="btn btn-danger btn-xs" onclick="deletePartner('${p._key}')"><i class="fas fa-trash"></i></button></td>
   </tr>`).join('');
