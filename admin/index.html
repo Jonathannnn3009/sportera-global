@@ -2073,6 +2073,9 @@ function toggleMobileSidebar(force){
   const backdrop = document.getElementById('mobileNavBackdrop');
   const open = typeof force === 'boolean' ? force : !sidebar.classList.contains('mobile-open');
   sidebar.classList.toggle('mobile-open', open);
+  // Inline !important, set directly, so this always wins regardless of any
+  // CSS specificity/cascade surprises with the .mobile-open class rule.
+  sidebar.style.setProperty('transform', open ? 'translateX(0)' : 'translateX(-100%)', 'important');
   backdrop.classList.toggle('active', open);
 }
 
@@ -2409,6 +2412,21 @@ async function approveSquadRequest(key){
   } catch(e) {
     alert('Could not approve: ' + e.message);
   }
+}
+
+// One line per scorer instead of one line per goal — a player who scored
+// twice previously showed as two separate "⚽ Name 12'" lines in the share
+// poster; this combines them into "⚽ Name 12', 37'" while keeping every
+// individual goal's minute (order preserved, not sorted, so it still reads
+// left-to-right as the match happened).
+function groupScorersForPoster(list){
+  const order = [];
+  const byName = {};
+  (list||[]).forEach(s => {
+    if (!byName[s.name]) { byName[s.name] = []; order.push(s.name); }
+    byName[s.name].push(s.minute);
+  });
+  return order.map(name => ({ name, minutes: byName[name].map(m=>m+"'").join(', ') }));
 }
 
 const ACCESS_LEVEL_LABEL = { delete: 'Full Access', write: 'Read & Write', read: 'Read Only' };
@@ -4508,7 +4526,7 @@ async function bulkDownloadResultPosters(){
   // which team a card or MOTM actually belonged to once both teams had one.
   const teamInfoHtml = (motm, yellow, red, scorers) => {
     const parts = [];
-    (scorers||[]).forEach(s => parts.push(`⚽ ${s.name} ${s.minute}'`));
+    groupScorersForPoster(scorers).forEach(s => parts.push(`⚽ ${s.name} ${s.minutes}`));
     if (motm) parts.push(`⭐ ${motm}`);
     if (yellow) parts.push(`🟨 ${yellow}`);
     if (red) parts.push(`🟥 ${red}`);
@@ -4783,7 +4801,7 @@ async function exportResultPoster(resultKey){
         ${logoImg(r.home)}
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;">${r.home}</div>
         <div style="text-align:center;">
-          ${(r.homeScorers||[]).map(s=>`<div style="font-size:.9rem;margin-bottom:2px;">⚽ ${s.name} ${s.minute}'</div>`).join('')}
+          ${groupScorersForPoster(r.homeScorers).map(s=>`<div style="font-size:.9rem;margin-bottom:2px;">⚽ ${s.name} ${s.minutes}</div>`).join('')}
           ${r.homeMotm?`<div style="font-size:.95rem;margin:4px 0;">⭐ ${r.homeMotm}</div>`:''}
           ${r.homeYellow?`<div style="font-size:.9rem;margin-bottom:4px;">🟨 ${r.homeYellow}</div>`:''}
           ${r.homeRed?`<div style="font-size:.9rem;">🟥 ${r.homeRed}</div>`:''}
@@ -4794,7 +4812,7 @@ async function exportResultPoster(resultKey){
         ${logoImg(r.away)}
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;">${r.away}</div>
         <div style="text-align:center;">
-          ${(r.awayScorers||[]).map(s=>`<div style="font-size:.9rem;margin-bottom:2px;">⚽ ${s.name} ${s.minute}'</div>`).join('')}
+          ${groupScorersForPoster(r.awayScorers).map(s=>`<div style="font-size:.9rem;margin-bottom:2px;">⚽ ${s.name} ${s.minutes}</div>`).join('')}
           ${r.awayMotm?`<div style="font-size:.95rem;margin:4px 0;">⭐ ${r.awayMotm}</div>`:''}
           ${r.awayYellow?`<div style="font-size:.9rem;margin-bottom:4px;">🟨 ${r.awayYellow}</div>`:''}
           ${r.awayRed?`<div style="font-size:.9rem;">🟥 ${r.awayRed}</div>`:''}
