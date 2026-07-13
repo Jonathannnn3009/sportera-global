@@ -1262,7 +1262,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
           <div class="fg"><label>Publish Date</label><input type="date" id="news-date"></div>
         </div>
         <div class="fg"><label>Article Body *</label><textarea id="news-body" style="min-height:180px;" placeholder="Write the article here…"></textarea></div>
-        <div class="fg"><label>Image URL (optional)</label><input type="text" id="news-img" placeholder="https://… or leave blank"></div>
+        <div class="fg"><label>Photo</label><input type="file" id="news-img-file" accept=".jpg,.jpeg,.png" onchange="uploadNewsPhoto()"><div id="news-img-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+        <div class="fg"><label>Image URL (optional, used if no photo uploaded)</label><input type="text" id="news-img" placeholder="https://… or leave blank"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="saveNews('published')"><i class="fas fa-paper-plane"></i> Publish</button>
           <button class="btn btn-ghost" onclick="saveNews('draft')"><i class="fas fa-save"></i> Save Draft</button>
@@ -5143,11 +5144,25 @@ async function refreshNews(){
 refreshNews();
 setInterval(refreshNews, 15000);
 
+let _newsImgUrl = '';
+function uploadNewsPhoto(){
+  const file = document.getElementById('news-img-file').files[0];
+  const statusEl = document.getElementById('news-img-status');
+  _newsImgUrl = '';
+  if (!file) return;
+  if (file.size > 600 * 1024) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 600KB.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
+  const reader = new FileReader();
+  reader.onload = () => { _newsImgUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
+  reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
+  reader.readAsDataURL(file);
+}
 function saveNews(status){
   const title=document.getElementById('news-title').value.trim(); if(!title){alert('Title required');return;}
   const body=document.getElementById('news-body').value.trim(); if(!body&&status==='published'){alert('Body required');return;}
   const editKey=document.getElementById('news-edit-id').value;
-  const obj={title,category:document.getElementById('news-cat').value,publishDate:document.getElementById('news-date').value||new Date().toISOString().slice(0,10),body,image:document.getElementById('news-img').value,status};
+  const image = _newsImgUrl || document.getElementById('news-img').value;
+  const obj={title,category:document.getElementById('news-cat').value,publishDate:document.getElementById('news-date').value||new Date().toISOString().slice(0,10),body,image,status};
   const write = editKey ? _fbDb.ref('news/'+editKey).update(obj) : _fbDb.ref('news').push(obj);
   write.then(() => setTimeout(refreshNews, 500));
   logActivity(editKey?'Updated news article':'Added news article', title);
@@ -5188,7 +5203,12 @@ function deleteNews(key){
   _fbDb.ref('news/'+key).remove().then(() => setTimeout(refreshNews, 500));
   logActivity('Deleted news article', a?a.title:key);
 }
-function clearNewsForm(){ ['news-edit-id','news-title','news-date','news-body','news-img'].forEach(x=>document.getElementById(x).value=''); document.getElementById('news-form-title').textContent='New Article'; }
+function clearNewsForm(){
+  ['news-edit-id','news-title','news-date','news-body','news-img','news-img-file'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('news-img-status').innerHTML = '';
+  document.getElementById('news-form-title').textContent='New Article';
+  _newsImgUrl = '';
+}
 
 // ── MEDIA ─────────────────────────────────────────────────────────────────
 // Previously localStorage ('sg_media') — same disconnect as News had: the
