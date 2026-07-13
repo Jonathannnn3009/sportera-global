@@ -1330,7 +1330,13 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
     <div class="card">
       <div class="card-head"><h3><i class="fas fa-user-plus"></i> Add Team Member</h3></div>
       <div class="card-body">
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up on the About page's team section.</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Each page (About, Football 5 Association) has its own separate team list.</p>
+        <div class="fg"><label>Which Page *</label>
+          <select id="tm-page">
+            <option value="about">About Page (Sportera Global)</option>
+            <option value="football5">Football 5 Association</option>
+          </select>
+        </div>
         <div class="fg"><label>Name *</label><input type="text" id="tm-name" placeholder="Full name"></div>
         <div class="fg"><label>Role / Position *</label><input type="text" id="tm-role" placeholder="e.g. Founder & CEO"></div>
         <div class="fg"><label>Photo</label><input type="file" id="tm-photo" accept=".jpg,.jpeg,.png" onchange="uploadTeamMemberPhoto()"><div id="tm-photo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
@@ -1338,8 +1344,15 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><h3><i class="fas fa-users"></i> Current Team</h3></div>
-      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Photo</th><th>Name</th><th>Role</th><th>Actions</th></tr></thead><tbody id="teammembers-body"></tbody></table></div></div>
+      <div class="card-head">
+        <h3><i class="fas fa-users"></i> Current Team</h3>
+        <select id="tm-filter" onchange="renderTeamMembers()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Pages</option>
+          <option value="about">About Page</option>
+          <option value="football5">Football 5 Association</option>
+        </select>
+      </div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Page</th><th>Photo</th><th>Name</th><th>Role</th><th>Actions</th></tr></thead><tbody id="teammembers-body"></tbody></table></div></div>
     </div>
   </div>
 </div>
@@ -5221,18 +5234,20 @@ function uploadTeamMemberPhoto(){
   reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
   reader.readAsDataURL(file);
 }
+const TEAM_PAGE_LABEL = { about: 'About Page', football5: 'Football 5 Association' };
 function addTeamMember(){
   const name = document.getElementById('tm-name').value.trim();
   const role = document.getElementById('tm-role').value.trim();
+  const page = document.getElementById('tm-page').value;
   if (!name || !role) { alert('Name and role are both required.'); return; }
-  _fbDb.ref('teamMembers').push({ name, role, photoUrl: _tmPhotoUrl, order: _teamMembers.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshTeamMembers, 500));
-  logActivity('Added team member', name+' ('+role+')');
+  _fbDb.ref('teamMembers').push({ name, role, page, photoUrl: _tmPhotoUrl, order: _teamMembers.filter(m=>m.page===page).length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshTeamMembers, 500));
+  logActivity('Added team member', name+' ('+role+') — '+TEAM_PAGE_LABEL[page]);
   document.getElementById('tm-name').value = ''; document.getElementById('tm-role').value = '';
   document.getElementById('tm-photo').value = ''; document.getElementById('tm-photo-status').innerHTML = '';
   _tmPhotoUrl = '';
 }
 function deleteTeamMember(key){
-  if (!confirm('Remove this team member from the About page?')) return;
+  if (!confirm('Remove this team member from their page?')) return;
   const m = _teamMembers.find(x=>x._key===key);
   _fbDb.ref('teamMembers/'+key).remove().then(() => setTimeout(refreshTeamMembers, 500));
   logActivity('Removed team member', m?m.name:key);
@@ -5240,8 +5255,11 @@ function deleteTeamMember(key){
 function renderTeamMembers(){
   const tbody = document.getElementById('teammembers-body');
   if (!tbody) return;
-  if (!_teamMembers.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No team members added yet.</td></tr>'; return; }
-  tbody.innerHTML = _teamMembers.map(m => `<tr>
+  const filter = (document.getElementById('tm-filter')||{}).value || '';
+  const list = filter ? _teamMembers.filter(m=>(m.page||'about')===filter) : _teamMembers;
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No team members added yet.</td></tr>'; return; }
+  tbody.innerHTML = list.map(m => `<tr>
+    <td style="font-size:.8rem;color:var(--muted);">${TEAM_PAGE_LABEL[m.page||'about']}</td>
     <td>${m.photoUrl?`<img src="${m.photoUrl}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">`:'—'}</td>
     <td><strong>${m.name}</strong></td>
     <td>${m.role}</td>

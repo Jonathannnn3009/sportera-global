@@ -120,51 +120,8 @@
                 <p>The leadership driving Football 5 development in India</p>
             </div>
             <div class="team-grid">
-                <div class="team-card fade-in">
-                    <img src="../Media (18).jpg" alt="Uttam Sah" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Uttam Sah</h4>
-                    <p class="role">Founder &amp; Secretary General</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../anupriya-pillai-v2.jpg" alt="Anupriya Pillai" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Anupriya Pillai</h4>
-                    <p class="role">President</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../Media (43).jpg" alt="Narendra Pandey" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Narendra Pandey</h4>
-                    <p class="role">Treasurer</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../Media (41).jpg" alt="Sachin Verma" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Sachin Verma</h4>
-                    <p class="role">Operations Head</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../Media (39).jpg" alt="Aditya Pillai" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Aditya Pillai</h4>
-                    <p class="role">Operations Head</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../anand-pandey-v2.jpg" alt="Anand Pandey" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Anand Pandey</h4>
-                    <p class="role">Technical Director</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../hemanshu-masurkar.png" alt="Hemanshu Masurkar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Hemanshu Masurkar</h4>
-                    <p class="role">Member</p>
-                </div>
-                <div class="team-card fade-in">
-                    <img src="../Media (40).jpg" alt="Manish Kalal" style="width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:top center;margin:0 auto 12px;display:block;">
-                    <h4>Manish Kalal</h4>
-                    <p class="role">Member</p>
-                </div>
-                <div class="team-card fade-in">
-                    <div class="avatar">JM</div>
-                    <h4>Javed Mujawar</h4>
-                    <p class="role">Member</p>
-                </div>
+                <!-- Managed via admin's Manage Team panel (page: Football 5 Association) -->
+                <div id="dynamicTeamGrid" style="display:contents;"></div>
             </div>
         </div>
     </section>
@@ -260,5 +217,25 @@
     </footer>
 
     <script src="../js/main.js"></script>
+    <script>
+      // Executive Committee members managed via admin's Manage Team panel
+      // (page: "football5") — fetched via REST directly, same reasoning as
+      // the About page's team/partners rendering.
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/teamMembers.json").then(r => r.json()).then(data => {
+        const el = document.getElementById('dynamicTeamGrid');
+        if (!el || !data) return;
+        const members = Object.values(data).filter(m => m.page === 'football5');
+        members.sort((a,b) => (a.order||0) - (b.order||0));
+        function initials(name){ return (name||'').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(); }
+        el.innerHTML = members.map(m => `
+          <div class="team-card fade-in">
+            ${m.photoUrl
+              ? `<img src="${m.photoUrl}" alt="${m.name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;">`
+              : `<div class="avatar" style="width:80px;height:80px;font-size:1.3rem;">${initials(m.name)}</div>`}
+            <h4>${m.name}</h4>
+            <p class="role">${m.role}</p>
+          </div>`).join('');
+      }).catch(()=>{});
+    </script>
 </body>
 </html>

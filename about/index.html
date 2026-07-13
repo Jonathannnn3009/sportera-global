@@ -238,7 +238,7 @@
       fetch(RTDB_URL + '/teamMembers.json').then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicTeamGrid');
         if (!el || !data) return;
-        const members = Object.values(data);
+        const members = Object.values(data).filter(m => (m.page||'about') === 'about');
         members.sort((a,b) => (a.order||0) - (b.order||0));
         el.innerHTML = members.map(m => `
           <div class="team-card">
