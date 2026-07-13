@@ -1280,8 +1280,9 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
 <!-- ── MEDIA ──────────────────────────────────────────────── -->
 <div class="panel" id="panel-media">
   <div class="card">
-    <div class="card-head"><h3><i class="fas fa-cloud-upload-alt"></i> Upload Media</h3></div>
+    <div class="card-head"><h3 id="med-form-title"><i class="fas fa-cloud-upload-alt"></i> Upload Media</h3></div>
     <div class="card-body">
+      <input type="hidden" id="med-edit-id">
       <div class="form-row" style="max-width:600px;">
         <div class="fg"><label>Album / Event Name</label><input type="text" id="med-album" placeholder="e.g. IF5L Season 2 Finals"></div>
         <div class="fg"><label>Category</label>
@@ -5190,29 +5191,67 @@ function deleteNews(key){
 function clearNewsForm(){ ['news-edit-id','news-title','news-date','news-body','news-img'].forEach(x=>document.getElementById(x).value=''); document.getElementById('news-form-title').textContent='New Article'; }
 
 // ── MEDIA ─────────────────────────────────────────────────────────────────
-function addMedia(){
-  const url=document.getElementById('med-url').value.trim(); if(!url){alert('Image URL required');return;}
-  const items=DB.get('sg_media');
-  items.push({id:generateId('MEDIA',items),url,album:document.getElementById('med-album').value,category:document.getElementById('med-cat').value,caption:document.getElementById('med-caption').value,addedAt:new Date().toISOString()});
-  DB.set('sg_media',items);
-  ['med-url','med-album','med-caption'].forEach(x=>document.getElementById(x).value='');
+// Previously localStorage ('sg_media') — same disconnect as News had: the
+// public Gallery page shows its own ~80 hardcoded photos and never read
+// this at all, so adding media here never appeared anywhere for visitors.
+// Moved to Firebase; the existing hardcoded gallery photos are left as-is
+// (they're just historical photos, not information that goes stale), and
+// anything added here now renders additively on the Gallery page.
+let _mediaItems = [];
+async function refreshMedia(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/media.json');
+    const data = await res.json();
+    _mediaItems = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _mediaItems.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
   renderMedia();
 }
+refreshMedia();
+setInterval(refreshMedia, 15000);
+
+function addMedia(){
+  const url=document.getElementById('med-url').value.trim(); if(!url){alert('Image URL required');return;}
+  const editKey = document.getElementById('med-edit-id').value;
+  const obj = { url, album:document.getElementById('med-album').value, category:document.getElementById('med-cat').value, caption:document.getElementById('med-caption').value };
+  const write = editKey ? _fbDb.ref('media/'+editKey).update(obj) : _fbDb.ref('media').push({ ...obj, addedAt:new Date().toISOString() });
+  write.then(() => setTimeout(refreshMedia, 500));
+  logActivity(editKey?'Updated media item':'Added media item', obj.caption||obj.album||url);
+  clearMediaForm();
+}
+function editMedia(key){
+  const m = _mediaItems.find(x=>x._key===key); if (!m) return;
+  document.getElementById('med-edit-id').value = key;
+  document.getElementById('med-url').value = m.url;
+  document.getElementById('med-album').value = m.album||'';
+  document.getElementById('med-cat').value = m.category;
+  document.getElementById('med-caption').value = m.caption||'';
+}
+function clearMediaForm(){
+  document.getElementById('med-edit-id').value = '';
+  ['med-url','med-album','med-caption'].forEach(x=>document.getElementById(x).value='');
+}
 function renderMedia(){
-  const items=DB.get('sg_media');
   const grid=document.getElementById('media-grid');
   const empty=document.getElementById('media-empty');
-  if(!items.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  if(!_mediaItems.length){ grid.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-  grid.innerHTML=items.reverse().map(m=>`<div class="ng-item">
+  grid.innerHTML=_mediaItems.map(m=>`<div class="ng-item">
     <div class="ng-thumb">${m.url?`<img src="${m.url}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-image\\"></i>'">`:'<i class="fas fa-image"></i>'}</div>
     <div class="ng-info">
       <h5>${m.caption||m.album||'Untitled'}</h5>
       <p>${m.category}</p>
-      <div class="ng-actions"><button class="btn btn-danger btn-xs" onclick="deleteMedia('${m.id}')"><i class="fas fa-trash"></i> Remove</button></div>
+      <div class="ng-actions">
+        <button class="btn btn-ghost btn-xs" onclick="editMedia('${m._key}')"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-xs" onclick="deleteMedia('${m._key}')"><i class="fas fa-trash"></i> Remove</button>
+      </div>
     </div></div>`).join('');
 }
-function deleteMedia(id){ if(!confirm('Remove media item?')) return; DB.set('sg_media',DB.get('sg_media').filter(m=>m.id!==id)); renderMedia(); }
+function deleteMedia(key){
+  if(!confirm('Remove media item?')) return;
+  _fbDb.ref('media/'+key).remove().then(() => setTimeout(refreshMedia, 500));
+  logActivity('Removed media item', key);
+}
 
 // ── DOWNLOADS ─────────────────────────────────────────────────────────────
 function addDownload(){

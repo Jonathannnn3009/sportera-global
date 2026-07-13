@@ -145,6 +145,8 @@
                 <div class="gallery-item fade-in"><img src="../Goa5/IMG_7053.jpg" alt="Championship scene"></div>
                 <div class="gallery-item fade-in"><img src="../Goa5/IMG_7055.jpg" alt="Match action"></div>
                 <div class="gallery-item fade-in"><img src="../Goa5/IMG_7057.jpg" alt="Football 5 championship"></div>
+                <!-- Photos added via admin's Photos & Videos panel render here -->
+                <div id="dynamicGalleryGrid" style="display:contents;"></div>
             </div>
         </div>
     </section>
@@ -206,5 +208,33 @@
     </footer>
 
     <script src="../js/main.js"></script>
+    <script>
+      // Photos added via admin's Photos & Videos panel — additive alongside
+      // the existing hardcoded gallery photos above (those don't need to be
+      // "manageable", they're just historical images). Fetched via REST
+      // directly, same reasoning as News/Team/Partners.
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/media.json").then(r => r.json()).then(data => {
+        const el = document.getElementById('dynamicGalleryGrid');
+        if (!el || !data) return;
+        const items = Object.values(data);
+        items.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
+        el.innerHTML = items.map(m => `<div class="gallery-item fade-in"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('');
+        // The shared lightbox click-binding in main.js only ran against
+        // photos present at page load, so these newly-inserted ones need
+        // their own binding to open the same lightbox.
+        const lightbox = document.querySelector('.lightbox');
+        const lightboxImg = lightbox ? lightbox.querySelector('img') : null;
+        if (lightbox && lightboxImg) {
+          el.querySelectorAll('img').forEach(img => {
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', () => {
+              lightbox.classList.add('active');
+              lightboxImg.src = img.src;
+              document.body.style.overflow = 'hidden';
+            });
+          });
+        }
+      }).catch(()=>{});
+    </script>
 </body>
 </html>
