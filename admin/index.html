@@ -2756,7 +2756,7 @@ async function exportTeamWelcomePoster(teamKey){
   if(!t){ alert('Team not found.'); return; }
   const theme = getPosterTheme('poster-theme-teams');
   const logoHtml = t.teamLogoUrl
-    ? `<img src="${t.teamLogoUrl}" style="width:260px;height:260px;border-radius:28px;object-fit:cover;background:#fff;border:4px solid rgba(255,255,255,.4);">`
+    ? `<img src="${t.teamLogoUrl}" style="width:260px;height:260px;border-radius:50%;object-fit:cover;background:#fff;border:4px solid rgba(255,255,255,.4);">`
     : `<div style="width:260px;height:260px;border-radius:28px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:6rem;font-weight:800;border:4px solid rgba(255,255,255,.4);">${(t.teamName||'?').charAt(0)}</div>`;
 
   const poster = document.createElement('div');
@@ -4112,8 +4112,8 @@ async function exportSingleFixturePoster(fixtureKey){
   const logoImg = (name) => {
     const url = teamLogo(name);
     return url
-      ? `<img src="${url}" style="width:150px;height:150px;border-radius:20px;object-fit:cover;background:#fff;">`
-      : `<div style="width:150px;height:150px;border-radius:20px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
+      ? `<img src="${url}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;background:#fff;">`
+      : `<div style="width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
   };
 
   const theme = getPosterTheme('poster-theme');
@@ -4521,7 +4521,7 @@ async function bulkDownloadResultPosters(){
           <div>
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;">
               <div style="font-size:1.3rem;font-weight:700;">${r.home}</div>
-              ${hLogo?`<img src="${hLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+              ${hLogo?`<img src="${hLogo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;background:#fff;">`:''}
             </div>
             ${teamInfoHtml(r.homeMotm, r.homeYellow, r.homeRed)}
           </div>
@@ -4530,7 +4530,7 @@ async function bulkDownloadResultPosters(){
         <div style="flex:1;display:flex;align-items:flex-start;gap:12px;">
           <div>
             <div style="display:flex;align-items:center;gap:12px;">
-              ${aLogo?`<img src="${aLogo}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;background:#fff;">`:''}
+              ${aLogo?`<img src="${aLogo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;background:#fff;">`:''}
               <div style="font-size:1.3rem;font-weight:700;">${r.away}</div>
             </div>
             ${teamInfoHtml(r.awayMotm, r.awayYellow, r.awayRed)}
@@ -4744,8 +4744,8 @@ async function exportResultPoster(resultKey){
   const logoImg = (name) => {
     const url = teamLogo(name);
     return url
-      ? `<img src="${url}" style="width:150px;height:150px;border-radius:20px;object-fit:cover;background:#fff;">`
-      : `<div style="width:150px;height:150px;border-radius:20px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
+      ? `<img src="${url}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;background:#fff;">`
+      : `<div style="width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:800;">${(name||'?').charAt(0)}</div>`;
   };
 
   const theme = getPosterTheme('poster-theme-res');
