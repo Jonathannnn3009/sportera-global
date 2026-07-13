@@ -334,7 +334,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
 <!-- ══════════════ SIDEBAR ══════════════ -->
 <aside class="sidebar">
   <div class="sb-head">
-    <img src="../Media (51).png" alt="Logo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:top;">
+    <img src="../sportera-logo-round.png" alt="Logo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
     <div><div class="sb-brand">Sportera <span>Global</span></div><div class="sb-sub">Admin Panel</div></div>
   </div>
 
@@ -2763,7 +2763,7 @@ async function exportTeamWelcomePoster(teamKey){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;">
-      <img src="../Media (51).png" style="width:96px;height:96px;border-radius:50%;object-fit:cover;object-position:top;">
+      <img src="../sportera-logo-round.png" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.6rem;color:${theme.accent};text-align:center;margin-bottom:48px;">Welcome to ${t.tournament||'the tournament'}${t.cityGroup?' &bull; '+t.cityGroup:''}</div>
@@ -4049,7 +4049,7 @@ async function exportFixturePoster(){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
-      <img src="../Media (51).png" style="width:100px;height:100px;border-radius:50%;object-fit:cover;object-position:top;">
+      <img src="../sportera-logo-round.png" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tournament}</div>
@@ -4121,7 +4121,7 @@ async function exportSingleFixturePoster(fixtureKey){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
-      <img src="../Media (51).png" style="width:96px;height:96px;border-radius:50%;object-fit:cover;object-position:top;">
+      <img src="../sportera-logo-round.png" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.5rem;color:${theme.accent};text-align:center;margin-bottom:6px;">${f.tournament||''}</div>
@@ -4503,7 +4503,7 @@ async function bulkDownloadResultPosters(){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:30px;">
-      <img src="../Media (51).png" style="width:88px;height:88px;border-radius:50%;object-fit:cover;object-position:top;">
+      <img src="../sportera-logo-round.png" style="width:88px;height:88px;border-radius:50%;object-fit:cover;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.2rem;color:${theme.accent};margin-bottom:8px;">Match Results${sameTournament?' — '+results[0].tournament:''}</div>
@@ -4753,7 +4753,7 @@ async function exportResultPoster(resultKey){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;height:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
-      <img src="../Media (51).png" style="width:96px;height:96px;border-radius:50%;object-fit:cover;object-position:top;">
+      <img src="../sportera-logo-round.png" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.5rem;color:${theme.accent};text-align:center;margin-bottom:6px;">${f.tournament||''}</div>
@@ -4985,7 +4985,7 @@ async function exportLeagueTablePoster(){
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
   poster.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">
-      <img src="../Media (51).png" style="width:100px;height:100px;border-radius:50%;object-fit:cover;object-position:top;">
+      <img src="../sportera-logo-round.png" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2rem;">Sportera Global</div>
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:2.6rem;color:${theme.accent};margin-bottom:14px;line-height:1.15;">${tourn}</div>
