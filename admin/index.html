@@ -1569,7 +1569,9 @@ const _currentAdminEmail = sessionStorage.getItem('sg_admin_email') || 'Admin';
 function logActivity(action, entity, revertData){
   const entry = { action, entity: entity || '', admin: _currentAdminEmail, ts: new Date().toISOString() };
   if (revertData) entry.revertData = revertData;
-  _fbDb.ref('activityLog').push(entry);
+  _fbDb.ref('activityLog').push(entry).then(() => {
+    if (typeof renderActivityLog === 'function') setTimeout(renderActivityLog, 500);
+  });
 }
 // The activity-log listener itself is registered further down, right after
 // _fbDb is initialized (see FIREBASE INIT section) — it was originally
@@ -1645,19 +1647,26 @@ if (!_isRootAdmin && _adminProfile) {
   });
 }
 
-// Plain listener (no limitToLast) — a query-modified .on('value') on this
-// path was observed returning inconsistent partial results across
-// identical calls (25, then 2, then 1 entries for the same data), which
-// made the on-screen log appear to "stop updating". A plain listener is
-// the same reliable pattern already used for fixtures/registrations/results
-// elsewhere in this file; the 500-cap is just applied client-side instead.
-_fbDb.ref('activityLog').on('value', snap => {
-  const entries = [];
-  snap.forEach(child => entries.push({ _key: child.key, ...child.val() }));
-  entries.reverse();
-  const limited = entries.slice(0, 500);
+// The Realtime Database JS SDK was observed silently returning incomplete
+// snapshots for this path — .on('value'), .once('value'), and even the
+// modern .get() all consistently returned only 1-2 of the real ~26 entries,
+// while a raw REST call to the same database URL always returned the full,
+// correct set. Root cause not fully isolated (rules and data both check
+// out fine), but since REST is reliable, activityLog now reads straight
+// from the REST endpoint instead of trusting the SDK's sync layer for this
+// one display — refetched on load, after every local logActivity() call,
+// and on a slow poll to pick up entries logged by other admins.
+async function renderActivityLog(){
   const tbody = document.getElementById('activity-log-body');
   if (!tbody) return;
+  let data;
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/activityLog.json');
+    data = await res.json();
+  } catch(e) { return; } // best-effort — leave whatever was last rendered
+  const entries = Object.entries(data || {}).map(([key, val]) => ({ _key: key, ...val }));
+  entries.sort((a,b) => a._key < b._key ? 1 : -1); // push keys sort chronologically; newest first
+  const limited = entries.slice(0, 500);
   if (!limited.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No activity logged yet.</td></tr>'; return; }
   tbody.innerHTML = limited.map(e => `<tr>
     <td style="font-size:.82rem;color:var(--muted);white-space:nowrap;">${fmtDateTime ? fmtDateTime(e.ts) : new Date(e.ts).toLocaleString()}</td>
@@ -1666,7 +1675,9 @@ _fbDb.ref('activityLog').on('value', snap => {
     <td style="font-size:.85rem;">${e.entity||'—'}</td>
     <td>${e.revertData ? `<button class="btn btn-ghost btn-xs" onclick="revertLoggedChange('${e._key}')" title="Undo — restore what it was before this change"><i class="fas fa-rotate-left"></i> Revert</button>` : ''}</td>
   </tr>`).join('');
-});
+}
+renderActivityLog();
+setInterval(renderActivityLog, 15000);
 
 async function revertLoggedChange(logKey){
   const snap = await _fbDb.ref('activityLog/'+logKey).once('value');
