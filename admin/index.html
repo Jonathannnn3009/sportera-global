@@ -5114,32 +5114,53 @@ async function exportLeagueTablePoster(){
 }
 
 // ── NEWS ──────────────────────────────────────────────────────────────────
+// Previously stored in localStorage ('sg_news') — meaning it only ever
+// existed in whichever single browser published it, and the actual public
+// News page (news/index.html) never read it at all, showing its own
+// separate hardcoded articles instead. Publishing news did nothing visible
+// on the live site. Moved to Firebase RTDB, same as everything else that
+// needs to be visible to every visitor, and the public page now renders
+// from here (the old hardcoded articles were migrated in as seed data).
+let _newsArticles = [];
+async function refreshNews(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/news.json');
+    const data = await res.json();
+    _newsArticles = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _newsArticles.sort((a,b) => (b.publishDate||'').localeCompare(a.publishDate||''));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
+  renderNewsList();
+}
+refreshNews();
+setInterval(refreshNews, 15000);
+
 function saveNews(status){
   const title=document.getElementById('news-title').value.trim(); if(!title){alert('Title required');return;}
   const body=document.getElementById('news-body').value.trim(); if(!body&&status==='published'){alert('Body required');return;}
-  const editId=document.getElementById('news-edit-id').value;
-  let articles=DB.get('sg_news');
-  const obj={id:editId||generateId('NEWS',articles),title,category:document.getElementById('news-cat').value,publishDate:document.getElementById('news-date').value||new Date().toISOString().slice(0,10),body,image:document.getElementById('news-img').value,status};
-  if(editId){ const i=articles.findIndex(a=>a.id===editId); if(i>-1)articles[i]=obj; } else articles.push(obj);
-  DB.set('sg_news',articles); clearNewsForm(); renderNewsList();
+  const editKey=document.getElementById('news-edit-id').value;
+  const obj={title,category:document.getElementById('news-cat').value,publishDate:document.getElementById('news-date').value||new Date().toISOString().slice(0,10),body,image:document.getElementById('news-img').value,status};
+  const write = editKey ? _fbDb.ref('news/'+editKey).update(obj) : _fbDb.ref('news').push(obj);
+  write.then(() => setTimeout(refreshNews, 500));
+  logActivity(editKey?'Updated news article':'Added news article', title);
+  clearNewsForm();
   if(status==='published') alert('Article published! It will appear on the News page.');
 }
 function renderNewsList(){
-  const articles=DB.get('sg_news').reverse();
+  const articles=_newsArticles;
   const tbody=document.getElementById('news-body-tbl');
   if(!articles.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No articles yet.</td></tr>'; return; }
   tbody.innerHTML=articles.map(a=>`<tr>
     <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><strong>${a.title}</strong></td>
     <td>${a.category}</td><td>${fmtDate(a.publishDate)}</td><td>${badge(a.status)}</td>
     <td class="actions">
-      <button class="btn btn-ghost btn-xs" onclick="editNews('${a.id}')"><i class="fas fa-edit"></i></button>
-      <button class="btn btn-success btn-xs" onclick="togglePublish('${a.id}')">${a.status==='published'?'Unpublish':'Publish'}</button>
-      <button class="btn btn-danger btn-xs" onclick="deleteNews('${a.id}')"><i class="fas fa-trash"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="editNews('${a._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-success btn-xs" onclick="togglePublish('${a._key}')">${a.status==='published'?'Unpublish':'Publish'}</button>
+      <button class="btn btn-danger btn-xs" onclick="deleteNews('${a._key}')"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
 }
-function editNews(id){
-  const a=DB.get('sg_news').find(x=>x.id===id); if(!a) return;
-  document.getElementById('news-edit-id').value=a.id;
+function editNews(key){
+  const a=_newsArticles.find(x=>x._key===key); if(!a) return;
+  document.getElementById('news-edit-id').value=key;
   document.getElementById('news-title').value=a.title;
   document.getElementById('news-cat').value=a.category;
   document.getElementById('news-date').value=a.publishDate;
@@ -5147,11 +5168,17 @@ function editNews(id){
   document.getElementById('news-img').value=a.image||'';
   document.getElementById('news-form-title').textContent='Edit Article';
 }
-function togglePublish(id){
-  const articles=DB.get('sg_news'); const i=articles.findIndex(a=>a.id===id);
-  if(i>-1){ articles[i].status=articles[i].status==='published'?'draft':'published'; DB.set('sg_news',articles); renderNewsList(); }
+function togglePublish(key){
+  const a=_newsArticles.find(x=>x._key===key); if(!a) return;
+  _fbDb.ref('news/'+key).update({ status: a.status==='published'?'draft':'published' }).then(() => setTimeout(refreshNews, 500));
+  logActivity('Toggled news status', a.title);
 }
-function deleteNews(id){ if(!confirm('Delete article?')) return; DB.set('sg_news',DB.get('sg_news').filter(a=>a.id!==id)); renderNewsList(); }
+function deleteNews(key){
+  if(!confirm('Delete article?')) return;
+  const a=_newsArticles.find(x=>x._key===key);
+  _fbDb.ref('news/'+key).remove().then(() => setTimeout(refreshNews, 500));
+  logActivity('Deleted news article', a?a.title:key);
+}
 function clearNewsForm(){ ['news-edit-id','news-title','news-date','news-body','news-img'].forEach(x=>document.getElementById(x).value=''); document.getElementById('news-form-title').textContent='New Article'; }
 
 // ── MEDIA ─────────────────────────────────────────────────────────────────

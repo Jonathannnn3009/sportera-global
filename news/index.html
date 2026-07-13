@@ -228,50 +228,7 @@
             <div class="news-grid">
                 <!-- News Feed -->
                 <div id="newsArticlesFeed">
-                    <div class="news-card fade-in" data-category="announcements">
-                        <div class="news-card-image" style="height: 220px;">
-                            <i class="fas fa-futbol"></i>
-                        </div>
-                        <div class="news-card-body">
-                            <div class="news-meta">
-                                <span class="news-category">Announcement</span>
-                                <span class="news-date"><i class="fas fa-calendar"></i> June 2026</span>
-                            </div>
-                            <h3>Sportera Global Officially Launches at sporteraglobal.com</h3>
-                            <p>We are thrilled to announce the official launch of the Sportera Global website — your one-stop destination for Football 5 development, the Indian Football 5 League, tournaments, and international opportunities for athletes across India.</p>
-                            <a href="../about/" class="news-read-more">Learn More <i class="fas fa-arrow-right"></i></a>
-                        </div>
-                    </div>
-
-                    <div class="news-card fade-in" data-category="if5l">
-                        <div class="news-card-image" style="height: 220px;">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <div class="news-card-body">
-                            <div class="news-meta">
-                                <span class="news-category" style="background: #e65100;">IF5L</span>
-                                <span class="news-date"><i class="fas fa-calendar"></i> August 2026</span>
-                            </div>
-                            <h3>IF5L Season 2 – Registrations Now Open</h3>
-                            <p>The Indian Football 5 League Season 2 is set to kick off in August 2026. Teams from across India are invited to register and compete for the coveted IF5L Championship title. Register now to secure your franchise spot.</p>
-                            <a href="../registration/" class="news-read-more">Register Your Team <i class="fas fa-arrow-right"></i></a>
-                        </div>
-                    </div>
-
-                    <div class="news-card fade-in" data-category="tournaments">
-                        <div class="news-card-image" style="height: 220px;">
-                            <i class="fas fa-medal"></i>
-                        </div>
-                        <div class="news-card-body">
-                            <div class="news-meta">
-                                <span class="news-category" style="background: #2e7d32;">Tournament</span>
-                                <span class="news-date"><i class="fas fa-calendar"></i> October 2026</span>
-                            </div>
-                            <h3>Football 5 National Club Championship 2026 – Save the Date</h3>
-                            <p>The Football 5 National Level Club Championship 2026 is coming. More details including venue, format, and eligibility criteria will be announced soon. Follow us on Instagram for the latest updates.</p>
-                            <a href="../tournaments/" class="news-read-more">View Tournaments <i class="fas fa-arrow-right"></i></a>
-                        </div>
-                    </div>
+                    <p style="text-align:center;color:#999;padding:40px 0;">Loading articles…</p>
                 </div>
 
                 <!-- Sidebar -->
@@ -360,6 +317,50 @@
 
     <script src="../js/main.js"></script>
     <script>
+        // Articles published via admin's "Publish News" panel — previously
+        // that panel wrote to localStorage only, and this page showed its
+        // own separate hardcoded articles, so publishing never actually
+        // changed what visitors saw. Now a single shared source (Firebase),
+        // fetched via REST directly (found to be more reliable for this
+        // project's Realtime Database than the JS SDK's live listeners).
+        const CATEGORY_META = {
+            'Announcement': { slug: 'announcements', color: '#0d1642', icon: 'fa-futbol' },
+            'Tournament':   { slug: 'tournaments',   color: '#2e7d32', icon: 'fa-medal' },
+            'IF5L':         { slug: 'if5l',          color: '#e65100', icon: 'fa-trophy' },
+            'Football 5':   { slug: 'football5',     color: '#0d1642', icon: 'fa-futbol' },
+            'Results':      { slug: 'results',       color: '#6a1b9a', icon: 'fa-chart-bar' }
+        };
+        function fmtNewsDate(iso){
+            if (!iso) return '';
+            const d = new Date(iso + 'T00:00:00');
+            return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+        fetch("https://f5awebsite-default-rtdb.firebaseio.com/news.json").then(r => r.json()).then(data => {
+            const feed = document.getElementById('newsArticlesFeed');
+            const articles = Object.values(data || {}).filter(a => a.status === 'published');
+            articles.sort((a,b) => (b.publishDate||'').localeCompare(a.publishDate||''));
+            if (!articles.length) { feed.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">No articles published yet.</p>'; return; }
+            feed.innerHTML = articles.map(a => {
+                const meta = CATEGORY_META[a.category] || { slug:'announcements', color:'#0d1642', icon:'fa-futbol' };
+                return `
+                <div class="news-card fade-in" data-category="${meta.slug}">
+                    <div class="news-card-image" style="height: 220px;">
+                        ${a.image ? `<img src="${a.image}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fas ${meta.icon}"></i>`}
+                    </div>
+                    <div class="news-card-body">
+                        <div class="news-meta">
+                            <span class="news-category" style="background: ${meta.color};">${a.category}</span>
+                            <span class="news-date"><i class="fas fa-calendar"></i> ${fmtNewsDate(a.publishDate)}</span>
+                        </div>
+                        <h3>${a.title}</h3>
+                        <p>${a.body}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }).catch(() => {
+            document.getElementById('newsArticlesFeed').innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">Could not load articles right now.</p>';
+        });
+
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
