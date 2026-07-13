@@ -4343,15 +4343,22 @@ function renderResultScorersList(fxKey, side){
     <button type="button" onclick="removeResultScorer('${fxKey}','${side}',${i})" style="background:none;border:none;color:#e53935;cursor:pointer;padding:2px 6px;"><i class="fas fa-times"></i></button>
   </div>`).join('');
 }
+// Jersey number instead of typing a name — jersey #s repeat across teams
+// (both could have a #7) but are unique WITHIN one team, so the lookup is
+// scoped to whichever side (home/away) the goal is being added for.
 function addResultScorer(fxKey, side){
-  const nameEl = document.getElementById(side.charAt(0)+'scname-'+fxKey);
+  const jerseyEl = document.getElementById(side.charAt(0)+'scname-'+fxKey);
   const minEl = document.getElementById(side.charAt(0)+'scmin-'+fxKey);
-  const name = nameEl.value.trim();
+  const jersey = jerseyEl.value.trim();
   const minute = minEl.value.trim();
-  if (!name) { alert('Enter the scorer\'s name first.'); return; }
+  if (!jersey) { alert('Enter the scorer\'s jersey number first.'); return; }
+  const fx = (_fbFixtures||[]).find(f=>f._key===fxKey);
+  const teamName = fx ? (side==='home' ? fx.home : fx.away) : null;
+  const player = (_fbRegs||[]).find(r => r.type==='player' && r.playerTeam===teamName && String(r.playerJerseyNumber)===jersey);
+  if (!player) { alert('No player found on '+(teamName||'this team')+' with jersey #'+jersey+'. Check the number, or set it in Manage Players.'); return; }
   initResultScorers(fxKey);
-  _resultScorersState[fxKey][side].push({ name, minute: minute || '?' });
-  nameEl.value = ''; minEl.value = '';
+  _resultScorersState[fxKey][side].push({ name: player.playerName, minute: minute || '?', jersey });
+  jerseyEl.value = ''; minEl.value = '';
   renderResultScorersList(fxKey, side);
 }
 function removeResultScorer(fxKey, side, idx){
@@ -4430,10 +4437,10 @@ function resultScoreForm(f, r, saveLabel){
         <input type="text" id="hred-${f._key}" value="${r.homeRed||r.redCards||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Fouls</label>
         <input type="number" id="hfoul-${f._key}" min="0" value="${r.homeFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;margin-bottom:6px;">
-        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (name + minute)</label>
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (jersey # + minute)</label>
         <div id="hscorersList-${f._key}" style="margin-bottom:4px;"></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <input type="text" id="hscname-${f._key}" placeholder="Player name" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
+          <input type="number" id="hscname-${f._key}" placeholder="Jersey #" min="0" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
           <input type="number" id="hscmin-${f._key}" placeholder="Min" min="0" style="width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;">
           <button type="button" onclick="addResultScorer('${f._key}','home')" class="btn btn-ghost btn-xs"><i class="fas fa-plus"></i></button>
         </div>
@@ -4450,10 +4457,10 @@ function resultScoreForm(f, r, saveLabel){
         <input type="text" id="ared-${f._key}" value="${r.awayRed||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;margin-bottom:6px;box-sizing:border-box;">
         <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Fouls</label>
         <input type="number" id="afoul-${f._key}" min="0" value="${r.awayFouls||''}" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;width:100%;box-sizing:border-box;margin-bottom:6px;">
-        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (name + minute)</label>
+        <label style="display:block;font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px;">Goal Scorers (jersey # + minute)</label>
         <div id="ascorersList-${f._key}" style="margin-bottom:4px;"></div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <input type="text" id="ascname-${f._key}" placeholder="Player name" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
+          <input type="number" id="ascname-${f._key}" placeholder="Jersey #" min="0" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;min-width:0;">
           <input type="number" id="ascmin-${f._key}" placeholder="Min" min="0" style="width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;font-family:inherit;outline:none;">
           <button type="button" onclick="addResultScorer('${f._key}','away')" class="btn btn-ghost btn-xs"><i class="fas fa-plus"></i></button>
         </div>
