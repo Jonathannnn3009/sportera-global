@@ -130,7 +130,7 @@
         if (!el || !data) return;
         const items = Object.values(data);
         items.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
-        el.innerHTML = items.map(m => `<div class="gallery-item fade-in"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('');
+        el.innerHTML = items.map(m => `<div class="gallery-item"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('');
         // The shared lightbox click-binding in main.js only ran against
         // photos present at page load, so these newly-inserted ones need
         // their own binding to open the same lightbox.

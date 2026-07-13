@@ -228,7 +228,7 @@
         members.sort((a,b) => (a.order||0) - (b.order||0));
         function initials(name){ return (name||'').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(); }
         el.innerHTML = members.map(m => `
-          <div class="team-card fade-in">
+          <div class="team-card">
             ${m.photoUrl
               ? `<img src="${m.photoUrl}" alt="${m.name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;">`
               : `<div class="avatar" style="width:80px;height:80px;font-size:1.3rem;">${initials(m.name)}</div>`}
