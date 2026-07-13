@@ -293,11 +293,17 @@ table.ltbl .pts{font-weight:800;color:var(--primary);}
 .search-bar input:focus{border-color:var(--primary);}
 .search-bar select{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.87rem;font-family:inherit;outline:none;}
 
+.mobile-nav-toggle{display:none;background:none;border:none;font-size:1.2rem;color:var(--text);cursor:pointer;padding:6px 10px;margin-right:8px;}
+.mobile-nav-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;}
+
 @media(max-width:900px){
-  .sidebar{transform:translateX(-100%);}
+  .sidebar{transform:translateX(-100%);transition:transform .25s ease;z-index:200;}
+  .sidebar.mobile-open{transform:translateX(0);}
   .main{margin-left:0;}
   .topbar{left:0;}
   .two-col,.three-col,.form-row{grid-template-columns:1fr;}
+  .mobile-nav-toggle{display:inline-block;}
+  .mobile-nav-backdrop.active{display:block;}
 }
 
 /* ── PERMISSION ENFORCEMENT ── set on <body> from the signed-in admin's
@@ -385,12 +391,14 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
 
 <!-- ══════════════ TOPBAR ══════════════ -->
 <header class="topbar">
+  <button class="mobile-nav-toggle" id="mobileNavToggle" onclick="toggleMobileSidebar()" aria-label="Menu"><i class="fas fa-bars"></i></button>
   <div class="topbar-title" id="topbarTitle">Dashboard</div>
   <div class="topbar-right">
     <a href="../index.html" class="btn-site" target="_blank"><i class="fas fa-external-link-alt"></i> Live Site</a>
     <div class="user-pill"><div class="user-av">SA</div><span>Admin</span></div>
   </div>
 </header>
+<div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="toggleMobileSidebar(false)"></div>
 
 <!-- ══════════════ MAIN ══════════════ -->
 <main class="main">
@@ -2055,8 +2063,18 @@ function switchPanel(id) {
   if(refresh[id]) refresh[id]();
 }
 document.querySelectorAll('.nav-item').forEach(item=>{
-  item.addEventListener('click',()=>switchPanel(item.dataset.panel));
+  item.addEventListener('click',()=>{ switchPanel(item.dataset.panel); if (window.innerWidth <= 900) toggleMobileSidebar(false); });
 });
+
+// Below 900px the sidebar previously just slid fully off-screen with no way
+// to bring it back — the admin panel was completely unusable on a phone.
+function toggleMobileSidebar(force){
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('mobileNavBackdrop');
+  const open = typeof force === 'boolean' ? force : !sidebar.classList.contains('mobile-open');
+  sidebar.classList.toggle('mobile-open', open);
+  backdrop.classList.toggle('active', open);
+}
 
 // ── MODAL ─────────────────────────────────────────────────────────────────
 function openModal(id){ document.getElementById(id).classList.add('open'); }
