@@ -334,7 +334,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
 <!-- ══════════════ SIDEBAR ══════════════ -->
 <aside class="sidebar">
   <div class="sb-head">
-    <img src="../Media (51).png" alt="Logo" style="border-radius:50%;">
+    <img src="../Media (51).png" alt="Logo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
     <div><div class="sb-brand">Sportera <span>Global</span></div><div class="sb-sub">Admin Panel</div></div>
   </div>
 
@@ -831,6 +831,14 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <h4 style="margin-bottom:6px;">Approved Only</h4>
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:18px;">Export only approved registrations (all types)</p>
         <button class="btn btn-success" onclick="exportCSV('approved')"><i class="fas fa-file-csv"></i> Export CSV</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="text-align:center;">
+        <i class="fas fa-futbol" style="font-size:2.2rem;color:var(--primary);margin-bottom:12px;display:block;"></i>
+        <h4 style="margin-bottom:6px;">Match Results</h4>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:18px;">Every saved result with scorers, minutes, MOTM, cards, and fouls</p>
+        <button class="btn btn-gold" onclick="exportResultsCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
       </div>
     </div>
   </div>
@@ -3445,6 +3453,29 @@ function exportCSV(type){
   const csv=[header,...rows].map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`sportera_${type}_registrations_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+// Every field a saved result actually carries — scorer names+minutes were
+// previously only visible one match at a time in the Results Log UI, with
+// no way to get them all out at once for external use (season stats sheets,
+// sharing with tournament organizers, etc.).
+function exportResultsCSV(){
+  const results = _fbResults||[];
+  if(!results.length){ alert('No results saved yet.'); return; }
+  const fmtScorers = list => (list||[]).map(s=>`${s.name} (${s.minute}')`).join('; ');
+  const header = ['Tournament','Age Category','City','Round','Match #','Date','Home Team','Away Team','Score',
+    'Home Scorers','Away Scorers','Home MOTM','Away MOTM','Home Yellow','Away Yellow','Home Red','Away Red','Home Fouls','Away Fouls'];
+  const rows = results.map(r => [
+    r.tournament||'', r.ageCategory||'', r.cityGroup||'', r.round||'', r.matchNumber||'', fmtDate(r.dt),
+    r.home||'', r.away||'', `${r.homeScore ?? 0} - ${r.awayScore ?? 0}`,
+    fmtScorers(r.homeScorers), fmtScorers(r.awayScorers),
+    r.homeMotm||'', r.awayMotm||'',
+    r.homeYellow||r.yellowCards||'', r.awayYellow||'', r.homeRed||r.redCards||'', r.awayRed||'',
+    r.homeFouls ?? '', r.awayFouls ?? ''
+  ]);
+  const csv=[header,...rows].map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`sportera_match_results_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 // ── AGE CATEGORIES (per tournament, dynamic) ────────────────────────────────
