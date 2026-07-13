@@ -608,7 +608,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="card-body" style="padding:0;">
     <div class="tbl-wrap">
       <table class="dt">
-        <thead><tr><th>Player</th><th>Team</th><th>Position</th><th>Jersey</th><th>Email</th><th>City</th><th>Age Doc</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Photo</th><th>Player</th><th>Team</th><th>Tournament</th><th>Position</th><th>Jersey</th><th>Email</th><th>City</th><th>Age Doc</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="squadreq-body"></tbody>
       </table>
     </div>
@@ -2254,10 +2254,12 @@ function renderSquadRequests(){
   const pendingCount = _squadRequests.filter(r=>r.status==='pending').length;
   const badgeEl = document.getElementById('sb-squadreq');
   if (badgeEl) badgeEl.textContent = pendingCount;
-  if (!_squadRequests.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No squad requests yet.</td></tr>'; return; }
+  if (!_squadRequests.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--muted);">No squad requests yet.</td></tr>'; return; }
   tbody.innerHTML = _squadRequests.map(r => `<tr>
+    <td>${r.photoUrl?`<img src="${r.photoUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`:'—'}</td>
     <td><strong>${r.playerName||'—'}</strong></td>
     <td>${r.teamName||'—'}</td>
+    <td>${r.tournament||'—'}${r.ageCategory?` <span style="color:var(--primary);font-size:.75rem;">(${r.ageCategory})</span>`:''}</td>
     <td>${r.position||'—'}</td>
     <td>${r.jerseyNumber||'—'}</td>
     <td>${r.email||'—'}</td>
@@ -2293,11 +2295,17 @@ async function approveSquadRequest(key){
         uid = q.docs[0].id;
       } else { throw e; }
     }
-    const tournament = team.tournament || (team.tournaments && team.tournaments[0]) || '';
+    // Prefer the tournament the team actually picked on the request itself —
+    // a team can now be registered under more than one tournament/age
+    // category (see admin's "Add Age Category"), so guessing from the
+    // team's own single/first tournament silently misattributed players
+    // whenever a team had more than one.
+    const tournament = r.tournament || team.tournament || (team.tournaments && team.tournaments[0]) || '';
     if (isNewAccount) {
       await _fbFs.collection('players').doc(uid).set({
         playerName: r.playerName, playerCity: r.city||'', playerPosition: r.position||'',
         playerTeam: r.teamName||'', playerDOB: r.dob||'', playerJerseyNumber: r.jerseyNumber||'',
+        playerAgeCategory: r.ageCategory||'', playerPhotoUrl: r.photoUrl||'',
         email: r.email, guardianName: r.guardianName||'', guardianPhone: r.guardianPhone||'', phone: r.phone||'',
         regId: 'squad-'+key,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2309,7 +2317,10 @@ async function approveSquadRequest(key){
     }
     if (teamDoc.exists) {
       await teamDoc.ref.update({
-        squad: firebase.firestore.FieldValue.arrayUnion({ name: r.playerName, position: r.position||'', dob: r.dob||'', phone: r.phone||'', status: 'approved' })
+        squad: firebase.firestore.FieldValue.arrayUnion({
+          name: r.playerName, position: r.position||'', dob: r.dob||'', phone: r.phone||'', status: 'approved',
+          tournament: tournament||'', ageCategory: r.ageCategory||'', photoUrl: r.photoUrl||''
+        })
       });
     }
     await _fbFs.collection('squadRequests').doc(key).update({ status: 'approved' });
@@ -2399,9 +2410,21 @@ async function saveAdminEdit(){
   const sections = allSections ? 'all' : [...document.querySelectorAll('.edit-admin-section-check:checked')].map(cb=>cb.value);
   if (!allSections && !sections.length) { alert('Pick at least one section, or check "Everything".'); return; }
   const email = document.getElementById('edit-admin-email').textContent;
+  const before = (_admins||[]).find(x=>x.uid===uid) || {};
+  const sectionLabel = { registrations: 'Registrations', fixtures: 'League & Fixtures', content: 'Content', messages: 'Messages' };
+  const fmtSections = s => (!s || s==='all') ? 'Everything' : s.map(x=>sectionLabel[x]||x).join(', ')||'None';
+  const fmtTourn = t => (!t || t==='all') ? 'All' : t.join(', ')||'None';
   try {
     await _fbFs.collection('admins').doc(uid).update({ level, tournaments, sections });
-    logActivity('Updated admin access', email+' ('+ACCESS_LEVEL_LABEL[level]+')');
+    // Record from → to for every field that actually changed, so an
+    // incorrect edit can be manually undone by reading what it used to be —
+    // the log entry itself is the only record, since there's no backend to
+    // keep real version history.
+    const changes = [];
+    if ((before.level||'delete') !== level) changes.push('Level: '+(ACCESS_LEVEL_LABEL[before.level]||ACCESS_LEVEL_LABEL.delete)+' → '+ACCESS_LEVEL_LABEL[level]);
+    if (JSON.stringify(before.tournaments||'all') !== JSON.stringify(tournaments)) changes.push('Tournaments: '+fmtTourn(before.tournaments)+' → '+fmtTourn(tournaments));
+    if (JSON.stringify(before.sections||'all') !== JSON.stringify(sections)) changes.push('Sections: '+fmtSections(before.sections)+' → '+fmtSections(sections));
+    logActivity('Updated admin access', email+(changes.length?' — '+changes.join(' | '):' (no changes)'));
     closeModal('modal-edit-admin');
   } catch(e) {
     alert('Could not update admin access: '+e.message);
