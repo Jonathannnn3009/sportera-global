@@ -322,7 +322,7 @@
                     <div id="teamOtp" class="otp-screen">
                         <i class="fas fa-shield-alt otp-icon"></i>
                         <h3>Confirm Payment</h3>
-                        <p class="otp-subtitle">An OTP has been sent to your registered mobile number.<br>Enter it below to authorise and confirm your payment.</p>
+                        <p class="otp-subtitle">An OTP has been sent to your email address.<br>Enter it below to authorise and confirm your payment.</p>
                         <div class="otp-boxes">
                             <input type="tel" maxlength="1" class="otp-digit" id="tOtp1">
                             <input type="tel" maxlength="1" class="otp-digit" id="tOtp2">
@@ -334,7 +334,7 @@
                         <button class="btn btn-primary" style="width:100%; max-width:340px; padding:14px;" onclick="verifyOtp('team')">
                             <i class="fas fa-check-circle"></i> Verify & Complete Registration
                         </button>
-                        <p class="otp-resend">Didn't receive it? <a onclick="resetOtpInputs('team')">Resend OTP</a></p>
+                        <p class="otp-resend">Didn't receive it? <a onclick="resendOtp('team')">Resend OTP</a></p>
                     </div>
 
                     <div id="teamSuccess" class="success-msg">
@@ -355,6 +355,19 @@
                                 <label for="teamCity">City *</label>
                                 <input type="text" id="teamCity" name="teamCity" placeholder="City / State" required>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="teamCountry">Country *</label>
+                            <select id="teamCountry" name="teamCountry" required onchange="updatePhoneCodeHints('team')">
+                                <option value="India" selected>India (+91)</option>
+                                <option value="United States">United States (+1)</option>
+                                <option value="United Kingdom">United Kingdom (+44)</option>
+                                <option value="United Arab Emirates">United Arab Emirates (+971)</option>
+                                <option value="Australia">Australia (+61)</option>
+                                <option value="Canada">Canada (+1)</option>
+                                <option value="Singapore">Singapore (+65)</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="tournament">Tournament *</label>
@@ -388,8 +401,8 @@
                                 <input type="text" id="coachName" name="coachName" placeholder="Head coach full name" required>
                             </div>
                             <div class="form-group">
-                                <label for="coachPhone">Coach Phone *</label>
-                                <input type="tel" id="coachPhone" name="coachPhone" placeholder="10-digit mobile" required>
+                                <label for="coachPhone">Coach Phone * <span id="teamPhoneCodeHint1" style="font-weight:400;color:var(--text-light);">(+91)</span></label>
+                                <input type="tel" id="coachPhone" name="coachPhone" placeholder="Mobile number, without country code" required>
                             </div>
                         </div>
                         <div class="form-row">
@@ -398,8 +411,8 @@
                                 <input type="text" id="managerName" name="managerName" placeholder="Team manager (if any)">
                             </div>
                             <div class="form-group">
-                                <label for="managerPhone">Manager Phone</label>
-                                <input type="tel" id="managerPhone" name="managerPhone" placeholder="10-digit mobile">
+                                <label for="managerPhone">Manager Phone <span id="teamPhoneCodeHint2" style="font-weight:400;color:var(--text-light);">(+91)</span></label>
+                                <input type="tel" id="managerPhone" name="managerPhone" placeholder="Mobile number, without country code">
                             </div>
                         </div>
 
@@ -488,7 +501,7 @@
                     <div id="playerOtp" class="otp-screen">
                         <i class="fas fa-shield-alt otp-icon"></i>
                         <h3>Confirm Payment</h3>
-                        <p class="otp-subtitle">An OTP has been sent to your registered mobile number.<br>Enter it below to authorise and confirm your payment.</p>
+                        <p class="otp-subtitle">An OTP has been sent to your email address.<br>Enter it below to authorise and confirm your payment.</p>
                         <div class="otp-boxes">
                             <input type="tel" maxlength="1" class="otp-digit" id="pOtp1">
                             <input type="tel" maxlength="1" class="otp-digit" id="pOtp2">
@@ -500,7 +513,7 @@
                         <button class="btn btn-primary" style="width:100%; max-width:340px; padding:14px;" onclick="verifyOtp('player')">
                             <i class="fas fa-check-circle"></i> Verify & Complete Registration
                         </button>
-                        <p class="otp-resend">Didn't receive it? <a onclick="resetOtpInputs('player')">Resend OTP</a></p>
+                        <p class="otp-resend">Didn't receive it? <a onclick="resendOtp('player')">Resend OTP</a></p>
                     </div>
 
                     <div id="playerSuccess" class="success-msg">
@@ -524,8 +537,8 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="playerPhone">Phone Number *</label>
-                                <input type="tel" id="playerPhone" name="playerPhone" placeholder="10-digit mobile" required>
+                                <label for="playerPhone">Phone Number * <span id="playerPhoneCodeHint1" style="font-weight:400;color:var(--text-light);">(+91)</span></label>
+                                <input type="tel" id="playerPhone" name="playerPhone" placeholder="Mobile number, without country code" required>
                             </div>
                             <div class="form-group">
                                 <label for="playerEmail">Email Address *</label>
@@ -547,6 +560,19 @@
                                 <label for="playerCity">City *</label>
                                 <input type="text" id="playerCity" name="playerCity" placeholder="City / State" required>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="playerCountry">Country *</label>
+                            <select id="playerCountry" name="playerCountry" required onchange="updatePhoneCodeHints('player')">
+                                <option value="India" selected>India (+91)</option>
+                                <option value="United States">United States (+1)</option>
+                                <option value="United Kingdom">United Kingdom (+44)</option>
+                                <option value="United Arab Emirates">United Arab Emirates (+971)</option>
+                                <option value="Australia">Australia (+61)</option>
+                                <option value="Canada">Canada (+1)</option>
+                                <option value="Singapore">Singapore (+65)</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -635,8 +661,8 @@
                                 <input type="text" id="guardianName" name="guardianName" placeholder="Parent / Guardian full name">
                             </div>
                             <div class="form-group">
-                                <label for="guardianPhone" id="guardianPhoneLabel">Guardian Phone</label>
-                                <input type="tel" id="guardianPhone" name="guardianPhone" placeholder="Guardian contact number">
+                                <label for="guardianPhone" id="guardianPhoneLabel">Guardian Phone <span id="playerPhoneCodeHint2" style="font-weight:400;color:var(--text-light);">(+91)</span></label>
+                                <input type="tel" id="guardianPhone" name="guardianPhone" placeholder="Guardian contact number, without country code">
                             </div>
                         </div>
                         <div class="form-row">
@@ -1393,8 +1419,45 @@
             });
         }
 
-        const DEMO_OTP = '1234';
+        // Real OTP, generated per-session and emailed — previously this was
+        // a hardcoded "1234" that never actually got sent anywhere despite
+        // the screen claiming one had been. Sent via email (not SMS) since
+        // that needs no paid gateway and works the same for any country.
+        let _currentOtp = null;
         let pendingTeamDataList = null, pendingPlayerData = null;
+
+        // International support: a Country field per form (default India)
+        // plus a live country-code hint next to each phone field. Phone
+        // numbers are still typed as plain digits (no country-specific
+        // format validation — that's a much bigger job across every
+        // possible country), but the dial code shown here is prepended to
+        // whatever's saved, so admin-side contact info is unambiguous
+        // regardless of which country a team/player registers from.
+        const COUNTRY_CODES = {
+            'India': '+91', 'United States': '+1', 'United Kingdom': '+44',
+            'United Arab Emirates': '+971', 'Australia': '+61', 'Canada': '+1',
+            'Singapore': '+65', 'Other': ''
+        };
+        function updatePhoneCodeHints(type) {
+            const sel = document.getElementById(type === 'team' ? 'teamCountry' : 'playerCountry');
+            const code = COUNTRY_CODES[sel.value] || '';
+            const text = code ? '(' + code + ')' : '';
+            document.getElementById((type === 'team' ? 'teamPhoneCodeHint1' : 'playerPhoneCodeHint1')).textContent = text;
+            document.getElementById((type === 'team' ? 'teamPhoneCodeHint2' : 'playerPhoneCodeHint2')).textContent = text;
+        }
+        function withCountryCode(type, rawPhone) {
+            if (!rawPhone) return rawPhone;
+            const sel = document.getElementById(type === 'team' ? 'teamCountry' : 'playerCountry');
+            const code = COUNTRY_CODES[sel.value] || '';
+            return code ? code + ' ' + rawPhone : rawPhone;
+        }
+        function generateAndSendOtp(email, name) {
+            _currentOtp = String(Math.floor(1000 + Math.random() * 9000));
+            fetch(CONFIRMATION_EMAIL_URL, {
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ email_type: 'otp_verification', to_email: email, to_name: name, otp_code: _currentOtp })
+            }).catch(() => {});
+        }
 
         // --- OTP digit auto-advance + backspace ---
         function setupOtpInputs(prefix) {
@@ -1423,6 +1486,11 @@
             document.getElementById(prefix+'OtpError').style.display = 'none';
             document.getElementById(prefix+'Otp1').focus();
         }
+        function resendOtp(type) {
+            resetOtpInputs(type);
+            const data = type === 'team' ? pendingTeamDataList[0] : pendingPlayerData;
+            generateAndSendOtp(type === 'team' ? data.teamEmail : data.playerEmail, type === 'team' ? data.teamName : data.playerName);
+        }
 
         const CONFIRMATION_EMAIL_URL = 'https://script.google.com/macros/s/AKfycbxvHdn0WGZXe-iNBBESWBnlWMuHiUUD38BSzyuL_h8iAgZz2PjnzNkkKTkHBtOFh1fT/exec';
 
@@ -1447,7 +1515,7 @@
             const prefix = type === 'team' ? 't' : 'p';
             const entered = getOtpValue(prefix);
             const errEl = document.getElementById(prefix + 'OtpError');
-            if (entered === DEMO_OTP) {
+            if (entered === _currentOtp) {
                 if (type === 'team') {
                     pendingTeamDataList.forEach(data => _regDb.ref('registrations').push(data));
                     sendConfirmationEmail('team', pendingTeamDataList[0]);
@@ -1630,10 +1698,11 @@
                 submittedAt: new Date().toISOString(),
                 teamName: document.getElementById('teamName').value,
                 teamCity: document.getElementById('teamCity').value,
+                teamCountry: document.getElementById('teamCountry').value,
                 coachName: document.getElementById('coachName').value,
-                coachPhone: document.getElementById('coachPhone').value,
+                coachPhone: withCountryCode('team', document.getElementById('coachPhone').value),
                 managerName: document.getElementById('managerName').value,
-                managerPhone: document.getElementById('managerPhone').value,
+                managerPhone: withCountryCode('team', document.getElementById('managerPhone').value),
                 teamEmail: document.getElementById('teamEmail').value,
                 tournament: document.getElementById('tournament').value,
                 cityGroup: cityGroupEntered || null,
@@ -1652,6 +1721,7 @@
             }));
             document.getElementById('teamForm').style.display = 'none';
             resetOtpInputs('team');
+            generateAndSendOtp(pendingTeamDataList[0].teamEmail, pendingTeamDataList[0].teamName);
             document.getElementById('teamOtp').style.display = 'block';
             document.getElementById('tOtp1').focus();
         }
@@ -1748,18 +1818,19 @@
                 playerName: document.getElementById('playerName').value,
                 playerDOB: dob,
                 playerAge: age,
-                playerPhone: document.getElementById('playerPhone').value,
+                playerPhone: withCountryCode('player', document.getElementById('playerPhone').value),
                 playerEmail: document.getElementById('playerEmail').value,
                 playerPosition: document.getElementById('playerPosition').value,
                 playerJerseyNumber: document.getElementById('playerJerseyNumber').value,
                 playerCity: document.getElementById('playerCity').value,
+                playerCountry: document.getElementById('playerCountry').value,
                 playerTeam: teamVal,
                 playerTournament: _tournamentForCheck,
                 playerAgeCategory: _categoryForCheck,
                 playerCityGroup: _cityGroupForCheck || null,
                 playerEntryMode: _noTeam ? 'individual' : 'team',
                 guardianName: document.getElementById('guardianName').value,
-                guardianPhone: document.getElementById('guardianPhone').value,
+                guardianPhone: withCountryCode('player', document.getElementById('guardianPhone').value),
                 guardianRelation: document.getElementById('guardianRelation').value,
                 guardianEmail: document.getElementById('guardianEmail').value,
                 ageDocFile: ageDocFile ? ageDocFile.name : '',
@@ -1778,6 +1849,7 @@
             };
             document.getElementById('playerForm').style.display = 'none';
             resetOtpInputs('player');
+            generateAndSendOtp(pendingPlayerData.playerEmail, pendingPlayerData.playerName);
             document.getElementById('playerOtp').style.display = 'block';
             document.getElementById('pOtp1').focus();
         }
