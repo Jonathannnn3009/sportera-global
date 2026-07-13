@@ -371,6 +371,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="nav-item" data-panel="news"><i class="fas fa-newspaper"></i> Publish News</div>
   <div class="nav-item" data-panel="media"><i class="fas fa-images"></i> Photos & Videos</div>
   <div class="nav-item" data-panel="downloads-mgr"><i class="fas fa-download"></i> Manage Downloads</div>
+  <div class="nav-item" data-panel="teammembers"><i class="fas fa-user-friends"></i> Manage Team</div>
+  <div class="nav-item" data-panel="partners"><i class="fas fa-handshake"></i> Manage Partners</div>
   </div>
 
   <div class="nav-group-section" data-section="messages">
@@ -1322,6 +1324,46 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
+<!-- ── MANAGE TEAM ──────────────────────────────────────── -->
+<div class="panel" id="panel-teammembers">
+  <div class="two-col" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-user-plus"></i> Add Team Member</h3></div>
+      <div class="card-body">
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up on the About page's team section.</p>
+        <div class="fg"><label>Name *</label><input type="text" id="tm-name" placeholder="Full name"></div>
+        <div class="fg"><label>Role / Position *</label><input type="text" id="tm-role" placeholder="e.g. Founder & CEO"></div>
+        <div class="fg"><label>Photo</label><input type="file" id="tm-photo" accept=".jpg,.jpeg,.png" onchange="uploadTeamMemberPhoto()"><div id="tm-photo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+        <button class="btn btn-primary" onclick="addTeamMember()"><i class="fas fa-save"></i> Add Member</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-users"></i> Current Team</h3></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Photo</th><th>Name</th><th>Role</th><th>Actions</th></tr></thead><tbody id="teammembers-body"></tbody></table></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MANAGE PARTNERS ──────────────────────────────────── -->
+<div class="panel" id="panel-partners">
+  <div class="two-col" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-handshake"></i> Add Partner / Sponsor</h3></div>
+      <div class="card-body">
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up in the sponsor strip on posters and site pages.</p>
+        <div class="fg"><label>Name *</label><input type="text" id="pt-name" placeholder="Partner / sponsor name"></div>
+        <div class="fg"><label>Website Link</label><input type="text" id="pt-link" placeholder="https:// (optional)"></div>
+        <div class="fg"><label>Logo *</label><input type="file" id="pt-logo" accept=".jpg,.jpeg,.png" onchange="uploadPartnerLogo()"><div id="pt-logo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+        <button class="btn btn-primary" onclick="addPartner()"><i class="fas fa-save"></i> Add Partner</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-list"></i> Current Partners</h3></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Logo</th><th>Name</th><th>Link</th><th>Actions</th></tr></thead><tbody id="partners-body"></tbody></table></div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── CONTACT MESSAGES ──────────────────────────────────── -->
 <div class="panel" id="panel-messages">
   <div class="card">
@@ -2043,6 +2085,7 @@ const PANEL_TITLES = {
   players:'Manage Players', agecats:'Age Categories', idcards:'Generate ID Cards', reports:'Export Reports',
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
+  teammembers:'Manage Team', partners:'Manage Partners',
   messages:'Contact Messages', admins:'Manage Admins', tournaments:'Tournaments'
 };
 function switchPanel(id) {
@@ -2058,6 +2101,7 @@ function switchPanel(id) {
     players: renderPlayers, agecats: renderAgeCatEditor, idcards: refreshIDCards, reports: renderReports,
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
+    teammembers: renderTeamMembers, partners: renderPartners,
     messages: renderMessages, admins: renderAdmins, tournaments: renderTournaments
   };
   if(refresh[id]) refresh[id]();
@@ -5142,6 +5186,106 @@ function renderDownloads(){
     <td><button class="btn btn-danger btn-xs" onclick="deleteDownload('${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
 }
 function deleteDownload(id){ if(!confirm('Remove document?')) return; DB.set('sg_downloads',DB.get('sg_downloads').filter(d=>d.id!==id)); renderDownloads(); }
+
+// ── MANAGE TEAM ───────────────────────────────────────────────────────────
+// Stored in RTDB (not localStorage like Downloads above) since the public
+// About page needs to read this from every visitor's browser, not just the
+// admin's own — same reasoning as everything else Firebase-backed here.
+let _teamMembers = [];
+_fbDb.ref('teamMembers').on('value', snap => {
+  _teamMembers = [];
+  snap.forEach(c => _teamMembers.push({ _key: c.key, ...c.val() }));
+  renderTeamMembers();
+});
+let _tmPhotoUrl = '';
+function uploadTeamMemberPhoto(){
+  const file = document.getElementById('tm-photo').files[0];
+  const statusEl = document.getElementById('tm-photo-status');
+  _tmPhotoUrl = '';
+  if (!file) return;
+  if (file.size > 600 * 1024) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 600KB.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
+  const reader = new FileReader();
+  reader.onload = () => { _tmPhotoUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
+  reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
+  reader.readAsDataURL(file);
+}
+function addTeamMember(){
+  const name = document.getElementById('tm-name').value.trim();
+  const role = document.getElementById('tm-role').value.trim();
+  if (!name || !role) { alert('Name and role are both required.'); return; }
+  _fbDb.ref('teamMembers').push({ name, role, photoUrl: _tmPhotoUrl, order: _teamMembers.length, addedAt: new Date().toISOString() });
+  logActivity('Added team member', name+' ('+role+')');
+  document.getElementById('tm-name').value = ''; document.getElementById('tm-role').value = '';
+  document.getElementById('tm-photo').value = ''; document.getElementById('tm-photo-status').innerHTML = '';
+  _tmPhotoUrl = '';
+}
+function deleteTeamMember(key){
+  if (!confirm('Remove this team member from the About page?')) return;
+  const m = _teamMembers.find(x=>x._key===key);
+  _fbDb.ref('teamMembers/'+key).remove();
+  logActivity('Removed team member', m?m.name:key);
+}
+function renderTeamMembers(){
+  const tbody = document.getElementById('teammembers-body');
+  if (!tbody) return;
+  if (!_teamMembers.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No team members added yet.</td></tr>'; return; }
+  tbody.innerHTML = _teamMembers.map(m => `<tr>
+    <td>${m.photoUrl?`<img src="${m.photoUrl}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">`:'—'}</td>
+    <td><strong>${m.name}</strong></td>
+    <td>${m.role}</td>
+    <td class="actions"><button class="btn btn-danger btn-xs" onclick="deleteTeamMember('${m._key}')"><i class="fas fa-trash"></i></button></td>
+  </tr>`).join('');
+}
+
+// ── MANAGE PARTNERS ───────────────────────────────────────────────────────
+let _partners = [];
+_fbDb.ref('partners').on('value', snap => {
+  _partners = [];
+  snap.forEach(c => _partners.push({ _key: c.key, ...c.val() }));
+  renderPartners();
+});
+let _ptLogoUrl = '';
+function uploadPartnerLogo(){
+  const file = document.getElementById('pt-logo').files[0];
+  const statusEl = document.getElementById('pt-logo-status');
+  _ptLogoUrl = '';
+  if (!file) return;
+  if (file.size > 600 * 1024) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 600KB.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
+  const reader = new FileReader();
+  reader.onload = () => { _ptLogoUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
+  reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
+  reader.readAsDataURL(file);
+}
+function addPartner(){
+  const name = document.getElementById('pt-name').value.trim();
+  const link = document.getElementById('pt-link').value.trim();
+  if (!name) { alert('Partner name is required.'); return; }
+  if (!_ptLogoUrl) { alert('Upload a logo first.'); return; }
+  _fbDb.ref('partners').push({ name, link: link||null, logoUrl: _ptLogoUrl, order: _partners.length, addedAt: new Date().toISOString() });
+  logActivity('Added partner', name);
+  document.getElementById('pt-name').value = ''; document.getElementById('pt-link').value = '';
+  document.getElementById('pt-logo').value = ''; document.getElementById('pt-logo-status').innerHTML = '';
+  _ptLogoUrl = '';
+}
+function deletePartner(key){
+  if (!confirm('Remove this partner?')) return;
+  const p = _partners.find(x=>x._key===key);
+  _fbDb.ref('partners/'+key).remove();
+  logActivity('Removed partner', p?p.name:key);
+}
+function renderPartners(){
+  const tbody = document.getElementById('partners-body');
+  if (!tbody) return;
+  if (!_partners.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No partners added yet.</td></tr>'; return; }
+  tbody.innerHTML = _partners.map(p => `<tr>
+    <td><img src="${p.logoUrl}" style="width:60px;height:36px;object-fit:contain;background:#fff;border-radius:4px;"></td>
+    <td><strong>${p.name}</strong></td>
+    <td>${p.link?`<a href="${p.link}" target="_blank" rel="noopener">${p.link}</a>`:'—'}</td>
+    <td class="actions"><button class="btn btn-danger btn-xs" onclick="deletePartner('${p._key}')"><i class="fas fa-trash"></i></button></td>
+  </tr>`).join('');
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 refreshDashboard();
