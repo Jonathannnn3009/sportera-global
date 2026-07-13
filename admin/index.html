@@ -1382,8 +1382,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       <p style="font-size:.82rem;color:var(--muted);padding:14px 20px 0;">Who approved, edited, or deleted what — most recent first.</p>
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead>
-          <tbody id="activity-log-body"><tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
+          <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th><th></th></tr></thead>
+          <tbody id="activity-log-body"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1561,10 +1561,15 @@ function logout(){ sessionStorage.removeItem('sg_admin'); sessionStorage.removeI
 // or remove real data (approvals, deletes, tournament/result edits, admin
 // management) rather than every UI interaction.
 const _currentAdminEmail = sessionStorage.getItem('sg_admin_email') || 'Admin';
-function logActivity(action, entity){
-  _fbDb.ref('activityLog').push({
-    action, entity: entity || '', admin: _currentAdminEmail, ts: new Date().toISOString()
-  });
+// revertData is optional: {type, uid, level, tournaments, sections} snapshot
+// of the state BEFORE this change, for the handful of edits (admin access
+// changes so far) where undoing it is just writing those old values back —
+// not a general undo system, just enough to fix an incorrect admin edit
+// without having to remember what it used to be.
+function logActivity(action, entity, revertData){
+  const entry = { action, entity: entity || '', admin: _currentAdminEmail, ts: new Date().toISOString() };
+  if (revertData) entry.revertData = revertData;
+  _fbDb.ref('activityLog').push(entry);
 }
 // The activity-log listener itself is registered further down, right after
 // _fbDb is initialized (see FIREBASE INIT section) — it was originally
@@ -1640,22 +1645,45 @@ if (!_isRootAdmin && _adminProfile) {
   });
 }
 
-// Keep only the most recent 500 activity-log entries client-side so this
-// table doesn't grow unbounded in memory over a long-running project.
-_fbDb.ref('activityLog').limitToLast(500).on('value', snap => {
+// Plain listener (no limitToLast) — a query-modified .on('value') on this
+// path was observed returning inconsistent partial results across
+// identical calls (25, then 2, then 1 entries for the same data), which
+// made the on-screen log appear to "stop updating". A plain listener is
+// the same reliable pattern already used for fixtures/registrations/results
+// elsewhere in this file; the 500-cap is just applied client-side instead.
+_fbDb.ref('activityLog').on('value', snap => {
   const entries = [];
   snap.forEach(child => entries.push({ _key: child.key, ...child.val() }));
   entries.reverse();
+  const limited = entries.slice(0, 500);
   const tbody = document.getElementById('activity-log-body');
   if (!tbody) return;
-  if (!entries.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No activity logged yet.</td></tr>'; return; }
-  tbody.innerHTML = entries.map(e => `<tr>
+  if (!limited.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No activity logged yet.</td></tr>'; return; }
+  tbody.innerHTML = limited.map(e => `<tr>
     <td style="font-size:.82rem;color:var(--muted);white-space:nowrap;">${fmtDateTime ? fmtDateTime(e.ts) : new Date(e.ts).toLocaleString()}</td>
     <td>${e.admin||'—'}</td>
     <td><strong>${e.action||'—'}</strong></td>
     <td style="font-size:.85rem;">${e.entity||'—'}</td>
+    <td>${e.revertData ? `<button class="btn btn-ghost btn-xs" onclick="revertLoggedChange('${e._key}')" title="Undo — restore what it was before this change"><i class="fas fa-rotate-left"></i> Revert</button>` : ''}</td>
   </tr>`).join('');
 });
+
+async function revertLoggedChange(logKey){
+  const snap = await _fbDb.ref('activityLog/'+logKey).once('value');
+  const entry = snap.val();
+  if (!entry || !entry.revertData) return;
+  const r = entry.revertData;
+  if (r.type === 'adminAccess') {
+    if (!confirm('Restore this admin\'s access to what it was before this change?')) return;
+    try {
+      await _fbFs.collection('admins').doc(r.uid).update({ level: r.level, tournaments: r.tournaments, sections: r.sections });
+      logActivity('Reverted admin access', r.email+' — restored to previous access');
+      alert('Access restored.');
+    } catch(e) {
+      alert('Could not revert: '+e.message);
+    }
+  }
+}
 
 // ── SECONDARY FIREBASE APP ────────────────────────────────────────────────
 // Creating a new Auth user (player/team/admin) with the client SDK signs the
@@ -2424,7 +2452,10 @@ async function saveAdminEdit(){
     if ((before.level||'delete') !== level) changes.push('Level: '+(ACCESS_LEVEL_LABEL[before.level]||ACCESS_LEVEL_LABEL.delete)+' → '+ACCESS_LEVEL_LABEL[level]);
     if (JSON.stringify(before.tournaments||'all') !== JSON.stringify(tournaments)) changes.push('Tournaments: '+fmtTourn(before.tournaments)+' → '+fmtTourn(tournaments));
     if (JSON.stringify(before.sections||'all') !== JSON.stringify(sections)) changes.push('Sections: '+fmtSections(before.sections)+' → '+fmtSections(sections));
-    logActivity('Updated admin access', email+(changes.length?' — '+changes.join(' | '):' (no changes)'));
+    logActivity(
+      'Updated admin access', email+(changes.length?' — '+changes.join(' | '):' (no changes)'),
+      changes.length ? { type: 'adminAccess', uid, email, level: before.level||'delete', tournaments: before.tournaments||'all', sections: before.sections||'all' } : null
+    );
     closeModal('modal-edit-admin');
   } catch(e) {
     alert('Could not update admin access: '+e.message);
