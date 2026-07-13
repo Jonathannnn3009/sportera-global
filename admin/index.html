@@ -1138,6 +1138,9 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <select id="res-agecat" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
           <option value="">All Ages</option>
         </select>
+        <select id="res-pool" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Pools</option>
+        </select>
       </div>
     </div>
     <div class="card-body">
@@ -1157,6 +1160,9 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         </select>
         <select id="reslog-agecat" onchange="renderResultsLog()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
           <option value="">All Ages</option>
+        </select>
+        <select id="reslog-pool" onchange="renderResultsLog()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Pools</option>
         </select>
         <select id="poster-theme-res" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;" title="Theme used by the Share/result-poster button below">
           <optgroup label="Gradients">
@@ -4435,6 +4441,9 @@ function onResFilterTournamentChange(){
   const citySel = document.getElementById('res-city');
   const cities = _fbCitiesByTournament[tournamentSlug(tournamentName)] || [];
   citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const poolSel = document.getElementById('res-pool');
+  const pools = _fbPoolsByTournament[tournamentSlug(tournamentName)] || [];
+  poolSel.innerHTML = '<option value="">All Pools</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('');
   renderResultsFixtures();
 }
 
@@ -4451,6 +4460,9 @@ function onResLogTournamentChange(){
     citySel.style.display = 'none';
     citySel.value = '';
   }
+  const poolSel = document.getElementById('reslog-pool');
+  const pools = _fbPoolsByTournament[tournamentSlug(tournamentName)] || [];
+  poolSel.innerHTML = '<option value="">All Pools</option>' + pools.map(p=>`<option value="${p}">Pool ${p}</option>`).join('');
   renderResultsLog();
 }
 
@@ -4546,10 +4558,12 @@ function renderResultsFixtures(){
   const t=(document.getElementById('res-tournament')||{}).value||'';
   const c=(document.getElementById('res-city')||{}).value||'';
   const a=(document.getElementById('res-agecat')||{}).value||'';
+  const p=(document.getElementById('res-pool')||{}).value||'';
   let fx=(_fbFixtures||[]).filter(f=>f.status==='upcoming');
   if(t) fx=fx.filter(f=>f.tournament===t);
   if(c) fx=fx.filter(f=>f.cityGroup===c);
   if(a) fx=fx.filter(f=>f.ageCategory===a);
+  if(p) fx=fx.filter(f=>f.pool===p);
   const container=document.getElementById('results-fixtures-list');
   if(!fx.length){ container.innerHTML='<div class="empty"><i class="fas fa-calendar-check"></i><h4>No upcoming fixtures</h4><p>All fixtures are played, or none added yet.</p></div>'; }
   else {
@@ -4588,7 +4602,7 @@ function saveResult(fxKey){
     homeMotm, awayMotm, homeYellow, awayYellow, homeRed, awayRed, homeFouls:hfoul, awayFouls:afoul,
     homeScorers: scorersState.home||[], awayScorers: scorersState.away||[],
     homeLineup: lineupState.home||[], awayLineup: lineupState.away||[],
-    tournament:fx.tournament, ageCategory:fx.ageCategory, cityGroup:fx.cityGroup||null, matchNumber:fx.matchNumber, round:fx.round,
+    tournament:fx.tournament, ageCategory:fx.ageCategory, cityGroup:fx.cityGroup||null, pool:fx.pool||null, matchNumber:fx.matchNumber, round:fx.round,
     dt:new Date().toISOString()
   });
   delete _resultScorersState[fxKey];
@@ -4664,10 +4678,18 @@ function renderResultsLog(){
   const t=(document.getElementById('reslog-tournament')||{}).value||'';
   const c=(document.getElementById('reslog-city')||{}).value||'';
   const a=(document.getElementById('reslog-agecat')||{}).value||'';
+  const p=(document.getElementById('reslog-pool')||{}).value||'';
   let results=[..._fbResults].reverse();
   if(t) results=results.filter(r=>r.tournament===t);
   if(c) results=results.filter(r=>r.cityGroup===c);
   if(a) results=results.filter(r=>r.ageCategory===a);
+  if(p) results=results.filter(r=>{
+    // Older results were saved before pool was tracked on the result itself
+    // — fall back to the matching fixture's pool for those.
+    if (r.pool) return r.pool===p;
+    const fx = (_fbFixtures||[]).find(f=>f._key===r._key);
+    return fx && fx.pool===p;
+  });
   const tbody=document.getElementById('results-log');
   if(!results.length){ tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);">No results match these filters.</td></tr>'; return; }
   const cardsHtml = r => {
