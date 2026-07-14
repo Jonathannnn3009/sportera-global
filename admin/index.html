@@ -1485,6 +1485,13 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       </div>
     </div>
     <div class="card">
+      <div class="card-head"><h3><i class="fas fa-eye"></i> Currently Showing on News Page</h3></div>
+      <div class="card-body" style="padding:0;">
+        <p style="font-size:.8rem;color:var(--muted);padding:14px 18px 0;">This is the live widget's actual content right now — your tournaments (auto) mixed with any manual events below, in the order visitors see them. Only rows tagged "Manual" can be edited/deleted here; tournament rows come from Manage Tournaments.</p>
+        <div class="tbl-wrap"><table class="dt"><thead><tr><th>Source</th><th>Title</th><th>Date</th></tr></thead><tbody id="upcomingevents-preview-body"></tbody></table></div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-head"><h3><i class="fas fa-list"></i> Manual Events</h3></div>
       <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Title</th><th>Date</th><th>Actions</th></tr></thead><tbody id="upcomingevents-body"></tbody></table></div></div>
     </div>
@@ -1950,6 +1957,7 @@ _fbDb.ref('tournaments').on('value', snap => {
   if (_permTournaments !== 'all') _fbTournaments = _fbTournaments.filter(t => scopedToTournament(t.name));
   _fbTournaments.sort((a,b) => (a.name||'').localeCompare(b.name||''));
   renderTournaments();
+  if (typeof renderUpcomingEventsPreview === 'function') renderUpcomingEventsPreview();
   refreshAllTournamentSelects();
 });
 
@@ -5870,15 +5878,41 @@ function deleteUpcomingEvent(key){
 }
 function renderUpcomingEvents(){
   const tbody = document.getElementById('upcomingevents-body');
+  if (tbody) {
+    if (!_upcomingEvents.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--muted);">No manual events added — the widget still shows your live tournaments automatically.</td></tr>'; }
+    else {
+      tbody.innerHTML = _upcomingEvents.map(e => `<tr>
+        <td><strong>${e.title}</strong></td>
+        <td>${e.date ? fmtDate(e.date) : 'TBA'}</td>
+        <td class="actions">
+          <button class="btn btn-ghost btn-xs" onclick="editUpcomingEvent('${e._key}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-danger btn-xs" onclick="deleteUpcomingEvent('${e._key}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+    }
+  }
+  renderUpcomingEventsPreview();
+}
+// Shows exactly what the News page widget is combining right now — same
+// filtering/sorting/limit as news/index.html — so "why isn't my tournament
+// showing" is answerable from this panel instead of having to check the
+// live site and guess.
+function renderUpcomingEventsPreview(){
+  const tbody = document.getElementById('upcomingevents-preview-body');
   if (!tbody) return;
-  if (!_upcomingEvents.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--muted);">No manual events added — the widget still shows your live tournaments automatically.</td></tr>'; return; }
-  tbody.innerHTML = _upcomingEvents.map(e => `<tr>
+  const today = new Date().toISOString().slice(0,10);
+  const fromTournaments = (_fbTournaments||[])
+    .filter(t => t.status !== 'draft' && (!t.endDate || t.endDate >= today))
+    .map(t => ({ source: 'Tournament', title: t.name, date: t.startDate }));
+  const fromManual = (_upcomingEvents||[]).map(e => ({ source: 'Manual', title: e.title, date: e.date }));
+  const combined = fromTournaments.concat(fromManual)
+    .sort((a,b) => (a.date||'9999').localeCompare(b.date||'9999'))
+    .slice(0, 4);
+  if (!combined.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--muted);">Nothing to show yet — add a tournament (Manage Tournaments) or a manual event above.</td></tr>'; return; }
+  tbody.innerHTML = combined.map(e => `<tr>
+    <td><span style="font-size:.78rem;color:var(--muted);">${e.source}</span></td>
     <td><strong>${e.title}</strong></td>
     <td>${e.date ? fmtDate(e.date) : 'TBA'}</td>
-    <td class="actions">
-      <button class="btn btn-ghost btn-xs" onclick="editUpcomingEvent('${e._key}')"><i class="fas fa-edit"></i></button>
-      <button class="btn btn-danger btn-xs" onclick="deleteUpcomingEvent('${e._key}')"><i class="fas fa-trash"></i></button>
-    </td>
   </tr>`).join('');
 }
 
