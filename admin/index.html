@@ -5411,13 +5411,14 @@ setInterval(refreshMedia, 15000);
 // of typing/pasting a URL — this is the primary path now, since a local
 // file path pasted into the URL box only ever worked on the admin's own
 // computer and silently created a dead photo for everyone else.
+const MED_MAX_SIZE = 5 * 1024 * 1024;
 let _medPhotoUrl = '';
 function uploadMediaPhoto(){
   const file = document.getElementById('med-photo').files[0];
   const statusEl = document.getElementById('med-photo-status');
   _medPhotoUrl = '';
   if (!file) return;
-  if (file.size > 600 * 1024) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 600KB. Use "Bulk-Upload a Whole Folder" below for more/larger photos, or compress this one first.</span>'; return; }
+  if (file.size > MED_MAX_SIZE) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 5MB. Compress it first, or use the Google Drive Link field for the rest of the album.</span>'; return; }
   statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
   const reader = new FileReader();
   reader.onload = () => { _medPhotoUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
@@ -5491,16 +5492,15 @@ function deleteMedia(key){
 // admin) and pushed as its own media entry, all sharing whatever
 // Album/Category/Tournament is set in the form above.
 let _medBulkFiles = [];
-const MED_BULK_MAX_SIZE = 600 * 1024;
 function onMediaBulkFilesSelected(){
   const files = Array.from(document.getElementById('med-bulk-files').files || []);
   const statusEl = document.getElementById('med-bulk-status');
   const btn = document.getElementById('med-bulk-btn');
-  const oversized = files.filter(f => f.size > MED_BULK_MAX_SIZE);
-  _medBulkFiles = files.filter(f => f.size <= MED_BULK_MAX_SIZE);
+  const oversized = files.filter(f => f.size > MED_MAX_SIZE);
+  _medBulkFiles = files.filter(f => f.size <= MED_MAX_SIZE);
   if (!files.length) { statusEl.innerHTML = ''; btn.disabled = true; return; }
   let msg = `<span style="color:#2e7d32;">${_medBulkFiles.length} photo${_medBulkFiles.length===1?'':'s'} ready</span>`;
-  if (oversized.length) msg += `<br><span style="color:#c62828;">${oversized.length} skipped — over 600KB each: ${oversized.map(f=>f.name).join(', ')}</span>`;
+  if (oversized.length) msg += `<br><span style="color:#c62828;">${oversized.length} skipped — over 5MB each: ${oversized.map(f=>f.name).join(', ')}</span>`;
   statusEl.innerHTML = msg;
   btn.disabled = _medBulkFiles.length === 0;
 }
