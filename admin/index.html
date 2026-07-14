@@ -1408,8 +1408,9 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <input type="hidden" id="ifc-edit-id">
         <div class="fg"><label>City Name *</label><input type="text" id="ifc-name" placeholder="e.g. Mumbai"></div>
         <div class="fg"><label>3-Letter Code *</label><input type="text" id="ifc-code" maxlength="3" placeholder="e.g. MUM" style="text-transform:uppercase;"></div>
-        <div class="fg"><label>Avatar Gradient — Color 1</label><input type="color" id="ifc-color1" value="#0077b6"></div>
+        <div class="fg"><label>Avatar Gradient — Color 1 <span style="font-weight:400;color:var(--muted);">(used if no image below)</span></label><input type="color" id="ifc-color1" value="#0077b6"></div>
         <div class="fg"><label>Avatar Gradient — Color 2</label><input type="color" id="ifc-color2" value="#00b4d8"></div>
+        <div class="fg"><label>Image <span style="font-weight:400;color:var(--muted);">(optional — replaces the code initials with a photo)</span></label><input type="file" id="ifc-photo" accept=".jpg,.jpeg,.png" onchange="uploadIf5lCityPhoto()"><div id="ifc-photo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary" onclick="addIf5lCity()" id="ifc-save-btn"><i class="fas fa-save"></i> Add City</button>
           <button class="btn btn-ghost" onclick="clearIf5lCityForm()" id="ifc-cancel-btn" style="display:none;">Cancel</button>
@@ -4405,7 +4406,18 @@ async function bulkUploadFixtures(){
     if(!/^\d{1,2}:\d{2}$/.test(timeStr)){ errors.push(`Row ${rowNum}: Time must be HH:MM, 24-hour (got "${timeStr}").`); return; }
     const dt = `${dateStr}T${timeStr.padStart(5,'0')}`;
 
-    if(!round || !FIXTURES_VALID_ROUNDS.includes(round)) round = 'League Stage';
+    // Match Round case/whitespace-insensitively (an Excel cell typed "semi
+    // final", "Semi-final ", etc. must still count as a knockout round —
+    // silently defaulting a mistyped knockout round to League Stage would
+    // wrongly fold that result into the pool points table). Only a truly
+    // blank cell defaults to League Stage; anything else unrecognized is
+    // rejected so it gets fixed instead of silently mis-filed.
+    if(!round) { round = 'League Stage'; }
+    else {
+      const matched = FIXTURES_VALID_ROUNDS.find(r => r.toLowerCase() === round.toLowerCase().trim());
+      if(!matched){ errors.push(`Row ${rowNum}: "${round}" is not a valid Round — use one of ${FIXTURES_VALID_ROUNDS.join(', ')}.`); return; }
+      round = matched;
+    }
 
     const scopeKey = [tournament, city, ageCategory, pool].join('|');
     if (matchCountCache[scopeKey] === undefined) {
@@ -5596,6 +5608,19 @@ async function refreshIf5lCities(){
 }
 refreshIf5lCities();
 setInterval(refreshIf5lCities, 15000);
+let _ifcPhotoUrl = '';
+function uploadIf5lCityPhoto(){
+  const file = document.getElementById('ifc-photo').files[0];
+  const statusEl = document.getElementById('ifc-photo-status');
+  _ifcPhotoUrl = '';
+  if (!file) return;
+  if (file.size > 600 * 1024) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 600KB.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
+  const reader = new FileReader();
+  reader.onload = () => { _ifcPhotoUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
+  reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
+  reader.readAsDataURL(file);
+}
 function addIf5lCity(){
   const name = document.getElementById('ifc-name').value.trim();
   const code = document.getElementById('ifc-code').value.trim().toUpperCase();
@@ -5604,10 +5629,12 @@ function addIf5lCity(){
   const editKey = document.getElementById('ifc-edit-id').value;
   if (!name || !code) { alert('City name and code are both required.'); return; }
   if (editKey) {
-    _fbDb.ref('if5lCities/'+editKey).update({ name, code, color1, color2 }).then(() => setTimeout(refreshIf5lCities, 500));
+    const existing = _if5lCities.find(c=>c._key===editKey);
+    const obj = { name, code, color1, color2, photoUrl: _ifcPhotoUrl || (existing?existing.photoUrl:'') || '' };
+    _fbDb.ref('if5lCities/'+editKey).update(obj).then(() => setTimeout(refreshIf5lCities, 500));
     logActivity('Updated IF5L city', name);
   } else {
-    _fbDb.ref('if5lCities').push({ name, code, color1, color2, order: _if5lCities.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshIf5lCities, 500));
+    _fbDb.ref('if5lCities').push({ name, code, color1, color2, photoUrl: _ifcPhotoUrl, order: _if5lCities.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshIf5lCities, 500));
     logActivity('Added IF5L city', name);
   }
   clearIf5lCityForm();
@@ -5628,9 +5655,11 @@ function clearIf5lCityForm(){
   document.getElementById('ifc-edit-id').value = '';
   document.getElementById('ifc-name').value = ''; document.getElementById('ifc-code').value = '';
   document.getElementById('ifc-color1').value = '#0077b6'; document.getElementById('ifc-color2').value = '#00b4d8';
+  document.getElementById('ifc-photo').value = ''; document.getElementById('ifc-photo-status').innerHTML = '';
   document.getElementById('ifc-form-title').innerHTML = '<i class="fas fa-city"></i> Add City';
   document.getElementById('ifc-save-btn').innerHTML = '<i class="fas fa-save"></i> Add City';
   document.getElementById('ifc-cancel-btn').style.display = 'none';
+  _ifcPhotoUrl = '';
 }
 function deleteIf5lCity(key){
   if (!confirm('Remove this city from the IF5L page?')) return;
@@ -5643,7 +5672,9 @@ function renderIf5lCities(){
   if (!tbody) return;
   if (!_if5lCities.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No cities added yet.</td></tr>'; return; }
   tbody.innerHTML = _if5lCities.map(c => `<tr>
-    <td><div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;background:linear-gradient(135deg, ${c.color1||'#0077b6'}, ${c.color2||'#00b4d8'});">${c.code}</div></td>
+    <td>${c.photoUrl
+      ? `<img src="${c.photoUrl}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">`
+      : `<div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;background:linear-gradient(135deg, ${c.color1||'#0077b6'}, ${c.color2||'#00b4d8'});">${c.code}</div>`}</td>
     <td><strong>${c.name}</strong></td>
     <td>${c.code}</td>
     <td class="actions">
