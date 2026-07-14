@@ -376,7 +376,7 @@
             if (!el) return;
             const today = new Date().toISOString().slice(0,10);
             const fromTournaments = Object.values(tournaments || {})
-                .filter(t => t.status !== 'draft' && (!t.endDate || t.endDate >= today))
+                .filter(t => t.status !== 'draft' && !t.hideFromUpcoming && (!t.endDate || t.endDate >= today))
                 .map(t => ({ title: t.name, date: t.startDate, icon: 'fa-futbol', link: '../tournaments/' }));
             const fromManual = Object.values(manualEvents || {})
                 .map(e => ({ title: e.title, date: e.date, icon: e.icon || 'fa-star', link: e.link || '../tournaments/' }));
