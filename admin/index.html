@@ -946,6 +946,10 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
           <select id="fx-filter-pool" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
             <option value="">All Pools</option>
           </select>
+          <select id="fx-filter-round" onchange="renderFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+            <option value="">All Rounds</option>
+            <option>League Stage</option><option>Quarter-Final</option><option>Semi-Final</option><option>Third Place</option><option>Grand Final</option>
+          </select>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
           <select id="poster-theme" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
@@ -1151,10 +1155,14 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <select id="res-pool" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
           <option value="">All Pools</option>
         </select>
+        <select id="res-round" onchange="renderResultsFixtures()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
+          <option value="">All Rounds</option>
+          <option>League Stage</option><option>Quarter-Final</option><option>Semi-Final</option><option>Third Place</option><option>Grand Final</option>
+        </select>
       </div>
     </div>
     <div class="card-body">
-      <div class="notice info"><i class="fas fa-info-circle"></i> Enter scores for played fixtures. League table updates automatically when you save a result.</div>
+      <div class="notice info"><i class="fas fa-info-circle"></i> Enter scores for played fixtures. League table updates automatically when you save a result — knockout-round results (Quarter-Final onward) are kept out of the pool table and shown separately.</div>
       <div id="results-fixtures-list"><div class="empty"><i class="fas fa-calendar-times"></i><h4>No fixtures to show</h4><p>Add fixtures first, then enter results here.</p></div></div>
     </div>
   </div>
@@ -3999,11 +4007,13 @@ function renderFixtures(){
   const fc=(document.getElementById('fx-filter-city')||{}).value||'';
   const fa=(document.getElementById('fx-filter-age')||{}).value||'';
   const fp=(document.getElementById('fx-filter-pool')||{}).value||'';
+  const fr=(document.getElementById('fx-filter-round')||{}).value||'';
   let fx=_fbFixtures;
   if(ft) fx=fx.filter(f=>f.tournament===ft);
   if(fc) fx=fx.filter(f=>f.cityGroup===fc);
   if(fa) fx=fx.filter(f=>f.ageCategory===fa);
   if(fp) fx=fx.filter(f=>f.pool===fp);
+  if(fr) fx=fx.filter(f=>(f.round||'League Stage')===fr);
   fx=[...fx].sort((a,b)=>fixturesCompare(a,b,_fxSortCol)*_fxSortDir);
   document.querySelectorAll('#fixtures-head-row th[data-sort]').forEach(th=>{
     th.querySelector('.sort-ind').textContent = th.dataset.sort===_fxSortCol ? (_fxSortDir===1?'▲':'▼') : '';
@@ -4671,11 +4681,13 @@ function renderResultsFixtures(){
   const c=(document.getElementById('res-city')||{}).value||'';
   const a=(document.getElementById('res-agecat')||{}).value||'';
   const p=(document.getElementById('res-pool')||{}).value||'';
+  const r=(document.getElementById('res-round')||{}).value||'';
   let fx=(_fbFixtures||[]).filter(f=>f.status==='upcoming');
   if(t) fx=fx.filter(f=>f.tournament===t);
   if(c) fx=fx.filter(f=>f.cityGroup===c);
   if(a) fx=fx.filter(f=>f.ageCategory===a);
   if(p) fx=fx.filter(f=>f.pool===p);
+  if(r) fx=fx.filter(f=>(f.round||'League Stage')===r);
   const container=document.getElementById('results-fixtures-list');
   if(!fx.length){ container.innerHTML='<div class="empty"><i class="fas fa-calendar-check"></i><h4>No upcoming fixtures</h4><p>All fixtures are played, or none added yet.</p></div>'; }
   else {
@@ -4981,25 +4993,59 @@ function renderLeagueTable(){
   // filename. City only appears for multi-city tournaments.
   heading.textContent = tourn + (city ? ' — ' + city : '') + ' — ' + (ageCat || 'All Age Categories');
 
-  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
-  if(city) fx=fx.filter(f=>f.cityGroup===city);
-  if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
+  let allPlayed=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
+  if(city) allPlayed=allPlayed.filter(f=>f.cityGroup===city);
+  if(ageCat) allPlayed=allPlayed.filter(f=>f.ageCategory===ageCat);
+
+  // Knockout rounds (Quarter-Final onward) never feed the pool/league
+  // table — a Semi-Final crosses pools, so counting it as a pool result
+  // would wrongly hand points to teams outside that pool.
+  const fx = allPlayed.filter(f=>(f.round||'League Stage')==='League Stage');
+  const knockoutFx = allPlayed.filter(f=>(f.round||'League Stage')!=='League Stage');
 
   const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&(!city||r.cityGroup===city)&&(!ageCat||r.ageCategory===ageCat));
   const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
 
-  if(!fx.length){ container.innerHTML=''; empty.style.display='block'; return; }
+  if(!fx.length && !knockoutFx.length){ container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
 
-  if(pools.length){
-    container.innerHTML = pools.map(p=>{
-      const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
-      const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
-      return tableHtml(computeTableRows(poolFx), 'Pool ' + p);
-    }).join('');
-  } else {
-    container.innerHTML = tableHtml(computeTableRows(fx), null);
+  let html = '';
+  if(fx.length){
+    if(pools.length){
+      html += pools.map(p=>{
+        const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
+        const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
+        return tableHtml(computeTableRows(poolFx), 'Pool ' + p);
+      }).join('');
+    } else {
+      html += tableHtml(computeTableRows(fx), null);
+    }
   }
+  html += knockoutResultsHtml(knockoutFx);
+  container.innerHTML = html;
+}
+
+// Knockout-round results (Quarter-Final, Semi-Final, Third Place, Grand
+// Final) are shown as a simple results list below the pool table instead
+// of being folded into anyone's win/loss column.
+const KNOCKOUT_ROUND_ORDER = ['Quarter-Final','Semi-Final','Third Place','Grand Final'];
+function knockoutResultsHtml(knockoutFx){
+  if(!knockoutFx.length) return '';
+  const byRound = {};
+  knockoutFx.forEach(f=>{ const r=f.round||'Knockout'; (byRound[r]=byRound[r]||[]).push(f); });
+  const rounds = Object.keys(byRound).sort((a,b)=>KNOCKOUT_ROUND_ORDER.indexOf(a)-KNOCKOUT_ROUND_ORDER.indexOf(b));
+  return `
+    <h4 style="margin:24px 0 10px;color:var(--primary);">Knockout Results</h4>
+    ${rounds.map(r=>`
+      <div style="margin-bottom:14px;">
+        <div style="font-weight:700;font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">${r}</div>
+        ${byRound[r].map(f=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f9ff;border-radius:8px;margin-bottom:6px;font-size:.9rem;">
+            <span style="flex:1;text-align:right;font-weight:600;">${f.home}</span>
+            <span style="font-weight:800;color:var(--primary);">${f.homeScore ?? 0} – ${f.awayScore ?? 0}</span>
+            <span style="flex:1;font-weight:600;">${f.away}</span>
+          </div>`).join('')}
+      </div>`).join('')}`;
 }
 
 // Exports whatever the League Table panel is currently showing — same
@@ -5011,7 +5057,7 @@ function exportLeagueTable(){
   const ageCat=(document.getElementById('lt-agecat')||{}).value||'';
   if(!tourn){ alert('Select a tournament first.'); return; }
 
-  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played');
+  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played'&&(f.round||'League Stage')==='League Stage');
   if(city) fx=fx.filter(f=>f.cityGroup===city);
   if(ageCat) fx=fx.filter(f=>f.ageCategory===ageCat);
   if(!fx.length){ alert('No table data to export yet.'); return; }
@@ -5051,7 +5097,7 @@ async function exportLeagueTablePoster(){
   if(!tourn){ alert('Select a Tournament in the filters above first.'); return; }
   if(!ageCat){ alert('Select an Age Category in the filters above first — the poster covers one age category at a time.'); return; }
 
-  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played'&&f.ageCategory===ageCat);
+  let fx=(_fbFixtures||[]).filter(f=>f.tournament===tourn&&f.status==='played'&&f.ageCategory===ageCat&&(f.round||'League Stage')==='League Stage');
   if(city) fx=fx.filter(f=>f.cityGroup===city);
   if(!fx.length){ alert('No played results yet for this selection — the table has nothing to show.'); return; }
 
