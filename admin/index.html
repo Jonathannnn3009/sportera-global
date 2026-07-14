@@ -1305,7 +1305,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <select id="med-tournament"></select>
       </div>
       <div class="fg" style="max-width:600px;"><label>Google Drive Link <span style="font-weight:400;color:var(--muted);">(optional — shown as a "See More Photos" link on this session; upload only your best few photos here and let Drive hold the rest)</span></label><input type="text" id="med-drive-link" placeholder="https://drive.google.com/..."></div>
-      <div class="fg" style="max-width:600px;"><label>Image URL</label><input type="text" id="med-url" placeholder="Paste image URL or local path"></div>
+      <div class="fg" style="max-width:600px;"><label>Photo <span style="font-weight:400;color:var(--muted);">(pick a file from your computer)</span></label><input type="file" id="med-photo" accept=".jpg,.jpeg,.png" onchange="uploadMediaPhoto()"><div id="med-photo-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+      <div class="fg" style="max-width:600px;"><label>— or — Image URL <span style="font-weight:400;color:var(--muted);">(only if the photo is already hosted online somewhere)</span></label><input type="text" id="med-url" placeholder="https://..."></div>
       <div class="fg" style="max-width:600px;"><label>Caption</label><input type="text" id="med-caption" placeholder="Short description"></div>
       <button class="btn btn-primary" onclick="addMedia()"><i class="fas fa-plus"></i> Add to Gallery</button>
 
@@ -5405,9 +5406,38 @@ async function refreshMedia(){
 refreshMedia();
 setInterval(refreshMedia, 15000);
 
+// Uploading an actual file (read via FileReader into a base64 data URL,
+// same approach as team photos/partner logos/bulk gallery upload) instead
+// of typing/pasting a URL — this is the primary path now, since a local
+// file path pasted into the URL box only ever worked on the admin's own
+// computer and silently created a dead photo for everyone else.
+let _medPhotoUrl = '';
+function uploadMediaPhoto(){
+  const file = document.getElementById('med-photo').files[0];
+  const statusEl = document.getElementById('med-photo-status');
+  _medPhotoUrl = '';
+  if (!file) return;
+  if (file.size > 600 * 1024) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 600KB. Use "Bulk-Upload a Whole Folder" below for more/larger photos, or compress this one first.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
+  const reader = new FileReader();
+  reader.onload = () => { _medPhotoUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
+  reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
+  reader.readAsDataURL(file);
+}
 function addMedia(){
-  const url=document.getElementById('med-url').value.trim(); if(!url){alert('Image URL required');return;}
+  const pastedUrl = document.getElementById('med-url').value.trim();
   const editKey = document.getElementById('med-edit-id').value;
+  // A local file path (C:\..., D:\..., file:///...) only exists on the
+  // admin's own computer — saving it here would silently create a dead
+  // photo nobody else can ever see. Catch it here instead of only in docs,
+  // since typing/pasting a path into this box gives no error otherwise.
+  if (pastedUrl && (/^[a-zA-Z]:[\\\/]/.test(pastedUrl) || /^file:\/\//i.test(pastedUrl) || pastedUrl.includes('\\'))) {
+    alert('That looks like a local file path (e.g. "D:\\folder\\photo.jpg"), not a web link — it will only work on your own computer and will be broken for everyone else.\n\nUse the Photo field above instead and pick the actual file — that reads and stores the real image, not just a path to it.');
+    return;
+  }
+  const existing = editKey ? _mediaItems.find(m=>m._key===editKey) : null;
+  const url = _medPhotoUrl || pastedUrl || (existing?existing.url:'');
+  if (!url) { alert('Pick a photo or paste an image URL first.'); return; }
   const obj = { url, album:document.getElementById('med-album').value, category:document.getElementById('med-cat').value, caption:document.getElementById('med-caption').value, tournament:document.getElementById('med-tournament').value||null, driveLink:document.getElementById('med-drive-link').value.trim()||null };
   const write = editKey ? _fbDb.ref('media/'+editKey).update(obj) : _fbDb.ref('media').push({ ...obj, addedAt:new Date().toISOString() });
   write.then(() => setTimeout(refreshMedia, 500));
@@ -5428,6 +5458,8 @@ function clearMediaForm(){
   document.getElementById('med-edit-id').value = '';
   ['med-url','med-album','med-caption','med-drive-link'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('med-tournament').value = '';
+  document.getElementById('med-photo').value = ''; document.getElementById('med-photo-status').innerHTML = '';
+  _medPhotoUrl = '';
 }
 function renderMedia(){
   const grid=document.getElementById('media-grid');
