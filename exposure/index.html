@@ -264,7 +264,7 @@
       // Upcoming Tours destinations, editable from admin's International
       // Destinations panel instead of being hardcoded here — same
       // REST-fetch pattern as News/Team/Partners/IF5L Cities.
-      fetch("https://f5awebsite-default-rtdb.firebaseio.com/internationalDestinations.json").then(r => r.json()).then(data => {
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/internationalDestinations.json", { cache: "no-store" }).then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicIntlDestinations');
         if (!el || !data) return;
         const dests = Object.values(data).sort((a,b) => (a.order||0) - (b.order||0));

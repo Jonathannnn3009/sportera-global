@@ -337,7 +337,7 @@
             const d = new Date(iso + 'T00:00:00');
             return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         }
-        fetch("https://f5awebsite-default-rtdb.firebaseio.com/news.json").then(r => r.json()).then(data => {
+        fetch("https://f5awebsite-default-rtdb.firebaseio.com/news.json", { cache: "no-store" }).then(r => r.json()).then(data => {
             const feed = document.getElementById('newsArticlesFeed');
             const articles = Object.values(data || {}).filter(a => a.status === 'published');
             articles.sort((a,b) => (b.publishDate||'').localeCompare(a.publishDate||''));
@@ -369,8 +369,8 @@
         // to feature that isn't itself a tournament), instead of a
         // hand-typed name/date that goes stale every season.
         Promise.all([
-            fetch("https://f5awebsite-default-rtdb.firebaseio.com/tournaments.json").then(r => r.json()).catch(() => null),
-            fetch("https://f5awebsite-default-rtdb.firebaseio.com/upcomingEvents.json").then(r => r.json()).catch(() => null)
+            fetch("https://f5awebsite-default-rtdb.firebaseio.com/tournaments.json", { cache: "no-store" }).then(r => r.json()).catch(() => null),
+            fetch("https://f5awebsite-default-rtdb.firebaseio.com/upcomingEvents.json", { cache: "no-store" }).then(r => r.json()).catch(() => null)
         ]).then(([tournaments, manualEvents]) => {
             const el = document.getElementById('upcomingEventsWidget');
             if (!el) return;

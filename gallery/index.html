@@ -184,7 +184,7 @@
       function filterBtnStyle(active){
         return `padding:8px 20px;border-radius:25px;border:2px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:600;font-size:.9rem;cursor:pointer;font-family:inherit;`;
       }
-      fetch("https://f5awebsite-default-rtdb.firebaseio.com/media.json").then(r => r.json()).then(data => {
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/media.json", { cache: "no-store" }).then(r => r.json()).then(data => {
         if (!data) return;
         _galleryItems = Object.values(data);
         _galleryItems.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));

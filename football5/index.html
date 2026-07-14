@@ -222,7 +222,7 @@
       // Executive Committee members managed via admin's Manage Team panel
       // (page: "football5") — fetched via REST directly, same reasoning as
       // the About page's team/partners rendering.
-      fetch("https://f5awebsite-default-rtdb.firebaseio.com/teamMembers.json").then(r => r.json()).then(data => {
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/teamMembers.json", { cache: "no-store" }).then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicTeamGrid');
         if (!el || !data) return;
         const members = Object.values(data).filter(m => m.page === 'football5');

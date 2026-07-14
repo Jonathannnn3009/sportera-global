@@ -227,7 +227,7 @@
     <script>
       // League Cities, editable from admin's IF5L Cities panel instead of
       // being hardcoded here — same REST-fetch pattern as News/Team/Partners.
-      fetch("https://f5awebsite-default-rtdb.firebaseio.com/if5lCities.json").then(r => r.json()).then(data => {
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/if5lCities.json", { cache: "no-store" }).then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicIf5lCities');
         if (!el || !data) return;
         const cities = Object.values(data).sort((a,b) => (a.order||0) - (b.order||0));
