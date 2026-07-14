@@ -300,13 +300,19 @@
             const r = _liveResults.find(x => x._key === f._key);
             let result = '<span style="color:#999;">Upcoming</span>';
             if (r) {
-                const motm = [r.homeMotm, r.awayMotm].filter(Boolean).join(', ') || r.motm || '';
-                const yellow = [r.homeYellow, r.awayYellow].filter(Boolean).join(', ');
-                const red = [r.homeRed, r.awayRed].filter(Boolean).join(', ');
+                // Attribute MOTM/cards to the actual team they belong to
+                // instead of merging both teams' values into one
+                // unlabeled, comma-joined string (e.g. "🟨 4, 7" gave no
+                // way to tell which jersey number was on which side).
+                const homeMotm = r.homeMotm || (!r.awayMotm ? r.motm : '') || '';
+                const homeYellow = r.homeYellow || r.yellowCards || '';
+                const homeRed = r.homeRed || r.redCards || '';
+                const lines = [];
+                if (homeMotm || r.awayMotm) lines.push({ color:'#555', text:`MOTM: ${homeMotm ? f.home + ' – ' + homeMotm : ''}${homeMotm && r.awayMotm ? ' &bull; ' : ''}${r.awayMotm ? f.away + ' – ' + r.awayMotm : ''}` });
+                if (homeYellow || r.awayYellow) lines.push({ color:'#8a6d00', text:`🟨 ${homeYellow ? f.home + ' – ' + homeYellow : ''}${homeYellow && r.awayYellow ? ' &bull; ' : ''}${r.awayYellow ? f.away + ' – ' + r.awayYellow : ''}` });
+                if (homeRed || r.awayRed) lines.push({ color:'#c62828', text:`🟥 ${homeRed ? f.home + ' – ' + homeRed : ''}${homeRed && r.awayRed ? ' &bull; ' : ''}${r.awayRed ? f.away + ' – ' + r.awayRed : ''}` });
                 result = `<span class="score-pill">${r.homeScore} – ${r.awayScore}</span>`
-                    + (motm ? `<div style="font-size:.78rem;color:#555;margin-top:2px;">MOTM: ${motm}</div>` : '')
-                    + (yellow ? `<div style="font-size:.75rem;color:#8a6d00;margin-top:2px;">🟨 ${yellow}</div>` : '')
-                    + (red ? `<div style="font-size:.75rem;color:#c62828;margin-top:2px;">🟥 ${red}</div>` : '');
+                    + lines.map(l => `<div style="font-size:.75rem;color:${l.color};margin-top:2px;">${l.text}</div>`).join('');
             }
             return `<tr>
                 <td>${f.matchNumber || '—'}</td>
