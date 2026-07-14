@@ -125,22 +125,19 @@
       // Every gallery photo, including the original launch photos, now lives
       // in Firebase and is manageable (editable/deletable) from admin's
       // Photos & Videos panel. Fetched via REST directly, same reasoning as
-      // News/Team/Partners. Photos tagged with a tournament (optional, set
-      // from admin) get a filter bar so visitors can jump to just one
-      // tournament's photos instead of scrolling the whole gallery.
+      // News/Team/Partners.
       //
-      // Photos are grouped by Session/Album — the idea being admin only
-      // uploads a handful of "best shot" photos per session here, and can
-      // optionally attach a Google Drive link for that session so visitors
-      // who want the full set can tap "See More Photos" to open it.
+      // Photos are grouped by Session/Album — admin uploads a handful of
+      // "best shot" photos per session and can optionally attach a Google
+      // Drive link for that session so visitors who want the full set can
+      // tap "See More Photos". The filter bar lets visitors jump straight
+      // to one session instead of scrolling past every other session's
+      // photos to find it — filtering by session (not tournament), since
+      // that's the thing every upload actually has, while tournament is an
+      // optional extra tag that's usually blank.
       let _galleryItems = [];
       let _galleryFilter = '';
-      function renderGalleryItems(){
-        const el = document.getElementById('dynamicGalleryGrid');
-        if (!el) return;
-        const items = _galleryFilter ? _galleryItems.filter(m => m.tournament === _galleryFilter) : _galleryItems;
-        if (!items.length) { el.innerHTML = ''; return; }
-
+      function buildGalleryGroups(items){
         // Group while preserving the existing most-recent-first order —
         // a session's position on the page is set by its most recent photo.
         const groups = [];
@@ -152,7 +149,15 @@
           g.items.push(m);
           if (!g.driveLink && m.driveLink) g.driveLink = m.driveLink;
         });
+        return groups;
+      }
+      function renderGalleryItems(){
+        const el = document.getElementById('dynamicGalleryGrid');
+        if (!el) return;
+        const items = _galleryFilter ? _galleryItems.filter(m => (m.album||'') === _galleryFilter) : _galleryItems;
+        if (!items.length) { el.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">No photos in this session yet.</p>'; return; }
 
+        const groups = buildGalleryGroups(items);
         el.innerHTML = groups.map(g => `
           <div style="margin-bottom:40px;">
             ${g.album ? `<h3 style="font-family:'Montserrat',sans-serif;color:var(--primary);margin-bottom:16px;">${g.album}</h3>` : ''}
@@ -183,13 +188,13 @@
         if (!data) return;
         _galleryItems = Object.values(data);
         _galleryItems.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
-        const tournaments = [...new Set(_galleryItems.map(m => m.tournament).filter(Boolean))].sort();
+        const sessions = [...new Set(_galleryItems.map(m => m.album || '').filter(Boolean))];
         const filterBar = document.getElementById('galleryTournamentFilter');
-        if (tournaments.length && filterBar) {
+        if (sessions.length && filterBar) {
           filterBar.style.display = 'flex';
           const renderButtons = () => {
             filterBar.innerHTML = [`<button data-t="" style="${filterBtnStyle(_galleryFilter==='')}">All</button>`]
-              .concat(tournaments.map(t => `<button data-t="${t}" style="${filterBtnStyle(_galleryFilter===t)}">${t}</button>`)).join('');
+              .concat(sessions.map(s => `<button data-t="${s}" style="${filterBtnStyle(_galleryFilter===s)}">${s}</button>`)).join('');
             filterBar.querySelectorAll('button').forEach(btn => {
               btn.addEventListener('click', () => { _galleryFilter = btn.dataset.t; renderButtons(); renderGalleryItems(); });
             });
