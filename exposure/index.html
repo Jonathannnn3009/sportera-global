@@ -247,6 +247,7 @@
                     <h4>Contact</h4>
                     <ul>
                         <li><a href="mailto:sporteraglobal@gmail.com"><i class="fas fa-envelope"></i> sporteraglobal@gmail.com</a></li>
+                        <li><a href="tel:+919769854600"><i class="fas fa-phone"></i> +91 97698 54600</a></li>
                         <li><a href="https://instagram.com/sportera.global" target="_blank"><i class="fab fa-instagram"></i> @sportera.global</a></li>
                         <li style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);"><a href="../admin/" style="color:rgba(255,255,255,0.5); font-size:0.82rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-lock"></i> Admin Login</a></li>
                     </ul>
@@ -269,7 +270,9 @@
         const dests = Object.values(data).sort((a,b) => (a.order||0) - (b.order||0));
         el.innerHTML = dests.map(d => `
           <div class="about-card" style="text-align:center;">
-            <div class="icon" style="font-size:2rem;">${d.flag||''}</div>
+            ${d.photoUrl
+              ? `<img src="${d.photoUrl}" style="width:100%;height:140px;object-fit:cover;border-radius:var(--radius);margin-bottom:14px;">`
+              : `<div class="icon" style="font-size:2rem;">${d.flag||''}</div>`}
             <h3>${d.country}</h3>
             ${d.subtitle ? `<p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">${d.subtitle}</p>` : ''}
             <p>${d.description||''}</p>
