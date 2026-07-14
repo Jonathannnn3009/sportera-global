@@ -133,31 +133,7 @@
                 <p>IF5L is hosted simultaneously across multiple cities</p>
             </div>
             <div class="team-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-                <div class="team-card fade-in">
-                    <div class="avatar" style="background: linear-gradient(135deg, #0077b6, #00b4d8);">MUM</div>
-                    <h4>Mumbai</h4>
-                    <p class="role">IF5L City</p>
-                </div>
-                <div class="team-card fade-in">
-                    <div class="avatar" style="background: linear-gradient(135deg, #e63946, #f4a261);">AMB</div>
-                    <h4>Ambernath</h4>
-                    <p class="role">IF5L City</p>
-                </div>
-                <div class="team-card fade-in">
-                    <div class="avatar" style="background: linear-gradient(135deg, #7b2cbf, #c77dff);">MIR</div>
-                    <h4>Mira Bhayander</h4>
-                    <p class="role">IF5L City</p>
-                </div>
-                <div class="team-card fade-in">
-                    <div class="avatar" style="background: linear-gradient(135deg, #6a040f, #e85d04);">BLR</div>
-                    <h4>Bangalore</h4>
-                    <p class="role">IF5L City</p>
-                </div>
-                <div class="team-card fade-in">
-                    <div class="avatar" style="background: linear-gradient(135deg, #e63946, #f4a261);">HYD</div>
-                    <h4>Hyderabad</h4>
-                    <p class="role">IF5L City</p>
-                </div>
+                <div id="dynamicIf5lCities" style="display:contents;"></div>
             </div>
             <p class="fade-in" style="text-align:center; margin-top:30px; color:var(--text-light); font-size:0.9rem;">More cities will be added. IF5L is hosted simultaneously across all participating cities.</p>
         </div>
@@ -247,5 +223,20 @@
     </footer>
 
     <script src="../js/main.js"></script>
+    <script>
+      // League Cities, editable from admin's IF5L Cities panel instead of
+      // being hardcoded here — same REST-fetch pattern as News/Team/Partners.
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/if5lCities.json").then(r => r.json()).then(data => {
+        const el = document.getElementById('dynamicIf5lCities');
+        if (!el || !data) return;
+        const cities = Object.values(data).sort((a,b) => (a.order||0) - (b.order||0));
+        el.innerHTML = cities.map(c => `
+          <div class="team-card">
+            <div class="avatar" style="background: linear-gradient(135deg, ${c.color1||'#0077b6'}, ${c.color2||'#00b4d8'});">${c.code||''}</div>
+            <h4>${c.name}</h4>
+            <p class="role">IF5L City</p>
+          </div>`).join('');
+      }).catch(()=>{});
+    </script>
 </body>
 </html>

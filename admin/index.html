@@ -373,6 +373,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="nav-item" data-panel="downloads-mgr"><i class="fas fa-download"></i> Manage Downloads</div>
   <div class="nav-item" data-panel="teammembers"><i class="fas fa-user-friends"></i> Manage Team</div>
   <div class="nav-item" data-panel="partners"><i class="fas fa-handshake"></i> Manage Partners</div>
+  <div class="nav-item" data-panel="if5lcities"><i class="fas fa-city"></i> IF5L Cities</div>
+  <div class="nav-item" data-panel="intldest"><i class="fas fa-globe-asia"></i> International Destinations</div>
   </div>
 
   <div class="nav-group-section" data-section="messages">
@@ -1396,6 +1398,64 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
+<!-- ── IF5L CITIES ──────────────────────────────────────── -->
+<div class="panel" id="panel-if5lcities">
+  <div class="two-col" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3 id="ifc-form-title"><i class="fas fa-city"></i> Add City</h3></div>
+      <div class="card-body">
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up on the IF5L page's "League Cities" section.</p>
+        <input type="hidden" id="ifc-edit-id">
+        <div class="fg"><label>City Name *</label><input type="text" id="ifc-name" placeholder="e.g. Mumbai"></div>
+        <div class="fg"><label>3-Letter Code *</label><input type="text" id="ifc-code" maxlength="3" placeholder="e.g. MUM" style="text-transform:uppercase;"></div>
+        <div class="fg"><label>Avatar Gradient — Color 1</label><input type="color" id="ifc-color1" value="#0077b6"></div>
+        <div class="fg"><label>Avatar Gradient — Color 2</label><input type="color" id="ifc-color2" value="#00b4d8"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="addIf5lCity()" id="ifc-save-btn"><i class="fas fa-save"></i> Add City</button>
+          <button class="btn btn-ghost" onclick="clearIf5lCityForm()" id="ifc-cancel-btn" style="display:none;">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-list"></i> Current Cities</h3></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Preview</th><th>City</th><th>Code</th><th>Actions</th></tr></thead><tbody id="if5lcities-body"></tbody></table></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── INTERNATIONAL DESTINATIONS ───────────────────────── -->
+<div class="panel" id="panel-intldest">
+  <div class="two-col" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3 id="id-form-title"><i class="fas fa-globe-asia"></i> Add Destination</h3></div>
+      <div class="card-body">
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up on the International page's "Upcoming Tours" section.</p>
+        <input type="hidden" id="id-edit-id">
+        <div class="fg"><label>Flag Emoji *</label><input type="text" id="id-flag" placeholder="e.g. 🇹🇭"></div>
+        <div class="fg"><label>Country / Destination Name *</label><input type="text" id="id-country" placeholder="e.g. Thailand"></div>
+        <div class="fg"><label>Subtitle</label><input type="text" id="id-subtitle" placeholder="e.g. PHUKET / BANGKOK"></div>
+        <div class="fg"><label>Description</label><textarea id="id-description" rows="3" placeholder="Short description"></textarea></div>
+        <div class="fg"><label>Badge Text</label><input type="text" id="id-badge-text" placeholder="e.g. August 2026, Upcoming, Coming Soon"></div>
+        <div class="fg"><label>Badge Color</label>
+          <select id="id-badge-color">
+            <option value="#2e7d32">Green</option>
+            <option value="var(--primary)">Navy (default)</option>
+            <option value="var(--gold)">Gold</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="addIntlDestination()" id="id-save-btn"><i class="fas fa-save"></i> Add Destination</button>
+          <button class="btn btn-ghost" onclick="clearIntlDestinationForm()" id="id-cancel-btn" style="display:none;">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-list"></i> Current Destinations</h3></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Flag</th><th>Country</th><th>Badge</th><th>Actions</th></tr></thead><tbody id="intldest-body"></tbody></table></div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── CONTACT MESSAGES ──────────────────────────────────── -->
 <div class="panel" id="panel-messages">
   <div class="card">
@@ -2118,6 +2178,7 @@ const PANEL_TITLES = {
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
   teammembers:'Manage Team', partners:'Manage Partners',
+  if5lcities:'IF5L Cities', intldest:'International Destinations',
   messages:'Contact Messages', admins:'Manage Admins', tournaments:'Tournaments'
 };
 function switchPanel(id) {
@@ -2134,6 +2195,7 @@ function switchPanel(id) {
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
     teammembers: renderTeamMembers, partners: renderPartners,
+    if5lcities: renderIf5lCities, intldest: renderIntlDestinations,
     messages: renderMessages, admins: renderAdmins, tournaments: renderTournaments
   };
   if(refresh[id]) refresh[id]();
@@ -5517,6 +5579,151 @@ function renderPartners(){
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editPartner('${p._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deletePartner('${p._key}')"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── IF5L CITIES ───────────────────────────────────────────────────────────
+let _if5lCities = [];
+async function refreshIf5lCities(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/if5lCities.json');
+    const data = await res.json();
+    _if5lCities = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _if5lCities.sort((a,b) => (a.order||0) - (b.order||0));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
+  renderIf5lCities();
+}
+refreshIf5lCities();
+setInterval(refreshIf5lCities, 15000);
+function addIf5lCity(){
+  const name = document.getElementById('ifc-name').value.trim();
+  const code = document.getElementById('ifc-code').value.trim().toUpperCase();
+  const color1 = document.getElementById('ifc-color1').value;
+  const color2 = document.getElementById('ifc-color2').value;
+  const editKey = document.getElementById('ifc-edit-id').value;
+  if (!name || !code) { alert('City name and code are both required.'); return; }
+  if (editKey) {
+    _fbDb.ref('if5lCities/'+editKey).update({ name, code, color1, color2 }).then(() => setTimeout(refreshIf5lCities, 500));
+    logActivity('Updated IF5L city', name);
+  } else {
+    _fbDb.ref('if5lCities').push({ name, code, color1, color2, order: _if5lCities.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshIf5lCities, 500));
+    logActivity('Added IF5L city', name);
+  }
+  clearIf5lCityForm();
+}
+function editIf5lCity(key){
+  const c = _if5lCities.find(x=>x._key===key); if (!c) return;
+  document.getElementById('ifc-edit-id').value = key;
+  document.getElementById('ifc-name').value = c.name;
+  document.getElementById('ifc-code').value = c.code;
+  document.getElementById('ifc-color1').value = c.color1 || '#0077b6';
+  document.getElementById('ifc-color2').value = c.color2 || '#00b4d8';
+  document.getElementById('ifc-form-title').innerHTML = '<i class="fas fa-edit"></i> Edit City';
+  document.getElementById('ifc-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  document.getElementById('ifc-cancel-btn').style.display = '';
+  document.getElementById('panel-if5lcities').scrollIntoView({behavior:'smooth'});
+}
+function clearIf5lCityForm(){
+  document.getElementById('ifc-edit-id').value = '';
+  document.getElementById('ifc-name').value = ''; document.getElementById('ifc-code').value = '';
+  document.getElementById('ifc-color1').value = '#0077b6'; document.getElementById('ifc-color2').value = '#00b4d8';
+  document.getElementById('ifc-form-title').innerHTML = '<i class="fas fa-city"></i> Add City';
+  document.getElementById('ifc-save-btn').innerHTML = '<i class="fas fa-save"></i> Add City';
+  document.getElementById('ifc-cancel-btn').style.display = 'none';
+}
+function deleteIf5lCity(key){
+  if (!confirm('Remove this city from the IF5L page?')) return;
+  const c = _if5lCities.find(x=>x._key===key);
+  _fbDb.ref('if5lCities/'+key).remove().then(() => setTimeout(refreshIf5lCities, 500));
+  logActivity('Removed IF5L city', c?c.name:key);
+}
+function renderIf5lCities(){
+  const tbody = document.getElementById('if5lcities-body');
+  if (!tbody) return;
+  if (!_if5lCities.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No cities added yet.</td></tr>'; return; }
+  tbody.innerHTML = _if5lCities.map(c => `<tr>
+    <td><div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;background:linear-gradient(135deg, ${c.color1||'#0077b6'}, ${c.color2||'#00b4d8'});">${c.code}</div></td>
+    <td><strong>${c.name}</strong></td>
+    <td>${c.code}</td>
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editIf5lCity('${c._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteIf5lCity('${c._key}')"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── INTERNATIONAL DESTINATIONS ─────────────────────────────────────────────
+let _intlDestinations = [];
+async function refreshIntlDestinations(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/internationalDestinations.json');
+    const data = await res.json();
+    _intlDestinations = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _intlDestinations.sort((a,b) => (a.order||0) - (b.order||0));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
+  renderIntlDestinations();
+}
+refreshIntlDestinations();
+setInterval(refreshIntlDestinations, 15000);
+function addIntlDestination(){
+  const flag = document.getElementById('id-flag').value.trim();
+  const country = document.getElementById('id-country').value.trim();
+  const subtitle = document.getElementById('id-subtitle').value.trim();
+  const description = document.getElementById('id-description').value.trim();
+  const badgeText = document.getElementById('id-badge-text').value.trim();
+  const badgeColor = document.getElementById('id-badge-color').value;
+  const editKey = document.getElementById('id-edit-id').value;
+  if (!country) { alert('Country / destination name is required.'); return; }
+  const obj = { flag, country, subtitle, description, badgeText, badgeColor };
+  if (editKey) {
+    _fbDb.ref('internationalDestinations/'+editKey).update(obj).then(() => setTimeout(refreshIntlDestinations, 500));
+    logActivity('Updated international destination', country);
+  } else {
+    _fbDb.ref('internationalDestinations').push({ ...obj, order: _intlDestinations.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshIntlDestinations, 500));
+    logActivity('Added international destination', country);
+  }
+  clearIntlDestinationForm();
+}
+function editIntlDestination(key){
+  const d = _intlDestinations.find(x=>x._key===key); if (!d) return;
+  document.getElementById('id-edit-id').value = key;
+  document.getElementById('id-flag').value = d.flag||'';
+  document.getElementById('id-country').value = d.country;
+  document.getElementById('id-subtitle').value = d.subtitle||'';
+  document.getElementById('id-description').value = d.description||'';
+  document.getElementById('id-badge-text').value = d.badgeText||'';
+  document.getElementById('id-badge-color').value = d.badgeColor||'var(--primary)';
+  document.getElementById('id-form-title').innerHTML = '<i class="fas fa-edit"></i> Edit Destination';
+  document.getElementById('id-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  document.getElementById('id-cancel-btn').style.display = '';
+  document.getElementById('panel-intldest').scrollIntoView({behavior:'smooth'});
+}
+function clearIntlDestinationForm(){
+  document.getElementById('id-edit-id').value = '';
+  ['id-flag','id-country','id-subtitle','id-description','id-badge-text'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('id-badge-color').value = 'var(--primary)';
+  document.getElementById('id-form-title').innerHTML = '<i class="fas fa-globe-asia"></i> Add Destination';
+  document.getElementById('id-save-btn').innerHTML = '<i class="fas fa-save"></i> Add Destination';
+  document.getElementById('id-cancel-btn').style.display = 'none';
+}
+function deleteIntlDestination(key){
+  if (!confirm('Remove this destination?')) return;
+  const d = _intlDestinations.find(x=>x._key===key);
+  _fbDb.ref('internationalDestinations/'+key).remove().then(() => setTimeout(refreshIntlDestinations, 500));
+  logActivity('Removed international destination', d?d.country:key);
+}
+function renderIntlDestinations(){
+  const tbody = document.getElementById('intldest-body');
+  if (!tbody) return;
+  if (!_intlDestinations.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No destinations added yet.</td></tr>'; return; }
+  tbody.innerHTML = _intlDestinations.map(d => `<tr>
+    <td style="font-size:1.4rem;">${d.flag||''}</td>
+    <td><strong>${d.country}</strong>${d.subtitle?`<br><span style="font-size:.78rem;color:var(--muted);">${d.subtitle}</span>`:''}</td>
+    <td>${d.badgeText?`<span style="background:${d.badgeColor||'var(--primary)'};color:#fff;padding:3px 10px;border-radius:14px;font-size:.75rem;">${d.badgeText}</span>`:'—'}</td>
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editIntlDestination('${d._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteIntlDestination('${d._key}')"><i class="fas fa-trash"></i></button>
     </td>
   </tr>`).join('');
 }

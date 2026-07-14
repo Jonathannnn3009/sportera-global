@@ -160,55 +160,7 @@
                 <p>International destinations for the 2025–26 season</p>
             </div>
             <div class="about-grid" style="grid-template-columns: repeat(3, 1fr);">
-
-                <div class="about-card fade-in" style="text-align:center;">
-                    <div class="icon" style="font-size:2rem;">🇹🇭</div>
-                    <h3>Thailand</h3>
-                    <p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">PHUKET / BANGKOK</p>
-                    <p>International tournament exposure in one of Asia's most vibrant football destinations.</p>
-                    <span class="badge" style="background:#2e7d32; color:#fff; padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px;">August 2026</span>
-                </div>
-
-                <div class="about-card fade-in" style="text-align:center;">
-                    <div class="icon" style="font-size:2rem;">🇲🇾</div>
-                    <h3>Malaysia</h3>
-                    <p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">KUALA LUMPUR</p>
-                    <p>Compete in one of Southeast Asia's premier football hubs with a rich sporting culture.</p>
-                    <span class="badge" style="background:var(--primary); color:#fff; padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px;">Upcoming</span>
-                </div>
-
-                <div class="about-card fade-in" style="text-align:center;">
-                    <div class="icon" style="font-size:2rem;">🇦🇪</div>
-                    <h3>Dubai</h3>
-                    <p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">UAE</p>
-                    <p>International exposure in the Middle East's sports capital with world-class facilities.</p>
-                    <span class="badge" style="background:var(--primary); color:#fff; padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px;">Upcoming</span>
-                </div>
-
-                <div class="about-card fade-in" style="text-align:center;">
-                    <div class="icon" style="font-size:2rem;">🇸🇬</div>
-                    <h3>Singapore</h3>
-                    <p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">SINGAPORE</p>
-                    <p>Experience professional football infrastructure in one of Asia's most developed sporting nations.</p>
-                    <span class="badge" style="background:var(--primary); color:#fff; padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px;">Upcoming</span>
-                </div>
-
-                <div class="about-card fade-in" style="text-align:center;">
-                    <div class="icon" style="font-size:2rem;">🇻🇳</div>
-                    <h3>Vietnam</h3>
-                    <p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">HO CHI MINH / HANOI</p>
-                    <p>Emerging football nation with passionate fans and a rapidly growing competitive scene.</p>
-                    <span class="badge" style="background:var(--primary); color:#fff; padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px;">Upcoming</span>
-                </div>
-
-                <div class="about-card fade-in" style="text-align:center;">
-                    <div class="icon" style="font-size:2rem;">🌏</div>
-                    <h3>Other Destinations</h3>
-                    <p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">BALI &amp; MORE</p>
-                    <p>Additional international destinations including Bali, Indonesia and more to be announced for the season.</p>
-                    <span class="badge" style="background:var(--gold); color:var(--primary-dark); padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px; font-weight:700;">Coming Soon</span>
-                </div>
-
+                <div id="dynamicIntlDestinations" style="display:contents;"></div>
             </div>
         </div>
     </section>
@@ -307,5 +259,23 @@
     </footer>
 
     <script src="../js/main.js"></script>
+    <script>
+      // Upcoming Tours destinations, editable from admin's International
+      // Destinations panel instead of being hardcoded here — same
+      // REST-fetch pattern as News/Team/Partners/IF5L Cities.
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/internationalDestinations.json").then(r => r.json()).then(data => {
+        const el = document.getElementById('dynamicIntlDestinations');
+        if (!el || !data) return;
+        const dests = Object.values(data).sort((a,b) => (a.order||0) - (b.order||0));
+        el.innerHTML = dests.map(d => `
+          <div class="about-card" style="text-align:center;">
+            <div class="icon" style="font-size:2rem;">${d.flag||''}</div>
+            <h3>${d.country}</h3>
+            ${d.subtitle ? `<p style="color:var(--gold); font-weight:700; font-size:.85rem; margin-bottom:8px;">${d.subtitle}</p>` : ''}
+            <p>${d.description||''}</p>
+            ${d.badgeText ? `<span class="badge" style="background:${d.badgeColor||'var(--primary)'}; color:#fff; padding:4px 12px; border-radius:20px; font-size:.75rem; display:inline-block; margin-top:12px;">${d.badgeText}</span>` : ''}
+          </div>`).join('');
+      }).catch(()=>{});
+    </script>
 </body>
 </html>
