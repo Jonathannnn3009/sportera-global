@@ -357,7 +357,11 @@
             container.innerHTML = '<p class="empty-note">Select a tournament and age category above.</p>';
             return;
         }
-        let fx = _liveFixtures.filter(f => f.tournament === tourn && f.ageCategory === ageCat);
+        // Knockout rounds (Quarter-Final onward) must never feed this table —
+        // same fix as admin's League Tables panel — a played crossover
+        // Semi-Final/Grand Final would otherwise wrongly add wins/points to
+        // teams' pool standings even though it isn't a pool match.
+        let fx = _liveFixtures.filter(f => f.tournament === tourn && f.ageCategory === ageCat && (f.round||'League Stage') === 'League Stage');
         if (city) fx = fx.filter(f => f.cityGroup === city);
         if (!fx.some(f => _liveResults.some(r => r._key === f._key))) {
             container.innerHTML = '<p class="empty-note">No results entered yet for this selection.</p>';
