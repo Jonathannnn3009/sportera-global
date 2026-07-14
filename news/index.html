@@ -234,18 +234,19 @@
                 <!-- Sidebar -->
                 <aside class="news-sidebar fade-in">
                     <div class="sidebar-widget">
+                        <h4>Upcoming Events</h4>
+                        <div id="upcomingEventsWidget">
+                            <a href="../tournaments/" class="sidebar-link"><i class="fas fa-futbol"></i> IF5L Season 1</a>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-widget">
                         <h4>Quick Links</h4>
                         <a href="../registration/" class="sidebar-link"><i class="fas fa-clipboard-list"></i> Register a Team</a>
                         <a href="../registration/" class="sidebar-link"><i class="fas fa-user-plus"></i> Register as Player</a>
                         <a href="../tournaments/" class="sidebar-link"><i class="fas fa-calendar-alt"></i> Tournament Calendar</a>
                         <a href="../downloads/" class="sidebar-link"><i class="fas fa-download"></i> Downloads</a>
                         <a href="../gallery/" class="sidebar-link"><i class="fas fa-images"></i> Photo Gallery</a>
-                    </div>
-
-                    <div class="sidebar-widget">
-                        <h4>Upcoming Events</h4>
-                        <a href="../tournaments/" class="sidebar-link"><i class="fas fa-futbol"></i> IF5L Season 2 – Aug 2026</a>
-                        <a href="../tournaments/" class="sidebar-link"><i class="fas fa-trophy"></i> National Championship – Oct 2026</a>
                     </div>
 
                     <div class="sidebar-widget">
@@ -360,6 +361,24 @@
         }).catch(() => {
             document.getElementById('newsArticlesFeed').innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">Could not load articles right now.</p>';
         });
+
+        // Upcoming Events widget — pulls real tournaments (name + date) from
+        // admin's Manage Tournaments panel instead of a hand-typed name/date
+        // that goes stale every season.
+        fetch("https://f5awebsite-default-rtdb.firebaseio.com/tournaments.json").then(r => r.json()).then(data => {
+            const el = document.getElementById('upcomingEventsWidget');
+            if (!el || !data) return;
+            const today = new Date().toISOString().slice(0,10);
+            const upcoming = Object.values(data)
+                .filter(t => t.status !== 'draft' && (!t.endDate || t.endDate >= today))
+                .sort((a,b) => (a.startDate||'9999').localeCompare(b.startDate||'9999'))
+                .slice(0, 3);
+            if (!upcoming.length) return;
+            el.innerHTML = upcoming.map(t => {
+                const label = t.startDate ? fmtNewsDate(t.startDate) : '';
+                return `<a href="../tournaments/" class="sidebar-link"><i class="fas fa-futbol"></i> ${t.name}${label ? ' – ' + label : ''}</a>`;
+            }).join('');
+        }).catch(() => {});
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
