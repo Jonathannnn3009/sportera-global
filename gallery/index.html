@@ -57,6 +57,7 @@
                 <h2>Photo Gallery</h2>
                 <p>Capturing the spirit of Football 5 across India</p>
             </div>
+            <div id="galleryTournamentFilter" style="display:none;flex-wrap:wrap;gap:12px;margin-bottom:30px;"></div>
             <div class="gallery-grid">                <!-- Photos added via admin's Photos & Videos panel render here -->
                 <div id="dynamicGalleryGrid" style="display:contents;"></div>
             </div>
@@ -125,12 +126,15 @@
       // Every gallery photo, including the original launch photos, now lives
       // in Firebase and is manageable (editable/deletable) from admin's
       // Photos & Videos panel. Fetched via REST directly, same reasoning as
-      // News/Team/Partners.
-      fetch("https://f5awebsite-default-rtdb.firebaseio.com/media.json").then(r => r.json()).then(data => {
+      // News/Team/Partners. Photos tagged with a tournament (optional, set
+      // from admin) get a filter bar so visitors can jump to just one
+      // tournament's photos instead of scrolling the whole gallery.
+      let _galleryItems = [];
+      let _galleryFilter = '';
+      function renderGalleryItems(){
         const el = document.getElementById('dynamicGalleryGrid');
-        if (!el || !data) return;
-        const items = Object.values(data);
-        items.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
+        if (!el) return;
+        const items = _galleryFilter ? _galleryItems.filter(m => m.tournament === _galleryFilter) : _galleryItems;
         el.innerHTML = items.map(m => `<div class="gallery-item"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('');
         // The shared lightbox click-binding in main.js only ran against
         // photos present at page load, so these newly-inserted ones need
@@ -147,6 +151,28 @@
             });
           });
         }
+      }
+      function filterBtnStyle(active){
+        return `padding:8px 20px;border-radius:25px;border:2px solid var(--primary);background:${active?'var(--primary)':'transparent'};color:${active?'#fff':'var(--primary)'};font-weight:600;font-size:.9rem;cursor:pointer;font-family:inherit;`;
+      }
+      fetch("https://f5awebsite-default-rtdb.firebaseio.com/media.json").then(r => r.json()).then(data => {
+        if (!data) return;
+        _galleryItems = Object.values(data);
+        _galleryItems.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
+        const tournaments = [...new Set(_galleryItems.map(m => m.tournament).filter(Boolean))].sort();
+        const filterBar = document.getElementById('galleryTournamentFilter');
+        if (tournaments.length && filterBar) {
+          filterBar.style.display = 'flex';
+          const renderButtons = () => {
+            filterBar.innerHTML = [`<button data-t="" style="${filterBtnStyle(_galleryFilter==='')}">All</button>`]
+              .concat(tournaments.map(t => `<button data-t="${t}" style="${filterBtnStyle(_galleryFilter===t)}">${t}</button>`)).join('');
+            filterBar.querySelectorAll('button').forEach(btn => {
+              btn.addEventListener('click', () => { _galleryFilter = btn.dataset.t; renderButtons(); renderGalleryItems(); });
+            });
+          };
+          renderButtons();
+        }
+        renderGalleryItems();
       }).catch(()=>{});
     </script>
 </body>

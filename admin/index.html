@@ -1301,13 +1301,19 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
           <select id="med-cat"><option>Tournament Photos</option><option>Team Photos</option><option>Event Photos</option><option>Match Highlights</option><option>Promotional</option></select>
         </div>
       </div>
+      <div class="fg" style="max-width:600px;"><label>Tournament <span style="font-weight:400;color:var(--muted);">(optional — lets visitors filter the gallery by tournament)</span></label>
+        <select id="med-tournament"></select>
+      </div>
       <div class="fg" style="max-width:600px;"><label>Image URL</label><input type="text" id="med-url" placeholder="Paste image URL or local path"></div>
       <div class="fg" style="max-width:600px;"><label>Caption</label><input type="text" id="med-caption" placeholder="Short description"></div>
       <button class="btn btn-primary" onclick="addMedia()"><i class="fas fa-plus"></i> Add to Gallery</button>
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><h3><i class="fas fa-images"></i> Gallery Items</h3></div>
+    <div class="card-head">
+      <h3><i class="fas fa-images"></i> Gallery Items</h3>
+      <select id="med-filter-tournament" onchange="renderMedia()" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;"></select>
+    </div>
     <div class="card-body">
       <div class="ng-grid" id="media-grid"></div>
       <div class="empty" id="media-empty"><i class="fas fa-images"></i><h4>No media added via admin yet</h4><p>Photos in the Goa5/ folder are already live on the gallery page.</p></div>
@@ -1948,8 +1954,8 @@ _fbDb.ref('contactMessages').on('value', snap => {
 // categories, fixtures, lineup, results, league tables, team edit) reads
 // from this one live list instead of duplicating hardcoded <option> tags.
 let _fbTournaments = [];
-const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','efx-tournament','lu-tournament','res-tournament','reslog-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter'];
-const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'reslog-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true, 'appTournamentFilter': true, 'idcTeamTournamentFilter': true };
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','efx-tournament','lu-tournament','res-tournament','reslog-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter','med-tournament','med-filter-tournament'];
+const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'reslog-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true, 'appTournamentFilter': true, 'idcTeamTournamentFilter': true, 'med-filter-tournament': true };
 
 _fbDb.ref('tournaments').on('value', snap => {
   _fbTournaments = [];
@@ -5395,7 +5401,7 @@ setInterval(refreshMedia, 15000);
 function addMedia(){
   const url=document.getElementById('med-url').value.trim(); if(!url){alert('Image URL required');return;}
   const editKey = document.getElementById('med-edit-id').value;
-  const obj = { url, album:document.getElementById('med-album').value, category:document.getElementById('med-cat').value, caption:document.getElementById('med-caption').value };
+  const obj = { url, album:document.getElementById('med-album').value, category:document.getElementById('med-cat').value, caption:document.getElementById('med-caption').value, tournament:document.getElementById('med-tournament').value||null };
   const write = editKey ? _fbDb.ref('media/'+editKey).update(obj) : _fbDb.ref('media').push({ ...obj, addedAt:new Date().toISOString() });
   write.then(() => setTimeout(refreshMedia, 500));
   logActivity(editKey?'Updated media item':'Added media item', obj.caption||obj.album||url);
@@ -5408,21 +5414,25 @@ function editMedia(key){
   document.getElementById('med-album').value = m.album||'';
   document.getElementById('med-cat').value = m.category;
   document.getElementById('med-caption').value = m.caption||'';
+  document.getElementById('med-tournament').value = m.tournament||'';
 }
 function clearMediaForm(){
   document.getElementById('med-edit-id').value = '';
   ['med-url','med-album','med-caption'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('med-tournament').value = '';
 }
 function renderMedia(){
   const grid=document.getElementById('media-grid');
   const empty=document.getElementById('media-empty');
-  if(!_mediaItems.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  const filter=(document.getElementById('med-filter-tournament')||{}).value||'';
+  const list = filter ? _mediaItems.filter(m=>m.tournament===filter) : _mediaItems;
+  if(!list.length){ grid.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-  grid.innerHTML=_mediaItems.map(m=>`<div class="ng-item">
+  grid.innerHTML=list.map(m=>`<div class="ng-item">
     <div class="ng-thumb">${m.url?`<img src="${m.url}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-image\\"></i>'">`:'<i class="fas fa-image"></i>'}</div>
     <div class="ng-info">
       <h5>${m.caption||m.album||'Untitled'}</h5>
-      <p>${m.category}</p>
+      <p>${m.category}${m.tournament?' &bull; '+m.tournament:''}</p>
       <div class="ng-actions">
         <button class="btn btn-ghost btn-xs" onclick="editMedia('${m._key}')"><i class="fas fa-edit"></i></button>
         <button class="btn btn-danger btn-xs" onclick="deleteMedia('${m._key}')"><i class="fas fa-trash"></i> Remove</button>
