@@ -162,7 +162,7 @@
           <div style="margin-bottom:40px;">
             ${g.album ? `<h3 style="font-family:'Montserrat',sans-serif;color:var(--primary);margin-bottom:16px;">${g.album}</h3>` : ''}
             <div class="gallery-grid">${g.items.map(m => `<div class="gallery-item"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('')}</div>
-            ${g.driveLink ? `<div style="text-align:center;margin-top:18px;"><a href="${g.driveLink}" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fas fa-images"></i> See More Photos</a></div>` : ''}
+            ${g.driveLink ? `<div style="text-align:center;margin-top:18px;"><a href="${g.driveLink}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fas fa-images"></i> See More Photos</a></div>` : ''}
           </div>`).join('');
 
         // The shared lightbox click-binding in main.js only ran against
