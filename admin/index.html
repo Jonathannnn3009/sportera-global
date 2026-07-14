@@ -1307,6 +1307,12 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       <div class="fg" style="max-width:600px;"><label>Image URL</label><input type="text" id="med-url" placeholder="Paste image URL or local path"></div>
       <div class="fg" style="max-width:600px;"><label>Caption</label><input type="text" id="med-caption" placeholder="Short description"></div>
       <button class="btn btn-primary" onclick="addMedia()"><i class="fas fa-plus"></i> Add to Gallery</button>
+
+      <div style="border-top:1px solid var(--border);margin:22px 0 18px;"></div>
+      <h4 style="margin-bottom:10px;font-size:.95rem;"><i class="fas fa-folder-open"></i> Or Bulk-Upload a Whole Folder</h4>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Select every photo from a folder at once (or drag-select multiple files) — they all get the same Album, Category, and Tournament set above. Each photo can still be edited or deleted individually afterward.</p>
+      <div class="fg" style="max-width:600px;"><label>Photos</label><input type="file" id="med-bulk-files" accept=".jpg,.jpeg,.png" multiple onchange="onMediaBulkFilesSelected()"><div id="med-bulk-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+      <button class="btn btn-primary" onclick="bulkUploadMediaPhotos()" id="med-bulk-btn" disabled><i class="fas fa-cloud-upload-alt"></i> Upload All Selected</button>
     </div>
   </div>
   <div class="card">
@@ -5443,6 +5449,59 @@ function deleteMedia(key){
   if(!confirm('Remove media item?')) return;
   _fbDb.ref('media/'+key).remove().then(() => setTimeout(refreshMedia, 500));
   logActivity('Removed media item', key);
+}
+
+// Bulk photo upload — lets admin select every photo from a folder at once
+// instead of pasting one URL per photo. Each file is read as a base64 data
+// URL (same approach as team photos/partner logos/city photos elsewhere in
+// admin) and pushed as its own media entry, all sharing whatever
+// Album/Category/Tournament is set in the form above.
+let _medBulkFiles = [];
+const MED_BULK_MAX_SIZE = 600 * 1024;
+function onMediaBulkFilesSelected(){
+  const files = Array.from(document.getElementById('med-bulk-files').files || []);
+  const statusEl = document.getElementById('med-bulk-status');
+  const btn = document.getElementById('med-bulk-btn');
+  const oversized = files.filter(f => f.size > MED_BULK_MAX_SIZE);
+  _medBulkFiles = files.filter(f => f.size <= MED_BULK_MAX_SIZE);
+  if (!files.length) { statusEl.innerHTML = ''; btn.disabled = true; return; }
+  let msg = `<span style="color:#2e7d32;">${_medBulkFiles.length} photo${_medBulkFiles.length===1?'':'s'} ready</span>`;
+  if (oversized.length) msg += `<br><span style="color:#c62828;">${oversized.length} skipped — over 600KB each: ${oversized.map(f=>f.name).join(', ')}</span>`;
+  statusEl.innerHTML = msg;
+  btn.disabled = _medBulkFiles.length === 0;
+}
+function readFileAsDataUrl(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function bulkUploadMediaPhotos(){
+  if (!_medBulkFiles.length) return;
+  const statusEl = document.getElementById('med-bulk-status');
+  const btn = document.getElementById('med-bulk-btn');
+  btn.disabled = true;
+  const album = document.getElementById('med-album').value;
+  const category = document.getElementById('med-cat').value;
+  const tournament = document.getElementById('med-tournament').value || null;
+  let done = 0;
+  for (const file of _medBulkFiles) {
+    statusEl.innerHTML = `<span style="color:#b8860b;">Uploading ${done+1} of ${_medBulkFiles.length}...</span>`;
+    try {
+      const url = await readFileAsDataUrl(file);
+      const caption = file.name.replace(/\.[^.]+$/, '');
+      await _fbDb.ref('media').push({ url, album, category, tournament, caption, addedAt: new Date(Date.now()+done).toISOString() });
+      done++;
+    } catch(e) { /* skip file that failed to read/upload, continue with the rest */ }
+  }
+  statusEl.innerHTML = `<span style="color:#2e7d32;">Uploaded ${done} of ${_medBulkFiles.length} photos.</span>`;
+  logActivity('Bulk-uploaded gallery photos', `${done} photo(s)${tournament?' — '+tournament:''}${album?' — '+album:''}`);
+  document.getElementById('med-bulk-files').value = '';
+  _medBulkFiles = [];
+  btn.disabled = true;
+  setTimeout(refreshMedia, 500);
 }
 
 // ── DOWNLOADS ─────────────────────────────────────────────────────────────
