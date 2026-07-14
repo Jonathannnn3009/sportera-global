@@ -375,6 +375,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="nav-item" data-panel="partners"><i class="fas fa-handshake"></i> Manage Partners</div>
   <div class="nav-item" data-panel="if5lcities"><i class="fas fa-city"></i> IF5L Cities</div>
   <div class="nav-item" data-panel="intldest"><i class="fas fa-globe-asia"></i> International Destinations</div>
+  <div class="nav-item" data-panel="upcomingevents"><i class="fas fa-star"></i> Upcoming Events</div>
   </div>
 
   <div class="nav-group-section" data-section="messages">
@@ -1457,6 +1458,38 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
+<!-- ── UPCOMING EVENTS (news sidebar) ───────────────────── -->
+<div class="panel" id="panel-upcomingevents">
+  <div class="two-col" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3 id="ue-form-title"><i class="fas fa-star"></i> Add Manual Event</h3></div>
+      <div class="card-body">
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">The News page's "Upcoming Events" widget always shows your live tournaments (from Manage Tournaments) automatically. Add entries here only for something extra you want featured — a custom title/date not tied to a tournament.</p>
+        <input type="hidden" id="ue-edit-id">
+        <div class="fg"><label>Title *</label><input type="text" id="ue-title" placeholder="e.g. National Championship"></div>
+        <div class="fg"><label>Date <span style="font-weight:400;color:var(--muted);">(optional — leave blank for "TBA")</span></label><input type="date" id="ue-date"></div>
+        <div class="fg"><label>Icon</label>
+          <select id="ue-icon">
+            <option value="fa-star">Star</option>
+            <option value="fa-futbol">Football</option>
+            <option value="fa-trophy">Trophy</option>
+            <option value="fa-medal">Medal</option>
+          </select>
+        </div>
+        <div class="fg"><label>Link <span style="font-weight:400;color:var(--muted);">(optional — defaults to Tournaments page)</span></label><input type="text" id="ue-link" placeholder="../tournaments/"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="addUpcomingEvent()" id="ue-save-btn"><i class="fas fa-save"></i> Add Event</button>
+          <button class="btn btn-ghost" onclick="clearUpcomingEventForm()" id="ue-cancel-btn" style="display:none;">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><i class="fas fa-list"></i> Manual Events</h3></div>
+      <div class="card-body" style="padding:0;"><div class="tbl-wrap"><table class="dt"><thead><tr><th>Title</th><th>Date</th><th>Actions</th></tr></thead><tbody id="upcomingevents-body"></tbody></table></div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── CONTACT MESSAGES ──────────────────────────────────── -->
 <div class="panel" id="panel-messages">
   <div class="card">
@@ -2179,7 +2212,7 @@ const PANEL_TITLES = {
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
   teammembers:'Manage Team', partners:'Manage Partners',
-  if5lcities:'IF5L Cities', intldest:'International Destinations',
+  if5lcities:'IF5L Cities', intldest:'International Destinations', upcomingevents:'Upcoming Events',
   messages:'Contact Messages', admins:'Manage Admins', tournaments:'Tournaments'
 };
 function switchPanel(id) {
@@ -2196,7 +2229,7 @@ function switchPanel(id) {
     fixtures: renderFixtures, lineup: renderLineupPanel, results: renderResultsFixtures, tables: renderLeagueTable,
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
     teammembers: renderTeamMembers, partners: renderPartners,
-    if5lcities: renderIf5lCities, intldest: renderIntlDestinations,
+    if5lcities: renderIf5lCities, intldest: renderIntlDestinations, upcomingevents: renderUpcomingEvents,
     messages: renderMessages, admins: renderAdmins, tournaments: renderTournaments
   };
   if(refresh[id]) refresh[id]();
@@ -5755,6 +5788,79 @@ function renderIntlDestinations(){
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editIntlDestination('${d._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteIntlDestination('${d._key}')"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+// ── UPCOMING EVENTS (manual, News sidebar) ─────────────────────────────────
+// These sit alongside the automatic tournament-derived entries (see
+// news/index.html) — this panel is only for something extra an admin wants
+// to feature that isn't itself a tournament in Manage Tournaments.
+let _upcomingEvents = [];
+async function refreshUpcomingEvents(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/upcomingEvents.json');
+    const data = await res.json();
+    _upcomingEvents = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _upcomingEvents.sort((a,b) => (a.date||'9999').localeCompare(b.date||'9999'));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
+  renderUpcomingEvents();
+}
+refreshUpcomingEvents();
+setInterval(refreshUpcomingEvents, 15000);
+function addUpcomingEvent(){
+  const title = document.getElementById('ue-title').value.trim();
+  const date = document.getElementById('ue-date').value || null;
+  const icon = document.getElementById('ue-icon').value;
+  const link = document.getElementById('ue-link').value.trim() || null;
+  const editKey = document.getElementById('ue-edit-id').value;
+  if (!title) { alert('Title is required.'); return; }
+  const obj = { title, date, icon, link };
+  if (editKey) {
+    _fbDb.ref('upcomingEvents/'+editKey).update(obj).then(() => setTimeout(refreshUpcomingEvents, 500));
+    logActivity('Updated upcoming event', title);
+  } else {
+    _fbDb.ref('upcomingEvents').push({ ...obj, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshUpcomingEvents, 500));
+    logActivity('Added upcoming event', title);
+  }
+  clearUpcomingEventForm();
+}
+function editUpcomingEvent(key){
+  const e = _upcomingEvents.find(x=>x._key===key); if (!e) return;
+  document.getElementById('ue-edit-id').value = key;
+  document.getElementById('ue-title').value = e.title;
+  document.getElementById('ue-date').value = e.date || '';
+  document.getElementById('ue-icon').value = e.icon || 'fa-star';
+  document.getElementById('ue-link').value = e.link || '';
+  document.getElementById('ue-form-title').innerHTML = '<i class="fas fa-edit"></i> Edit Event';
+  document.getElementById('ue-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  document.getElementById('ue-cancel-btn').style.display = '';
+  document.getElementById('panel-upcomingevents').scrollIntoView({behavior:'smooth'});
+}
+function clearUpcomingEventForm(){
+  document.getElementById('ue-edit-id').value = '';
+  document.getElementById('ue-title').value = ''; document.getElementById('ue-date').value = '';
+  document.getElementById('ue-icon').value = 'fa-star'; document.getElementById('ue-link').value = '';
+  document.getElementById('ue-form-title').innerHTML = '<i class="fas fa-star"></i> Add Manual Event';
+  document.getElementById('ue-save-btn').innerHTML = '<i class="fas fa-save"></i> Add Event';
+  document.getElementById('ue-cancel-btn').style.display = 'none';
+}
+function deleteUpcomingEvent(key){
+  if (!confirm('Remove this event?')) return;
+  const e = _upcomingEvents.find(x=>x._key===key);
+  _fbDb.ref('upcomingEvents/'+key).remove().then(() => setTimeout(refreshUpcomingEvents, 500));
+  logActivity('Removed upcoming event', e?e.title:key);
+}
+function renderUpcomingEvents(){
+  const tbody = document.getElementById('upcomingevents-body');
+  if (!tbody) return;
+  if (!_upcomingEvents.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--muted);">No manual events added — the widget still shows your live tournaments automatically.</td></tr>'; return; }
+  tbody.innerHTML = _upcomingEvents.map(e => `<tr>
+    <td><strong>${e.title}</strong></td>
+    <td>${e.date ? fmtDate(e.date) : 'TBA'}</td>
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editUpcomingEvent('${e._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteUpcomingEvent('${e._key}')"><i class="fas fa-trash"></i></button>
     </td>
   </tr>`).join('');
 }

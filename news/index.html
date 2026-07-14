@@ -362,23 +362,32 @@
             document.getElementById('newsArticlesFeed').innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">Could not load articles right now.</p>';
         });
 
-        // Upcoming Events widget — pulls real tournaments (name + date) from
-        // admin's Manage Tournaments panel instead of a hand-typed name/date
-        // that goes stale every season.
-        fetch("https://f5awebsite-default-rtdb.firebaseio.com/tournaments.json").then(r => r.json()).then(data => {
+        // Upcoming Events widget — combines real tournaments (name + date)
+        // from admin's Manage Tournaments panel with any manually-added
+        // entries from admin's Upcoming Events panel (for something extra
+        // to feature that isn't itself a tournament), instead of a
+        // hand-typed name/date that goes stale every season.
+        Promise.all([
+            fetch("https://f5awebsite-default-rtdb.firebaseio.com/tournaments.json").then(r => r.json()).catch(() => null),
+            fetch("https://f5awebsite-default-rtdb.firebaseio.com/upcomingEvents.json").then(r => r.json()).catch(() => null)
+        ]).then(([tournaments, manualEvents]) => {
             const el = document.getElementById('upcomingEventsWidget');
-            if (!el || !data) return;
+            if (!el) return;
             const today = new Date().toISOString().slice(0,10);
-            const upcoming = Object.values(data)
+            const fromTournaments = Object.values(tournaments || {})
                 .filter(t => t.status !== 'draft' && (!t.endDate || t.endDate >= today))
-                .sort((a,b) => (a.startDate||'9999').localeCompare(b.startDate||'9999'))
-                .slice(0, 3);
-            if (!upcoming.length) return;
-            el.innerHTML = upcoming.map(t => {
-                const label = t.startDate ? fmtNewsDate(t.startDate) : '';
-                return `<a href="../tournaments/" class="sidebar-link"><i class="fas fa-futbol"></i> ${t.name}${label ? ' – ' + label : ''}</a>`;
+                .map(t => ({ title: t.name, date: t.startDate, icon: 'fa-futbol', link: '../tournaments/' }));
+            const fromManual = Object.values(manualEvents || {})
+                .map(e => ({ title: e.title, date: e.date, icon: e.icon || 'fa-star', link: e.link || '../tournaments/' }));
+            const combined = fromTournaments.concat(fromManual)
+                .sort((a,b) => (a.date||'9999').localeCompare(b.date||'9999'))
+                .slice(0, 4);
+            if (!combined.length) return;
+            el.innerHTML = combined.map(e => {
+                const label = e.date ? fmtNewsDate(e.date) : '';
+                return `<a href="${e.link}" class="sidebar-link"><i class="fas ${e.icon}"></i> ${e.title}${label ? ' – ' + label : ''}</a>`;
             }).join('');
-        }).catch(() => {});
+        });
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
