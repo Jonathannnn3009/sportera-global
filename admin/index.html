@@ -1296,7 +1296,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
     <div class="card-body">
       <input type="hidden" id="med-edit-id">
       <div class="form-row" style="max-width:600px;">
-        <div class="fg"><label>Album / Event Name</label><input type="text" id="med-album" placeholder="e.g. IF5L Season 2 Finals"></div>
+        <div class="fg"><label>Session / Album Name *</label><input type="text" id="med-album" placeholder="e.g. Goa 5s — July 2026"></div>
         <div class="fg"><label>Category</label>
           <select id="med-cat"><option>Tournament Photos</option><option>Team Photos</option><option>Event Photos</option><option>Match Highlights</option><option>Promotional</option></select>
         </div>
@@ -1304,6 +1304,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       <div class="fg" style="max-width:600px;"><label>Tournament <span style="font-weight:400;color:var(--muted);">(optional — lets visitors filter the gallery by tournament)</span></label>
         <select id="med-tournament"></select>
       </div>
+      <div class="fg" style="max-width:600px;"><label>Google Drive Link <span style="font-weight:400;color:var(--muted);">(optional — shown as a "See More Photos" link on this session; upload only your best few photos here and let Drive hold the rest)</span></label><input type="text" id="med-drive-link" placeholder="https://drive.google.com/..."></div>
       <div class="fg" style="max-width:600px;"><label>Image URL</label><input type="text" id="med-url" placeholder="Paste image URL or local path"></div>
       <div class="fg" style="max-width:600px;"><label>Caption</label><input type="text" id="med-caption" placeholder="Short description"></div>
       <button class="btn btn-primary" onclick="addMedia()"><i class="fas fa-plus"></i> Add to Gallery</button>
@@ -5407,7 +5408,7 @@ setInterval(refreshMedia, 15000);
 function addMedia(){
   const url=document.getElementById('med-url').value.trim(); if(!url){alert('Image URL required');return;}
   const editKey = document.getElementById('med-edit-id').value;
-  const obj = { url, album:document.getElementById('med-album').value, category:document.getElementById('med-cat').value, caption:document.getElementById('med-caption').value, tournament:document.getElementById('med-tournament').value||null };
+  const obj = { url, album:document.getElementById('med-album').value, category:document.getElementById('med-cat').value, caption:document.getElementById('med-caption').value, tournament:document.getElementById('med-tournament').value||null, driveLink:document.getElementById('med-drive-link').value.trim()||null };
   const write = editKey ? _fbDb.ref('media/'+editKey).update(obj) : _fbDb.ref('media').push({ ...obj, addedAt:new Date().toISOString() });
   write.then(() => setTimeout(refreshMedia, 500));
   logActivity(editKey?'Updated media item':'Added media item', obj.caption||obj.album||url);
@@ -5421,10 +5422,11 @@ function editMedia(key){
   document.getElementById('med-cat').value = m.category;
   document.getElementById('med-caption').value = m.caption||'';
   document.getElementById('med-tournament').value = m.tournament||'';
+  document.getElementById('med-drive-link').value = m.driveLink||'';
 }
 function clearMediaForm(){
   document.getElementById('med-edit-id').value = '';
-  ['med-url','med-album','med-caption'].forEach(x=>document.getElementById(x).value='');
+  ['med-url','med-album','med-caption','med-drive-link'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('med-tournament').value = '';
 }
 function renderMedia(){
@@ -5486,13 +5488,14 @@ async function bulkUploadMediaPhotos(){
   const album = document.getElementById('med-album').value;
   const category = document.getElementById('med-cat').value;
   const tournament = document.getElementById('med-tournament').value || null;
+  const driveLink = document.getElementById('med-drive-link').value.trim() || null;
   let done = 0;
   for (const file of _medBulkFiles) {
     statusEl.innerHTML = `<span style="color:#b8860b;">Uploading ${done+1} of ${_medBulkFiles.length}...</span>`;
     try {
       const url = await readFileAsDataUrl(file);
       const caption = file.name.replace(/\.[^.]+$/, '');
-      await _fbDb.ref('media').push({ url, album, category, tournament, caption, addedAt: new Date(Date.now()+done).toISOString() });
+      await _fbDb.ref('media').push({ url, album, category, tournament, driveLink, caption, addedAt: new Date(Date.now()+done).toISOString() });
       done++;
     } catch(e) { /* skip file that failed to read/upload, continue with the rest */ }
   }

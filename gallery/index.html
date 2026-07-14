@@ -58,9 +58,8 @@
                 <p>Capturing the spirit of Football 5 across India</p>
             </div>
             <div id="galleryTournamentFilter" style="display:none;flex-wrap:wrap;gap:12px;margin-bottom:30px;"></div>
-            <div class="gallery-grid">                <!-- Photos added via admin's Photos & Videos panel render here -->
-                <div id="dynamicGalleryGrid" style="display:contents;"></div>
-            </div>
+            <!-- Photos added via admin's Photos & Videos panel render here, grouped by session/album -->
+            <div id="dynamicGalleryGrid"></div>
         </div>
     </section>
 
@@ -129,13 +128,38 @@
       // News/Team/Partners. Photos tagged with a tournament (optional, set
       // from admin) get a filter bar so visitors can jump to just one
       // tournament's photos instead of scrolling the whole gallery.
+      //
+      // Photos are grouped by Session/Album — the idea being admin only
+      // uploads a handful of "best shot" photos per session here, and can
+      // optionally attach a Google Drive link for that session so visitors
+      // who want the full set can tap "See More Photos" to open it.
       let _galleryItems = [];
       let _galleryFilter = '';
       function renderGalleryItems(){
         const el = document.getElementById('dynamicGalleryGrid');
         if (!el) return;
         const items = _galleryFilter ? _galleryItems.filter(m => m.tournament === _galleryFilter) : _galleryItems;
-        el.innerHTML = items.map(m => `<div class="gallery-item"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('');
+        if (!items.length) { el.innerHTML = ''; return; }
+
+        // Group while preserving the existing most-recent-first order —
+        // a session's position on the page is set by its most recent photo.
+        const groups = [];
+        const groupByAlbum = new Map();
+        items.forEach(m => {
+          const key = m.album || '';
+          if (!groupByAlbum.has(key)) { const g = { album: key, driveLink: '', items: [] }; groupByAlbum.set(key, g); groups.push(g); }
+          const g = groupByAlbum.get(key);
+          g.items.push(m);
+          if (!g.driveLink && m.driveLink) g.driveLink = m.driveLink;
+        });
+
+        el.innerHTML = groups.map(g => `
+          <div style="margin-bottom:40px;">
+            ${g.album ? `<h3 style="font-family:'Montserrat',sans-serif;color:var(--primary);margin-bottom:16px;">${g.album}</h3>` : ''}
+            <div class="gallery-grid">${g.items.map(m => `<div class="gallery-item"><img src="${m.url}" alt="${m.caption||m.album||'Sportera Global'}"></div>`).join('')}</div>
+            ${g.driveLink ? `<div style="text-align:center;margin-top:18px;"><a href="${g.driveLink}" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fas fa-images"></i> See More Photos</a></div>` : ''}
+          </div>`).join('');
+
         // The shared lightbox click-binding in main.js only ran against
         // photos present at page load, so these newly-inserted ones need
         // their own binding to open the same lightbox.
