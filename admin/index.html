@@ -1339,7 +1339,8 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <div class="fg"><label>Category</label>
           <select id="dl-cat"><option>Rule Book</option><option>Registration Form</option><option>Tournament Regulations</option><option>Circular</option><option>Notice</option><option>Press Release</option></select>
         </div>
-        <div class="fg"><label>File URL / Path</label><input type="text" id="dl-url" placeholder="URL or relative path to the PDF"></div>
+        <div class="fg"><label>File <span style="font-weight:400;color:var(--muted);">(pick a PDF from your computer)</span></label><input type="file" id="dl-file" accept=".pdf,.doc,.docx" onchange="uploadDownloadFile()"><div id="dl-file-status" style="font-size:.82rem;margin-top:6px;"></div></div>
+        <div class="fg"><label>— or — File URL <span style="font-weight:400;color:var(--muted);">(only if it's already hosted online somewhere)</span></label><input type="text" id="dl-url" placeholder="https://..."></div>
         <div class="fg"><label>Description</label><input type="text" id="dl-desc" placeholder="Brief description"></div>
         <button class="btn btn-primary" onclick="addDownload()"><i class="fas fa-save"></i> Publish Document</button>
       </div>
@@ -5540,26 +5541,67 @@ async function bulkUploadMediaPhotos(){
 }
 
 // ── DOWNLOADS ─────────────────────────────────────────────────────────────
-function addDownload(){
-  const title=document.getElementById('dl-title').value.trim(); if(!title){alert('Title required');return;}
-  const url=document.getElementById('dl-url').value.trim(); if(!url){alert('File URL required');return;}
-  const items=DB.get('sg_downloads');
-  items.push({id:generateId('DL',items),title,category:document.getElementById('dl-cat').value,url,desc:document.getElementById('dl-desc').value,addedAt:new Date().toISOString()});
-  DB.set('sg_downloads',items);
-  ['dl-title','dl-url','dl-desc'].forEach(x=>document.getElementById(x).value='');
+// ── DOWNLOADS ─────────────────────────────────────────────────────────────
+// Was localStorage-only ('sg_downloads') — meaning a document published here
+// only ever existed in the admin's own browser and never actually reached
+// the public Downloads page (which has its own separate hardcoded content).
+// Moved to RTDB, same REST-fetch pattern as News/Gallery/Team, plus a real
+// file picker instead of a URL-only text box (a local file path pasted
+// there would only ever work on the admin's own computer).
+let _downloads = [];
+async function refreshDownloads(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/downloads.json');
+    const data = await res.json();
+    _downloads = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _downloads.sort((a,b) => (b.addedAt||'').localeCompare(a.addedAt||''));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
   renderDownloads();
 }
+refreshDownloads();
+setInterval(refreshDownloads, 15000);
+const DL_MAX_SIZE = 5 * 1024 * 1024;
+let _dlFileUrl = '';
+function uploadDownloadFile(){
+  const file = document.getElementById('dl-file').files[0];
+  const statusEl = document.getElementById('dl-file-status');
+  _dlFileUrl = '';
+  if (!file) return;
+  if (file.size > DL_MAX_SIZE) { statusEl.innerHTML = '<span style="color:#c62828;">File too large — max 5MB. Host it online (e.g. Google Drive) and paste the link instead.</span>'; return; }
+  statusEl.innerHTML = '<span style="color:#b8860b;">Processing...</span>';
+  const reader = new FileReader();
+  reader.onload = () => { _dlFileUrl = reader.result; statusEl.innerHTML = '<span style="color:#2e7d32;">'+file.name+' ready</span>'; };
+  reader.onerror = () => { statusEl.innerHTML = '<span style="color:#c62828;">Could not read file.</span>'; };
+  reader.readAsDataURL(file);
+}
+function addDownload(){
+  const title=document.getElementById('dl-title').value.trim(); if(!title){alert('Title required');return;}
+  const pastedUrl=document.getElementById('dl-url').value.trim();
+  if (pastedUrl && (/^[a-zA-Z]:[\\\/]/.test(pastedUrl) || /^file:\/\//i.test(pastedUrl) || pastedUrl.includes('\\'))) {
+    alert('That looks like a local file path, not a web link — it will only work on your own computer. Use the File field above instead and pick the actual document.');
+    return;
+  }
+  const url = _dlFileUrl || pastedUrl;
+  if (!url) { alert('Pick a file or paste a document URL first.'); return; }
+  _fbDb.ref('downloads').push({
+    title, category:document.getElementById('dl-cat').value, url, desc:document.getElementById('dl-desc').value, addedAt:new Date().toISOString()
+  }).then(() => setTimeout(refreshDownloads, 500));
+  logActivity('Published document', title);
+  ['dl-title','dl-url','dl-desc','dl-file'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('dl-file-status').innerHTML = '';
+  _dlFileUrl = '';
+}
 function renderDownloads(){
-  const items=DB.get('sg_downloads');
   const tbody=document.getElementById('dl-body');
-  if(!items.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No documents yet.</td></tr>'; return; }
-  tbody.innerHTML=items.map(d=>`<tr>
+  if(!tbody) return;
+  if(!_downloads.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No documents yet.</td></tr>'; return; }
+  tbody.innerHTML=_downloads.map(d=>`<tr>
     <td><strong>${d.title}</strong><br><span style="font-size:.78rem;color:var(--muted);">${d.desc||''}</span></td>
     <td>${d.category}</td>
     <td><a href="${d.url}" target="_blank" class="btn btn-ghost btn-xs"><i class="fas fa-external-link-alt"></i> Open</a></td>
-    <td><button class="btn btn-danger btn-xs" onclick="deleteDownload('${d.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+    <td><button class="btn btn-danger btn-xs" onclick="deleteDownload('${d._key}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
 }
-function deleteDownload(id){ if(!confirm('Remove document?')) return; DB.set('sg_downloads',DB.get('sg_downloads').filter(d=>d.id!==id)); renderDownloads(); }
+function deleteDownload(key){ if(!confirm('Remove document?')) return; _fbDb.ref('downloads/'+key).remove().then(() => setTimeout(refreshDownloads, 500)); logActivity('Removed document', key); }
 
 // ── MANAGE TEAM ───────────────────────────────────────────────────────────
 // Stored in RTDB (not localStorage like Downloads above) since the public
