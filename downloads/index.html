@@ -255,7 +255,17 @@
         'Press Release':           { icon: 'fa-newspaper', color: 'linear-gradient(135deg, #455a64, #78909c)' }
       };
       const DL_CATEGORY_ORDER = ['Rule Book','Registration Form','Tournament Brochure','Circular','Notice','Press Release'];
+      const DL_MIME_EXT = { 'application/pdf':'pdf', 'application/msword':'doc', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'docx' };
       function downloadItemHtml(d, meta){
+        // Uploaded files are stored as a base64 data: URI, not a normal
+        // hosted link — without a `download` attribute, clicking a multi-MB
+        // data: URI is silently blocked/does nothing in most browsers
+        // (it's treated as a blocked top-level navigation, not a file
+        // save). Same `a.download = "name"` technique already used
+        // everywhere else in this codebase for CSV/image exports.
+        const mimeMatch = /^data:([^;]+);/.exec(d.url);
+        const ext = mimeMatch ? (DL_MIME_EXT[mimeMatch[1]] || '') : '';
+        const filename = d.title.replace(/[^a-zA-Z0-9]+/g,'_') + (ext ? '.'+ext : '');
         return `
                   <div class="download-item">
                       <div class="download-item-info">
@@ -265,7 +275,7 @@
                               <p>${d.desc || ''}</p>
                           </div>
                       </div>
-                      <a href="${d.url}" target="_blank" rel="noopener" class="btn-download"><i class="fas fa-download"></i> Download</a>
+                      <a href="${d.url}" target="_blank" rel="noopener" download="${filename}" class="btn-download"><i class="fas fa-download"></i> Download</a>
                   </div>`;
       }
       fetch("https://f5awebsite-default-rtdb.firebaseio.com/downloads.json", { cache: "no-store" }).then(r => r.json()).then(data => {
