@@ -263,9 +263,16 @@
         // (it's treated as a blocked top-level navigation, not a file
         // save). Same `a.download = "name"` technique already used
         // everywhere else in this codebase for CSV/image exports.
+        const isDataUri = d.url.startsWith('data:');
         const mimeMatch = /^data:([^;]+);/.exec(d.url);
         const ext = mimeMatch ? (DL_MIME_EXT[mimeMatch[1]] || '') : '';
         const filename = d.title.replace(/[^a-zA-Z0-9]+/g,'_') + (ext ? '.'+ext : '');
+        // target="_blank" on a data: URI can get intercepted by the popup
+        // blocker before the download attribute takes effect (shows
+        // about:blank#blocked) — only add it for real external links
+        // (Drive, etc.), where it's needed to open in a new tab; data:
+        // URIs download directly via the `download` attribute instead.
+        const linkAttrs = isDataUri ? `download="${filename}"` : `target="_blank" rel="noopener"`;
         return `
                   <div class="download-item">
                       <div class="download-item-info">
@@ -275,7 +282,7 @@
                               <p>${d.desc || ''}</p>
                           </div>
                       </div>
-                      <a href="${d.url}" target="_blank" rel="noopener" download="${filename}" class="btn-download"><i class="fas fa-download"></i> Download</a>
+                      <a href="${d.url}" ${linkAttrs} class="btn-download"><i class="fas fa-download"></i> Download</a>
                   </div>`;
       }
       fetch("https://f5awebsite-default-rtdb.firebaseio.com/downloads.json", { cache: "no-store" }).then(r => r.json()).then(data => {

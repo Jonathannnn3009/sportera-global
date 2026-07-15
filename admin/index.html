@@ -5604,11 +5604,25 @@ function renderDownloads(){
   const tbody=document.getElementById('dl-body');
   if(!tbody) return;
   if(!_downloads.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No documents yet.</td></tr>'; return; }
-  tbody.innerHTML=_downloads.map(d=>`<tr>
+  tbody.innerHTML=_downloads.map(d=>{
+    // Uploaded files are a base64 data: URI — without a `download`
+    // attribute, opening a multi-MB one via target="_blank" gets silently
+    // blocked by the browser (shows about:blank#blocked) instead of
+    // opening/saving. External hosted links (http/https) still just open
+    // normally in a new tab; `download` is ignored cross-origin.
+    const filename = d.title.replace(/[^a-zA-Z0-9]+/g,'_');
+    const isDataUri = d.url.startsWith('data:');
+    // target="_blank" on a data: URI can get intercepted by the popup
+    // blocker before the download attribute takes effect (shows
+    // about:blank#blocked) — only add it for real external links, where
+    // it's needed to open in a new tab; data: URIs download directly.
+    const linkAttrs = isDataUri ? `download="${filename}"` : `target="_blank" rel="noopener"`;
+    return `<tr>
     <td><strong>${d.title}</strong><br><span style="font-size:.78rem;color:var(--muted);">${d.desc||''}</span></td>
     <td>${d.category}${d.tournament?' &bull; '+d.tournament:''}</td>
-    <td><a href="${d.url}" target="_blank" class="btn btn-ghost btn-xs"><i class="fas fa-external-link-alt"></i> Open</a></td>
-    <td><button class="btn btn-danger btn-xs" onclick="deleteDownload('${d._key}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+    <td><a href="${d.url}" ${linkAttrs} class="btn btn-ghost btn-xs"><i class="fas fa-external-link-alt"></i> Open</a></td>
+    <td><button class="btn btn-danger btn-xs" onclick="deleteDownload('${d._key}')"><i class="fas fa-trash"></i></button></td></tr>`;
+  }).join('');
 }
 function deleteDownload(key){ if(!confirm('Remove document?')) return; _fbDb.ref('downloads/'+key).remove().then(() => setTimeout(refreshDownloads, 500)); logActivity('Removed document', key); }
 
