@@ -249,12 +249,25 @@
       const DL_CATEGORY_META = {
         'Rule Book':               { icon: 'fa-book' },
         'Registration Form':       { icon: 'fa-file-alt' },
-        'Tournament Regulations':  { icon: 'fa-gavel' },
+        'Tournament Brochure':     { icon: 'fa-trophy' },
         'Circular':                { icon: 'fa-bullhorn', color: 'linear-gradient(135deg, #e65100, #ff6d00)' },
         'Notice':                  { icon: 'fa-bell', color: 'linear-gradient(135deg, #e65100, #ff6d00)' },
         'Press Release':           { icon: 'fa-newspaper', color: 'linear-gradient(135deg, #455a64, #78909c)' }
       };
-      const DL_CATEGORY_ORDER = ['Rule Book','Registration Form','Tournament Regulations','Circular','Notice','Press Release'];
+      const DL_CATEGORY_ORDER = ['Rule Book','Registration Form','Tournament Brochure','Circular','Notice','Press Release'];
+      function downloadItemHtml(d, meta){
+        return `
+                  <div class="download-item">
+                      <div class="download-item-info">
+                          <div class="download-icon"${meta.color ? ` style="background: ${meta.color};"` : ''}><i class="fas fa-file-pdf"></i></div>
+                          <div class="download-meta">
+                              <h4>${d.title}</h4>
+                              <p>${d.desc || ''}</p>
+                          </div>
+                      </div>
+                      <a href="${d.url}" target="_blank" rel="noopener" class="btn-download"><i class="fas fa-download"></i> Download</a>
+                  </div>`;
+      }
       fetch("https://f5awebsite-default-rtdb.firebaseio.com/downloads.json", { cache: "no-store" }).then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicDownloads');
         if (!el) return;
@@ -265,22 +278,24 @@
         const categories = DL_CATEGORY_ORDER.filter(c => byCategory[c]).concat(Object.keys(byCategory).filter(c => !DL_CATEGORY_ORDER.includes(c)));
         el.innerHTML = categories.map(cat => {
           const meta = DL_CATEGORY_META[cat] || { icon: 'fa-file' };
+          // Tournament Brochure is further split tournament-wise — a
+          // sub-heading per tournament instead of one flat list, since a
+          // brochure only makes sense in the context of its own tournament.
+          let listHtml;
+          if (cat === 'Tournament Brochure') {
+            const byTournament = {};
+            byCategory[cat].forEach(d => { (byTournament[d.tournament || 'Other'] = byTournament[d.tournament || 'Other'] || []).push(d); });
+            listHtml = Object.keys(byTournament).map(t => `
+              <h4 style="margin:14px 0 8px;color:var(--primary);font-size:1rem;">${t}</h4>
+              <div class="downloads-list">${byTournament[t].map(d => downloadItemHtml(d, meta)).join('')}</div>
+            `).join('');
+          } else {
+            listHtml = `<div class="downloads-list">${byCategory[cat].map(d => downloadItemHtml(d, meta)).join('')}</div>`;
+          }
           return `
           <div class="downloads-category">
               <h3><i class="fas ${meta.icon}"></i> ${cat}</h3>
-              <div class="downloads-list">
-                  ${byCategory[cat].map(d => `
-                  <div class="download-item">
-                      <div class="download-item-info">
-                          <div class="download-icon"${meta.color ? ` style="background: ${meta.color};"` : ''}><i class="fas fa-file-pdf"></i></div>
-                          <div class="download-meta">
-                              <h4>${d.title}</h4>
-                              <p>${d.desc || ''}</p>
-                          </div>
-                      </div>
-                      <a href="${d.url}" target="_blank" rel="noopener" class="btn-download"><i class="fas fa-download"></i> Download</a>
-                  </div>`).join('')}
-              </div>
+              ${listHtml}
           </div>`;
         }).join('');
       }).catch(() => {

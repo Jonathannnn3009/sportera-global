@@ -1337,7 +1337,10 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       <div class="card-body">
         <div class="fg"><label>Document Title *</label><input type="text" id="dl-title" placeholder="e.g. Rule Book 2026"></div>
         <div class="fg"><label>Category</label>
-          <select id="dl-cat"><option>Rule Book</option><option>Registration Form</option><option>Tournament Regulations</option><option>Circular</option><option>Notice</option><option>Press Release</option></select>
+          <select id="dl-cat" onchange="onDownloadCategoryChange()"><option>Rule Book</option><option>Registration Form</option><option>Tournament Brochure</option><option>Circular</option><option>Notice</option><option>Press Release</option></select>
+        </div>
+        <div class="fg" id="dl-tournament-fg" style="display:none;"><label>Tournament</label>
+          <select id="dl-tournament"></select>
         </div>
         <div class="fg"><label>File <span style="font-weight:400;color:var(--muted);">(pick a PDF from your computer)</span></label><input type="file" id="dl-file" accept=".pdf,.doc,.docx" onchange="uploadDownloadFile()"><div id="dl-file-status" style="font-size:.82rem;margin-top:6px;"></div></div>
         <div class="fg"><label>— or — File URL <span style="font-weight:400;color:var(--muted);">(only if it's already hosted online somewhere)</span></label><input type="text" id="dl-url" placeholder="https://..."></div>
@@ -1963,7 +1966,7 @@ _fbDb.ref('contactMessages').on('value', snap => {
 // categories, fixtures, lineup, results, league tables, team edit) reads
 // from this one live list instead of duplicating hardcoded <option> tags.
 let _fbTournaments = [];
-const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','efx-tournament','lu-tournament','res-tournament','reslog-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter','med-tournament','med-filter-tournament'];
+const TOURNAMENT_SELECT_IDS = ['ac-tournament','fx-tournament','fx-filter','efx-tournament','lu-tournament','res-tournament','reslog-tournament','lt-tournament','t-tourn','p-tourn','teamsTournamentFilter','playersTournamentFilter','pl-tournament','appTournamentFilter','idcTeamTournamentFilter','med-tournament','med-filter-tournament','dl-tournament'];
 const TOURNAMENT_SELECT_ALL_OPTION = { 'fx-filter': true, 'res-tournament': true, 'reslog-tournament': true, 'teamsTournamentFilter': true, 'playersTournamentFilter': true, 'appTournamentFilter': true, 'idcTeamTournamentFilter': true, 'med-filter-tournament': true };
 
 _fbDb.ref('tournaments').on('value', snap => {
@@ -5541,13 +5544,17 @@ async function bulkUploadMediaPhotos(){
 }
 
 // ── DOWNLOADS ─────────────────────────────────────────────────────────────
-// ── DOWNLOADS ─────────────────────────────────────────────────────────────
 // Was localStorage-only ('sg_downloads') — meaning a document published here
 // only ever existed in the admin's own browser and never actually reached
 // the public Downloads page (which has its own separate hardcoded content).
 // Moved to RTDB, same REST-fetch pattern as News/Gallery/Team, plus a real
 // file picker instead of a URL-only text box (a local file path pasted
-// there would only ever work on the admin's own computer).
+// there would only ever work on the admin's own computer). Tournament
+// Brochures are further organized tournament-wise on the public page.
+function onDownloadCategoryChange(){
+  const cat = document.getElementById('dl-cat').value;
+  document.getElementById('dl-tournament-fg').style.display = cat === 'Tournament Brochure' ? '' : 'none';
+}
 let _downloads = [];
 async function refreshDownloads(){
   try {
@@ -5583,8 +5590,10 @@ function addDownload(){
   }
   const url = _dlFileUrl || pastedUrl;
   if (!url) { alert('Pick a file or paste a document URL first.'); return; }
+  const category = document.getElementById('dl-cat').value;
+  const tournament = (category === 'Tournament Brochure' ? document.getElementById('dl-tournament').value : '') || null;
   _fbDb.ref('downloads').push({
-    title, category:document.getElementById('dl-cat').value, url, desc:document.getElementById('dl-desc').value, addedAt:new Date().toISOString()
+    title, category, tournament, url, desc:document.getElementById('dl-desc').value, addedAt:new Date().toISOString()
   }).then(() => setTimeout(refreshDownloads, 500));
   logActivity('Published document', title);
   ['dl-title','dl-url','dl-desc','dl-file'].forEach(x=>document.getElementById(x).value='');
@@ -5597,7 +5606,7 @@ function renderDownloads(){
   if(!_downloads.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted);">No documents yet.</td></tr>'; return; }
   tbody.innerHTML=_downloads.map(d=>`<tr>
     <td><strong>${d.title}</strong><br><span style="font-size:.78rem;color:var(--muted);">${d.desc||''}</span></td>
-    <td>${d.category}</td>
+    <td>${d.category}${d.tournament?' &bull; '+d.tournament:''}</td>
     <td><a href="${d.url}" target="_blank" class="btn btn-ghost btn-xs"><i class="fas fa-external-link-alt"></i> Open</a></td>
     <td><button class="btn btn-danger btn-xs" onclick="deleteDownload('${d._key}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
 }
