@@ -68,68 +68,8 @@
                         </tr>
                     </thead>
                     <tbody id="calendar-live-rows"></tbody>
-                    <tbody>
-                        <tr>
-                            <td><strong>Indian Football 5 League 2026 (Season 1)</strong></td>
-                            <td>November 2026</td>
-                            <td>Multiple Cities</td>
-                            <td><span class="status-upcoming">Coming Soon</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>International Football Tournament 2026</strong></td>
-                            <td>June 2026</td>
-                            <td>Phuket, Thailand</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 National Level Club Championship 2026</strong></td>
-                            <td>May 2026</td>
-                            <td>Goa</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 National Level Club Championship 2025</strong></td>
-                            <td>May 2025</td>
-                            <td>Goa</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 National Level Club Championship 2024</strong></td>
-                            <td>June 2024</td>
-                            <td>Goa</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Attempt to India Book of Records 2023</strong></td>
-                            <td>November 2023</td>
-                            <td>Belgaum, Karnataka</td>
-                            <td><span class="status-completed">Successful</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 National Level Club Championship 2023</strong></td>
-                            <td>May 2023</td>
-                            <td>Goa</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 Cup 2021</strong></td>
-                            <td>January 2021</td>
-                            <td>Pune</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 Cup 2020</strong></td>
-                            <td>November 2020</td>
-                            <td>Pune</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Football 5 National Level Club Championship 2019</strong></td>
-                            <td>June 2019</td>
-                            <td>Bangalore</td>
-                            <td><span class="status-completed">Completed</span></td>
-                        </tr>
-                    </tbody>
+                    <!-- Past events added via admin's Tournament History panel render here -->
+                    <tbody id="calendar-history-rows"></tbody>
                 </table>
             </div>
         </div>
@@ -296,6 +236,21 @@
           <td>${statusHtml(t)}</td>
         </tr>`).join('');
     });
+
+    // Past-events archive, editable from admin's Tournament History panel
+    // instead of being hardcoded here.
+    fetch("https://f5awebsite-default-rtdb.firebaseio.com/tournamentHistory.json", { cache: "no-store" }).then(r => r.json()).then(data => {
+      const el = document.getElementById('calendar-history-rows');
+      if (!el || !data) return;
+      const rows = Object.values(data).sort((a,b) => (a.order||0) - (b.order||0));
+      el.innerHTML = rows.map(t => `
+        <tr>
+          <td><strong>${t.name}</strong></td>
+          <td>${t.date || 'TBA'}</td>
+          <td>${t.location || 'TBA'}</td>
+          <td><span class="status-completed">${t.status || 'Completed'}</span></td>
+        </tr>`).join('');
+    }).catch(()=>{});
     </script>
 </body>
 </html>

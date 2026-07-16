@@ -504,6 +504,26 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
     </div>
   </div>
   <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3 id="th-form-title"><i class="fas fa-history"></i> Tournament History (Past Events Calendar)</h3></div>
+    <div class="card-body">
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">Shown in the "Tournament Calendar" table on the public Tournaments page, below your live tournaments. For completed/past events not tracked as a live Tournament.</p>
+      <input type="hidden" id="th-edit-id">
+      <div class="form-row">
+        <div class="fg"><label>Event Name *</label><input type="text" id="th-name" placeholder="e.g. Football 5 Cup 2021"></div>
+        <div class="fg"><label>Date <span style="font-weight:400;color:var(--muted);">(display text)</span></label><input type="text" id="th-date" placeholder="e.g. January 2021"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Location</label><input type="text" id="th-location" placeholder="e.g. Pune"></div>
+        <div class="fg"><label>Status</label><input type="text" id="th-status" placeholder="e.g. Completed, Successful, Coming Soon"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="addTournamentHistory()" id="th-save-btn"><i class="fas fa-save"></i> Add Event</button>
+        <button class="btn btn-ghost" onclick="clearTournamentHistoryForm()" id="th-cancel-btn" style="display:none;">Cancel</button>
+      </div>
+      <div class="tbl-wrap" style="margin-top:16px;"><table class="dt"><thead><tr><th>Event</th><th>Date</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tournament-history-body"></tbody></table></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:20px;">
     <div class="card-head"><h3><i class="fas fa-plus-circle"></i> Create Tournament</h3></div>
     <div class="card-body">
       <input type="hidden" id="trn-edit-id">
@@ -2257,7 +2277,7 @@ function switchPanel(id) {
     news: renderNewsList, media: renderMedia, 'downloads-mgr': renderDownloads,
     teammembers: renderTeamMembers, partners: renderPartners,
     if5lcities: renderIf5lCities, intldest: renderIntlDestinations, upcomingevents: renderUpcomingEvents,
-    messages: renderMessages, admins: renderAdmins, tournaments: renderTournaments
+    messages: renderMessages, admins: renderAdmins, tournaments: () => { renderTournaments(); renderTournamentHistory(); }
   };
   if(refresh[id]) refresh[id]();
 }
@@ -6099,6 +6119,78 @@ function hideTournamentFromUpcoming(key){
   if (!confirm('Hide this tournament from the Upcoming Events widget? It stays untouched everywhere else on the site.')) return;
   _fbDb.ref('tournaments/'+key).update({ hideFromUpcoming: true });
   logActivity('Hid tournament from Upcoming Events', (_fbTournaments.find(t=>t._key===key)||{}).name||key);
+}
+
+// ── TOURNAMENT HISTORY (public Tournament Calendar, past events) ──────────
+let _tournamentHistory = [];
+async function refreshTournamentHistory(){
+  try {
+    const res = await fetch(_fbConfig.databaseURL + '/tournamentHistory.json');
+    const data = await res.json();
+    _tournamentHistory = Object.entries(data||{}).map(([key,val]) => ({ _key: key, ...val }));
+    _tournamentHistory.sort((a,b) => (a.order||0) - (b.order||0));
+  } catch(e) { /* best-effort — leave whatever was last rendered */ }
+  renderTournamentHistory();
+}
+refreshTournamentHistory();
+setInterval(refreshTournamentHistory, 15000);
+function addTournamentHistory(){
+  const name = document.getElementById('th-name').value.trim();
+  if (!name) { alert('Event name is required.'); return; }
+  const obj = {
+    name,
+    date: document.getElementById('th-date').value.trim(),
+    location: document.getElementById('th-location').value.trim(),
+    status: document.getElementById('th-status').value.trim() || 'Completed'
+  };
+  const editKey = document.getElementById('th-edit-id').value;
+  if (editKey) {
+    _fbDb.ref('tournamentHistory/'+editKey).update(obj).then(() => setTimeout(refreshTournamentHistory, 500));
+    logActivity('Updated tournament history entry', name);
+  } else {
+    _fbDb.ref('tournamentHistory').push({ ...obj, order: _tournamentHistory.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshTournamentHistory, 500));
+    logActivity('Added tournament history entry', name);
+  }
+  clearTournamentHistoryForm();
+}
+function editTournamentHistory(key){
+  const t = _tournamentHistory.find(x=>x._key===key); if (!t) return;
+  document.getElementById('th-edit-id').value = key;
+  document.getElementById('th-name').value = t.name;
+  document.getElementById('th-date').value = t.date||'';
+  document.getElementById('th-location').value = t.location||'';
+  document.getElementById('th-status').value = t.status||'';
+  document.getElementById('th-form-title').innerHTML = '<i class="fas fa-edit"></i> Edit Event';
+  document.getElementById('th-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  document.getElementById('th-cancel-btn').style.display = '';
+}
+function clearTournamentHistoryForm(){
+  document.getElementById('th-edit-id').value = '';
+  ['th-name','th-date','th-location','th-status'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('th-form-title').innerHTML = '<i class="fas fa-history"></i> Tournament History (Past Events Calendar)';
+  document.getElementById('th-save-btn').innerHTML = '<i class="fas fa-save"></i> Add Event';
+  document.getElementById('th-cancel-btn').style.display = 'none';
+}
+function deleteTournamentHistory(key){
+  if (!confirm('Remove this event from the Tournament Calendar?')) return;
+  const t = _tournamentHistory.find(x=>x._key===key);
+  _fbDb.ref('tournamentHistory/'+key).remove().then(() => setTimeout(refreshTournamentHistory, 500));
+  logActivity('Removed tournament history entry', t?t.name:key);
+}
+function renderTournamentHistory(){
+  const tbody = document.getElementById('tournament-history-body');
+  if (!tbody) return;
+  if (!_tournamentHistory.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No past events added yet.</td></tr>'; return; }
+  tbody.innerHTML = _tournamentHistory.map(t => `<tr>
+    <td><strong>${t.name}</strong></td>
+    <td>${t.date||'—'}</td>
+    <td>${t.location||'—'}</td>
+    <td>${t.status||'—'}</td>
+    <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="editTournamentHistory('${t._key}')"><i class="fas fa-edit"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="deleteTournamentHistory('${t._key}')"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
