@@ -274,6 +274,14 @@
                   <div class="form-group"><label>Jersey Number *</label><input type="number" id="newPlayerJersey" min="0" max="99" placeholder="e.g. 7"></div>
                 </div>
                 <div class="form-row">
+                  <div class="form-group"><label>Jersey Size</label>
+                    <select id="newPlayerJerseySize">
+                      <option value="">Select (optional)</option>
+                      <option>28</option><option>30</option><option>32</option><option>34</option>
+                      <option>36</option><option>38</option><option>40</option><option>42</option>
+                      <option>44</option><option>46</option>
+                    </select>
+                  </div>
                   <div class="form-group"><label>Tournament *</label>
                     <select id="newPlayerTournament" onchange="onNewPlayerTournamentChange()"><option value="">Select tournament</option></select>
                   </div>
@@ -583,6 +591,7 @@
           email,
           city,
           jerseyNumber: jersey,
+          jerseySize: document.getElementById('newPlayerJerseySize').value || null,
           tournament,
           ageCategory,
           position: document.getElementById('newPlayerPosition').value,
@@ -598,7 +607,7 @@
         });
         alert('Player addition request submitted! Admin will review the document and approve shortly.');
         document.getElementById('addPlayerForm').classList.remove('open');
-        ['newPlayerName','newPlayerPhone','newPlayerDOB','newPlayerAgeDoc','newPlayerEmail','newPlayerCity','newPlayerJersey','newPlayerGuardianName','newPlayerGuardianPhone','newPlayerPhoto'].forEach(id => document.getElementById(id).value = '');
+        ['newPlayerName','newPlayerPhone','newPlayerDOB','newPlayerAgeDoc','newPlayerEmail','newPlayerCity','newPlayerJersey','newPlayerJerseySize','newPlayerGuardianName','newPlayerGuardianPhone','newPlayerPhoto'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('newPlayerPosition').value = '';
         document.getElementById('newPlayerTournament').value = '';
         document.getElementById('newPlayerAgeCategory').innerHTML = '<option value="">Select tournament first</option>';

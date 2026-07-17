@@ -561,6 +561,15 @@
                                 <label for="playerJerseyNumber">Jersey Number *</label>
                                 <input type="number" id="playerJerseyNumber" name="playerJerseyNumber" min="0" max="99" placeholder="e.g. 7" required>
                             </div>
+                            <div class="form-group">
+                                <label for="playerJerseySize">Jersey Size</label>
+                                <select id="playerJerseySize" name="playerJerseySize">
+                                    <option value="">Select (optional)</option>
+                                    <option>28</option><option>30</option><option>32</option><option>34</option>
+                                    <option>36</option><option>38</option><option>40</option><option>42</option>
+                                    <option>44</option><option>46</option>
+                                </select>
+                            </div>
                         </div>
 
                         <p class="form-section-label">Team &amp; Tournament</p>
@@ -1852,6 +1861,7 @@
                 playerEmail: document.getElementById('playerEmail').value,
                 playerPosition: document.getElementById('playerPosition').value,
                 playerJerseyNumber: document.getElementById('playerJerseyNumber').value,
+                playerJerseySize: document.getElementById('playerJerseySize').value || null,
                 playerCity: document.getElementById('playerCity').value,
                 playerCountry: document.getElementById('playerCountry').value,
                 playerTeam: teamVal,

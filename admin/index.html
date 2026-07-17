@@ -2613,7 +2613,7 @@ async function approveSquadRequest(key){
     if (isNewAccount) {
       await _fbFs.collection('players').doc(uid).set({
         playerName: r.playerName, playerCity: r.city||'', playerPosition: r.position||'',
-        playerTeam: r.teamName||'', playerDOB: r.dob||'', playerJerseyNumber: r.jerseyNumber||'',
+        playerTeam: r.teamName||'', playerDOB: r.dob||'', playerJerseyNumber: r.jerseyNumber||'', playerJerseySize: r.jerseySize||'',
         playerAgeCategory: r.ageCategory||'', playerPhotoUrl: r.photoUrl||'',
         email: r.email, guardianName: r.guardianName||'', guardianPhone: r.guardianPhone||'', phone: r.phone||'',
         regId: 'squad-'+key,
@@ -2878,7 +2878,7 @@ function viewReg(id){
   document.getElementById('modal-reg-title').textContent=(r.type==='team'?'Team':'Player')+' — '+name;
   const fields = r.type==='team'
     ? [['Team Name',r.teamName],['City',r.teamCity],['Coach',r.coachName],['Coach Phone',r.coachPhone],['Manager',r.managerName||'—'],['Manager Phone',r.managerPhone||'—'],['Email',r.teamEmail],['Tournament',r.tournament],['Age Category',r.ageCategory||'—'],['Payment Method',r.paymentMethod]]
-    : [['Player Name',r.playerName],['Date of Birth',r.playerDOB],['Team',r.playerTeam],['Position',r.playerPosition||'—'],['Age Category',r.playerAgeCategory||'—'],['Guardian',r.guardianName],['Guardian Phone',r.guardianPhone],['Email',r.playerEmail||'—'],['Payment Method',r.paymentMethod]];
+    : [['Player Name',r.playerName],['Date of Birth',r.playerDOB],['Team',r.playerTeam],['Position',r.playerPosition||'—'],['Jersey Number',r.playerJerseyNumber||'—'],['Jersey Size',r.playerJerseySize||'—'],['Age Category',r.playerAgeCategory||'—'],['Guardian',r.guardianName],['Guardian Phone',r.guardianPhone],['Email',r.playerEmail||'—'],['Payment Method',r.paymentMethod]];
   const docUrl = r.ageDocUrl || r.teamLogoUrl;
   const docLabel = r.type==='team' ? 'Team Logo' : 'Age Verification Document';
   document.getElementById('modal-reg-body').innerHTML=`
@@ -3722,10 +3722,10 @@ function exportCSV(type){
   else if(type==='approved') regs=regs.filter(r=>r.status==='approved');
   if(!regs.length){ alert('No data to export.'); return; }
   const header=type==='player'
-    ? ['ID','Name','DOB','Team','Position','Age Category','Guardian','Guardian Phone','Email','Payment','Status','Submitted']
+    ? ['ID','Name','DOB','Team','Position','Jersey Number','Jersey Size','Age Category','Guardian','Guardian Phone','Email','Payment','Status','Submitted']
     : ['ID','Team Name','City','Coach','Coach Phone','Manager','Email','Tournament','Age Category','Payment','Status','Submitted'];
   const rows=regs.map(r=>type==='player'
-    ? [r.id,r.playerName,r.playerDOB,r.playerTeam,r.playerPosition,r.playerAgeCategory,r.guardianName,r.guardianPhone,r.playerEmail,r.paymentMethod,r.status,fmtDate(r.submittedAt)]
+    ? [r.id,r.playerName,r.playerDOB,r.playerTeam,r.playerPosition,r.playerJerseyNumber,r.playerJerseySize,r.playerAgeCategory,r.guardianName,r.guardianPhone,r.playerEmail,r.paymentMethod,r.status,fmtDate(r.submittedAt)]
     : [r.id,r.teamName,r.teamCity,r.coachName,r.coachPhone,r.managerName,r.teamEmail,r.tournament,r.ageCategory,r.paymentMethod,r.status,fmtDate(r.submittedAt)]);
   const csv=[header,...rows].map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
