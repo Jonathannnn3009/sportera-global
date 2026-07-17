@@ -2518,28 +2518,44 @@ async function createPortalAccount(reg) {
 }
 
 // ── MANAGE ADMINS ──────────────────────────────────────────────────────────
+// These two listeners used to attach immediately at page load, before
+// Firebase Auth had resolved who's actually signed in — request.auth was
+// still null at that instant, so Firestore rejected the (now correctly
+// locked-down) reads with permission-denied. Harmless under the old wide-open
+// rules, but a real bug once real security rules were added. Waiting for
+// onAuthStateChanged to actually confirm a signed-in user before attaching
+// them fixes it, and also means they get torn down/reattached correctly if
+// the admin ever logs out and a different one logs in on the same tab.
 let _admins = [];
-_fbFs.collection('admins').onSnapshot(snap => {
-  _admins = [];
-  snap.forEach(doc => _admins.push({ uid: doc.id, ...doc.data() }));
-  renderAdmins();
-});
-
-// ── SQUAD REQUESTS ───────────────────────────────────────────────────────
-// Players a team adds themselves via the Team Portal (portal/team-dashboard.html
-// "Add Player" form) land here as squadRequests, not in registrations — this
-// was previously only handled by the separate, disconnected portal/admin-portal.html
-// tool, which just appended a bare {name,position,dob,phone} object into the
-// team's squad array and never created the player their own portal login.
-// This block gives the player a real players/{uid} account (same shape as
-// createPortalAccount) so they show up in Manage Players, get individual
-// stats tracking, and can log into the Player Portal themselves.
 let _squadRequests = [];
-_fbFs.collection('squadRequests').onSnapshot(snap => {
-  _squadRequests = [];
-  snap.forEach(doc => _squadRequests.push({ _key: doc.id, ...doc.data() }));
-  _squadRequests.sort((a,b) => (a.requestedAt&&a.requestedAt.seconds||0) - (b.requestedAt&&b.requestedAt.seconds||0));
-  renderSquadRequests();
+let _adminsUnsub = null;
+let _squadRequestsUnsub = null;
+_fbAuth.onAuthStateChanged(user => {
+  if (_adminsUnsub) { _adminsUnsub(); _adminsUnsub = null; }
+  if (_squadRequestsUnsub) { _squadRequestsUnsub(); _squadRequestsUnsub = null; }
+  if (!user) { _admins = []; _squadRequests = []; renderAdmins(); renderSquadRequests(); return; }
+
+  _adminsUnsub = _fbFs.collection('admins').onSnapshot(snap => {
+    _admins = [];
+    snap.forEach(doc => _admins.push({ uid: doc.id, ...doc.data() }));
+    renderAdmins();
+  });
+
+  // ── SQUAD REQUESTS ─────────────────────────────────────────────────────
+  // Players a team adds themselves via the Team Portal (portal/team-dashboard.html
+  // "Add Player" form) land here as squadRequests, not in registrations — this
+  // was previously only handled by the separate, disconnected portal/admin-portal.html
+  // tool, which just appended a bare {name,position,dob,phone} object into the
+  // team's squad array and never created the player their own portal login.
+  // This block gives the player a real players/{uid} account (same shape as
+  // createPortalAccount) so they show up in Manage Players, get individual
+  // stats tracking, and can log into the Player Portal themselves.
+  _squadRequestsUnsub = _fbFs.collection('squadRequests').onSnapshot(snap => {
+    _squadRequests = [];
+    snap.forEach(doc => _squadRequests.push({ _key: doc.id, ...doc.data() }));
+    _squadRequests.sort((a,b) => (a.requestedAt&&a.requestedAt.seconds||0) - (b.requestedAt&&b.requestedAt.seconds||0));
+    renderSquadRequests();
+  });
 });
 function renderSquadRequests(){
   const tbody = document.getElementById('squadreq-body');
