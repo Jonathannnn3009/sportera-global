@@ -223,7 +223,13 @@
         const name = document.getElementById('live-tournament').value;
         const t = _liveTournaments.find(x => x.name === name);
         const citySel = document.getElementById('live-city');
-        const cities = [...(_liveCitiesByTournament[tournamentSlug(name)] || [])];
+        // Prefer the tournament's own configured city list (set in Manage
+        // Tournaments) over deriving cities from existing team
+        // registrations/fixtures — a brand-new or freshly-cleared
+        // multi-city tournament has no registrations/fixtures yet, so the
+        // derived list would be empty even though the tournament itself is
+        // correctly configured as multi-city.
+        const cities = (t && t.cities && t.cities.length) ? t.cities : [...(_liveCitiesByTournament[tournamentSlug(name)] || [])];
         if (cities.length) {
             citySel.style.display = '';
             citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
