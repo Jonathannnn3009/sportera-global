@@ -3420,7 +3420,7 @@ function updateIDPreview(){
   document.getElementById('prev-id').textContent=idVal;
   document.getElementById('qr-img').src='https://api.qrserver.com/v1/create-qr-code/?size=84x84&data='+encodeURIComponent(idVal)+'&bgcolor=ffffff&color=1a237e&margin=2';
 }
-const EMAIL_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxvHdn0WGZXe-iNBBESWBnlWMuHiUUD38BSzyuL_h8iAgZz2PjnzNkkKTkHBtOFh1fT/exec';
+const EMAIL_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwxhcMOHEQvxmzqpgaGdU_1nkXcsecBUPX0snKwEm3qmh3K5HICtyP9biXAD4GObGqm/exec';
 
 async function emailIDCard(){
   const email=document.getElementById('id-email').value;
