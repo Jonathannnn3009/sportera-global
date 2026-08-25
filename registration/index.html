@@ -584,7 +584,7 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="playerTournament">Tournament *</label>
-                                    <select id="playerTournament" name="playerTournament" onchange="onPlayerTournamentSelectChange()">
+                                    <select id="playerTournament" name="playerTournament" required onchange="onPlayerTournamentSelectChange()">
                                         <option value="">Select tournament</option>
                                     </select>
                                 </div>
@@ -1128,6 +1128,14 @@
             }
         }
         updatePlayerPaymentVisibility();
+        // onPlayerNoTeamToggle() was previously only ever wired to the
+        // checkbox's onchange — meaning a player who never touched that
+        // checkbox (the common case: they do have a team) got Team/Age
+        // Category left at their static-HTML default of NOT required, since
+        // nothing else ever set .required=true for the default/unchecked
+        // state. Calling it once here sets the correct required flags for
+        // whichever state the form actually starts in.
+        onPlayerNoTeamToggle();
 
         // Any category labeled "U<number>" (U8, U10, U14, ...) has an
         // unambiguous cutoff even if the admin never explicitly set one: a
@@ -1809,6 +1817,25 @@
             }
             if (_noTeam && _indivCityRequired && !_cityGroupForCheck) {
                 alert('Please select a city — this tournament runs in multiple cities.');
+                return;
+            }
+            // Explicit backup checks for the "has a team" path, mirroring the
+            // individual-entry checks above — previously this path relied
+            // solely on the HTML required attribute (set only by
+            // onPlayerNoTeamToggle, which never ran unless the checkbox was
+            // touched), so a registration could silently go through with no
+            // tournament/team/age category at all. Belt-and-braces now: this
+            // catches it even if the required-attribute path ever breaks again.
+            if (!_noTeam && !_tournamentForCheck) {
+                alert('Please select a tournament.');
+                return;
+            }
+            if (!_noTeam && !document.getElementById('playerTeam').value) {
+                alert('Please select your team.');
+                return;
+            }
+            if (!_noTeam && !_categoryForCheck) {
+                alert('Please select an age category.');
                 return;
             }
             if (_tournamentForCheck && _categoryForCheck && _dobForCheck) {
