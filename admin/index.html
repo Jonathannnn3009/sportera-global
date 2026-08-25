@@ -1638,6 +1638,34 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
+<!-- Reject Registration (with reason) -->
+<div class="modal-bg" id="modal-reject">
+  <div class="modal">
+    <div class="modal-head"><h3><i class="fas fa-times-circle"></i> Reject Registration</h3><button class="modal-close" onclick="closeModal('modal-reject')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="reject-reg-id">
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">The registrant will receive a rejection email with this reason.</p>
+      <div class="fg"><label>Common Reason</label>
+        <select id="reject-reason-preset" onchange="onRejectReasonPresetChange()">
+          <option value="">Select a reason (optional)</option>
+          <option value="ID proof issue">ID proof issue</option>
+          <option value="Payment issue">Payment issue</option>
+          <option value="Photograph issue">Photograph issue</option>
+          <option value="Duplicate entry">Duplicate entry</option>
+          <option value="__other__">Other (type below)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Reason (sent to registrant) *</label>
+        <textarea id="reject-reason-text" rows="4" placeholder="Explain why this registration is being rejected..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" onclick="confirmReject()"><i class="fas fa-times"></i> Reject &amp; Notify</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-reject')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add/Edit Team -->
 <div class="modal-bg" id="modal-team">
   <div class="modal">
@@ -2381,7 +2409,7 @@ function renderApprovals(){
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="viewReg('${r.id}')"><i class="fas fa-eye"></i></button>
       ${r.status!=='approved'?`<button class="btn btn-success btn-xs" onclick="setStatus('${r.id}','approved')"><i class="fas fa-check"></i></button>`:''}
-      ${r.status!=='rejected'?`<button class="btn btn-danger btn-xs" onclick="setStatus('${r.id}','rejected')"><i class="fas fa-times"></i></button>`:''}
+      ${r.status!=='rejected'?`<button class="btn btn-danger btn-xs" onclick="promptReject('${r.id}')"><i class="fas fa-times"></i></button>`:''}
       ${r.status==='rejected'?`<button class="btn btn-danger btn-xs" onclick="deleteRegistration('${r._key}')" title="Delete permanently"><i class="fas fa-trash"></i></button>`:''}
       ${r.status==='approved'&&r.portalAccountCreated?`<button class="btn btn-ghost btn-xs" onclick="resendCredentials('${r.type==='team'?(r.teamEmail||''):(r.playerEmail||'')}')" title="Send portal login reset link to this email"><i class="fas fa-key"></i></button>`:''}
     </td>
@@ -2416,19 +2444,59 @@ function deleteRegistration(key){
 // second DB.save() call, silently reverting this exact status change back
 // to whatever the stale snapshot had. That's what caused "approved" to
 // flip back to "pending" even though the ID card had already gone out.
-function setStatus(id, status){
+function setStatus(id, status, rejectionReason){
   const regs=DB.all(); const i=regs.findIndex(r=>r.id===id);
   if(i>-1){
     const reg=regs[i];
-    _fbDb.ref('registrations/'+reg._key).update({ status });
-    logActivity(status==='approved'?'Approved':status==='rejected'?'Rejected':'Status changed to '+status, (reg.teamName||reg.playerName||reg.id)+' ('+(reg.type||'registration')+')');
+    const update = { status };
+    if (status === 'rejected') update.rejectionReason = rejectionReason || '';
+    _fbDb.ref('registrations/'+reg._key).update(update);
+    logActivity(status==='approved'?'Approved':status==='rejected'?'Rejected':'Status changed to '+status, (reg.teamName||reg.playerName||reg.id)+' ('+(reg.type||'registration')+')'+(rejectionReason?' — '+rejectionReason:''));
     if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg);
     if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
       emailIDCardToPlayer(reg)
         .then(() => _fbDb.ref('registrations/'+reg._key).update({ idCardSent: true }))
         .catch(e => console.warn('Auto ID card send skipped for', reg.playerName, '—', e.message));
     }
+    if (status === 'rejected') {
+      const email = reg.type === 'team' ? reg.teamEmail : reg.playerEmail;
+      const name = reg.type === 'team' ? reg.teamName : reg.playerName;
+      // NOTE: the Google Apps Script webhook backing EMAIL_WEBHOOK_URL needs
+      // a handler added for this email_type ('registration_rejected') — it
+      // isn't part of this codebase (lives in Google Apps Script), so this
+      // call will silently no-op server-side until that's added there.
+      if (email) {
+        fetch(EMAIL_WEBHOOK_URL, {
+          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            email_type: 'registration_rejected', to_email: email, to_name: name,
+            reg_type: reg.type, rejection_reason: rejectionReason || 'Not specified'
+          })
+        }).catch(() => {});
+      }
+    }
   }
+}
+// Reject requires a reason (shown to the registrant by email), instead of
+// rejecting silently — admin picks a common reason or types a custom one.
+function promptReject(id){
+  document.getElementById('reject-reg-id').value = id;
+  document.getElementById('reject-reason-preset').value = '';
+  document.getElementById('reject-reason-text').value = '';
+  openModal('modal-reject');
+}
+function onRejectReasonPresetChange(){
+  const preset = document.getElementById('reject-reason-preset').value;
+  if (preset && preset !== '__other__') document.getElementById('reject-reason-text').value = preset;
+  if (preset === '__other__') document.getElementById('reject-reason-text').value = '';
+}
+function confirmReject(){
+  const id = document.getElementById('reject-reg-id').value;
+  const reason = document.getElementById('reject-reason-text').value.trim();
+  if (!reason) { alert('Please enter a rejection reason — it will be included in the email sent to the registrant.'); return; }
+  setStatus(id, 'rejected', reason);
+  closeModal('modal-reject');
+  closeModal('modal-reg');
 }
 
 // ── PLAYER/TEAM PORTAL ACCOUNT CREATION ────────────────────────────────────
@@ -2878,7 +2946,7 @@ function viewReg(id){
   document.getElementById('modal-reg-title').textContent=(r.type==='team'?'Team':'Player')+' — '+name;
   const fields = r.type==='team'
     ? [['Team Name',r.teamName],['City',r.teamCity],['Coach',r.coachName],['Coach Phone',r.coachPhone],['Manager',r.managerName||'—'],['Manager Phone',r.managerPhone||'—'],['Email',r.teamEmail],['Tournament',r.tournament],['Age Category',r.ageCategory||'—'],['Payment Method',r.paymentMethod]]
-    : [['Player Name',r.playerName],['Date of Birth',r.playerDOB],['Team',r.playerTeam],['Position',r.playerPosition||'—'],['Jersey Number',r.playerJerseyNumber||'—'],['Jersey Size',r.playerJerseySize||'—'],['Age Category',r.playerAgeCategory||'—'],['Guardian',r.guardianName],['Guardian Phone',r.guardianPhone],['Email',r.playerEmail||'—'],['Payment Method',r.paymentMethod]];
+    : [['Player Name',r.playerName],['Date of Birth',r.playerDOB],['Team',r.playerTeam||'—'],['Tournament',r.playerTournament||'—'],['City',(r.playerCity||'—')+(r.playerCityGroup?' ('+r.playerCityGroup+')':'')],['Position',r.playerPosition||'—'],['Jersey Number',r.playerJerseyNumber||'—'],['Jersey Size',r.playerJerseySize||'—'],['Age Category',r.playerAgeCategory||'—'],['Guardian',r.guardianName],['Guardian Phone',r.guardianPhone],['Email',r.playerEmail||'—'],['Payment Method',r.paymentMethod]];
   const docUrl = r.ageDocUrl || r.teamLogoUrl;
   const docLabel = r.type==='team' ? 'Team Logo' : 'Age Verification Document';
   document.getElementById('modal-reg-body').innerHTML=`
@@ -2894,11 +2962,12 @@ function viewReg(id){
         <span style="font-size:.88rem;">${r.paymentProofUrl ? `<a href="#" onclick="openRegFile('${r.id}','paymentProofUrl');return false;" style="color:var(--primary);font-weight:600;"><i class="fas fa-receipt"></i> View Screenshot</a> ${r.paymentVerified?'<span class="badge b-approved" style="margin-left:8px;">Verified</span>':`<button class="btn btn-gold btn-xs" style="margin-left:8px;" onclick="markPaymentVerified('${r.id}')">Mark Verified</button>`}` : (r.paymentMethod==='Online' ? '<span style="color:var(--muted);">Gateway payment — no manual proof needed</span>' : '<span style="color:var(--muted);">No payment proof uploaded</span>')}</span>
       </div>
       <div style="display:flex;gap:12px;padding:8px 0;"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Status</span>${badge(r.status)}</div>
+      ${r.status==='rejected' && r.rejectionReason ? `<div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--border);"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Rejection Reason</span><span style="font-size:.88rem;color:var(--red);">${r.rejectionReason}</span></div>` : ''}
       <div style="display:flex;gap:12px;padding:8px 0;"><span style="min-width:140px;font-weight:600;font-size:.85rem;color:var(--muted);">Submitted</span><span style="font-size:.88rem;">${fmtDateTime(r.submittedAt)}</span></div>
     </div>`;
   document.getElementById('modal-reg-foot').innerHTML=`
     ${r.status!=='approved'?`<button class="btn btn-success" onclick="setStatus('${r.id}','approved');closeModal('modal-reg');"><i class="fas fa-check"></i> Approve</button>`:''}
-    ${r.status!=='rejected'?`<button class="btn btn-danger" onclick="setStatus('${r.id}','rejected');closeModal('modal-reg');"><i class="fas fa-times"></i> Reject</button>`:''}
+    ${r.status!=='rejected'?`<button class="btn btn-danger" onclick="closeModal('modal-reg');promptReject('${r.id}');"><i class="fas fa-times"></i> Reject</button>`:''}
     ${r.status==='rejected'?`<button class="btn btn-danger" onclick="deleteRegistration('${r._key}')"><i class="fas fa-trash"></i> Delete Permanently</button>`:''}
     <button class="btn btn-ghost" onclick="closeModal('modal-reg')">Close</button>`;
   openModal('modal-reg');
