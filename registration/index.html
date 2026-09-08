@@ -1111,12 +1111,19 @@
             document.getElementById('teamFeeDisplayTotal').textContent = '₹' + Number((fee||0) * count).toLocaleString('en-IN');
         }
 
-        // --- Payment only required for individual-entry tournaments ---
+        // --- Payment only required when THIS player is actually registering
+        // individually (the "I don't have a team" checkbox), not merely
+        // because the tournament happens to allow individual entries. A
+        // "both" entry-type tournament accepts team-based players too — a
+        // player picking a team from the dropdown never needs to pay
+        // separately (their team already paid at team registration), even
+        // though the tournament itself is individual-eligible. ---
         function updatePlayerPaymentVisibility() {
             const noTeam = document.getElementById('playerNoTeam').checked;
             const tournamentName = noTeam ? document.getElementById('playerIndivTournament').value : document.getElementById('playerTournament').value;
             const t = findTournament(tournamentName);
-            const isIndividual = !!(t && (t.entryType === 'individual' || t.entryType === 'both'));
+            const tournamentAcceptsIndividual = !!(t && (t.entryType === 'individual' || t.entryType === 'both'));
+            const isIndividual = noTeam && tournamentAcceptsIndividual;
             document.getElementById('playerPaymentSection').style.display = isIndividual ? 'block' : 'none';
             document.getElementById('playerNoPaymentNotice').style.display = (tournamentName && !isIndividual) ? 'flex' : 'none';
             document.querySelectorAll('input[name="playerPayment"]').forEach(r => r.required = isIndividual);
