@@ -2128,7 +2128,7 @@ function renderLiveVisList(){
   list.style.opacity = showAll ? '.45' : '1';
   list.style.pointerEvents = showAll ? 'none' : 'auto';
   if (!_fbTournaments.length) { list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No tournaments yet.</p>'; return; }
-  const selectedKeys = showAll ? [] : (_liveVisSelected||[]);
+  const selectedKeys = (showAll || _liveVisSelected === 'none' || !Array.isArray(_liveVisSelected)) ? [] : _liveVisSelected;
   list.innerHTML = _fbTournaments.map(t => `
     <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;padding:8px 12px;background:#f8f9ff;border-radius:8px;cursor:pointer;">
       <input type="checkbox" class="live-vis-check" value="${t._key}" ${selectedKeys.includes(t._key)?'checked':''} style="width:auto;">
@@ -2160,7 +2160,14 @@ function onLiveVisAllToggle(){
 }
 function saveLiveVisibility(){
   const showAll = document.getElementById('live-vis-all').checked;
-  const value = showAll ? 'all' : [...document.querySelectorAll('.live-vis-check:checked')].map(cb=>cb.value);
+  const checked = [...document.querySelectorAll('.live-vis-check:checked')].map(cb=>cb.value);
+  // RTDB silently deletes a node when you .set() it to an empty array,
+  // so saving [] (nothing checked) would read back as null next time —
+  // and null is treated as "show all" (the default for a never-configured
+  // setting). Use the string 'none' as an explicit "select nothing" marker
+  // so it survives the round-trip instead of being indistinguishable from
+  // "this was never set up".
+  const value = showAll ? 'all' : (checked.length ? checked : 'none');
   _fbDb.ref('settings/liveVisibleTournaments').set(value).then(() => {
     const s = document.getElementById('live-vis-status');
     s.textContent = 'Saved ✓';
