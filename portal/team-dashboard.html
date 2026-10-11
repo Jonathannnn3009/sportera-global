@@ -370,6 +370,7 @@
           db.collection('settings').doc('portal').get()
         ]);
         if (!teamDoc.exists) { await auth.signOut(); window.location.href = 'login.html'; return; }
+        if (teamDoc.data().accessRevoked) { await auth.signOut(); window.location.href = 'login.html?revoked=1'; return; }
         teamData = { id: user.uid, ...teamDoc.data() };
         editingOpen = settingsDoc.exists ? (settingsDoc.data().squadEditingOpen === true) : false;
         await loadTournamentsInfo();

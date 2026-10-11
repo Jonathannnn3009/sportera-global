@@ -2460,6 +2460,8 @@ function setStatus(id, status, rejectionReason){
     _fbDb.ref('registrations/'+reg._key).update(update);
     logActivity(status==='approved'?'Approved':status==='rejected'?'Rejected':'Status changed to '+status, (reg.teamName||reg.playerName||reg.id)+' ('+(reg.type||'registration')+')'+(rejectionReason?' — '+rejectionReason:''));
     if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg);
+    else if (status === 'approved') restorePortalAccess(reg); // re-approving a previously rejected registration
+    if (status !== 'approved' && reg.status === 'approved' && reg.portalAccountCreated) revokePortalAccess(reg);
     if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
       emailIDCardToPlayer(reg)
         .then(() => _fbDb.ref('registrations/'+reg._key).update({ idCardSent: true }))
@@ -2589,6 +2591,44 @@ async function createPortalAccount(reg) {
         login_email: email, login_password: password, reg_type: reg.type
       })
     }).catch(() => {});
+  }
+}
+
+// ── PORTAL ACCESS REVOCATION / RESTORE ─────────────────────────────────────
+// A portal login is one account per email shared across every tournament that
+// email registered for, so rejecting (or deleting) ONE registration must only
+// drop that tournament from the profile — access is cut entirely
+// (accessRevoked: true, checked by portal/login + both dashboards) only when
+// no tournament is left. Re-approving clears it again.
+async function _findPortalProfile(reg) {
+  const email = reg.type === 'team' ? reg.teamEmail : reg.playerEmail;
+  if (!email) return null;
+  const collection = reg.type === 'team' ? 'teams' : 'players';
+  const emailField = reg.type === 'team' ? 'teamEmail' : 'email';
+  const q = await _fbFs.collection(collection).where(emailField, '==', email).limit(1).get();
+  return q.empty ? null : q.docs[0].ref;
+}
+async function revokePortalAccess(reg) {
+  try {
+    const ref = await _findPortalProfile(reg);
+    if (!ref) return;
+    const snap = await ref.get();
+    const remaining = (snap.data().tournaments || []).filter(t => t !== reg.tournament);
+    // Another still-approved registration under the same email keeps access.
+    const stillApproved = (_fbRegs || []).some(r => r._key !== reg._key && r.status === 'approved' &&
+      (r.type === 'team' ? r.teamEmail : r.playerEmail) === (reg.type === 'team' ? reg.teamEmail : reg.playerEmail) && r.type === reg.type);
+    await ref.update({ tournaments: remaining, accessRevoked: remaining.length === 0 && !stillApproved });
+  } catch (e) {
+    console.error('Could not revoke portal access for', reg.teamEmail || reg.playerEmail, e);
+  }
+}
+async function restorePortalAccess(reg) {
+  try {
+    const ref = await _findPortalProfile(reg);
+    if (!ref) return;
+    await ref.update({ accessRevoked: false, tournaments: firebase.firestore.FieldValue.arrayUnion(reg.tournament) });
+  } catch (e) {
+    console.error('Could not restore portal access for', reg.teamEmail || reg.playerEmail, e);
   }
 }
 

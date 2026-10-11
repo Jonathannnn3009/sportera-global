@@ -268,6 +268,12 @@
       try {
         const cred = await auth.signInWithEmailAndPassword(email, pass);
         const doc = await db.collection('players').doc(cred.user.uid).get();
+        if (doc.exists && doc.data().accessRevoked) {
+          await auth.signOut();
+          showError('player', REVOKED_MSG);
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login as Player';
+          return;
+        }
         if (!doc.exists) {
           await auth.signOut();
           showError('player', 'No player account found. Please contact admin.');
@@ -293,6 +299,12 @@
       try {
         const cred = await auth.signInWithEmailAndPassword(email, pass);
         const doc = await db.collection('teams').doc(cred.user.uid).get();
+        if (doc.exists && doc.data().accessRevoked) {
+          await auth.signOut();
+          showError('team', REVOKED_MSG);
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login as Team';
+          return;
+        }
         if (!doc.exists) {
           await auth.signOut();
           showError('team', 'No team account found. Please contact admin.');
@@ -319,6 +331,9 @@
       }
     }
 
+    const REVOKED_MSG = 'Your registration is no longer active, so portal access has been disabled. Please contact the organisers.';
+    if (new URLSearchParams(location.search).has('revoked')) { showError('player', REVOKED_MSG); showError('team', REVOKED_MSG); }
+
     function friendlyError(code) {
       const map = {
         'auth/user-not-found': 'No account found with this email.',
@@ -334,8 +349,10 @@
     auth.onAuthStateChanged(async user => {
       if (!user) return;
       const playerDoc = await db.collection('players').doc(user.uid).get();
+      if (playerDoc.exists && playerDoc.data().accessRevoked) { await auth.signOut(); return; }
       if (playerDoc.exists) { window.location.href = 'player-dashboard.html'; return; }
       const teamDoc = await db.collection('teams').doc(user.uid).get();
+      if (teamDoc.exists && teamDoc.data().accessRevoked) { await auth.signOut(); return; }
       if (teamDoc.exists) { window.location.href = 'team-dashboard.html'; return; }
     });
   </script>

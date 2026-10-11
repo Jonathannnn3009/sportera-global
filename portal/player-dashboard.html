@@ -340,6 +340,7 @@
       try {
         const doc = await db.collection('players').doc(user.uid).get();
         if (!doc.exists) { await auth.signOut(); window.location.href = 'login.html'; return; }
+        if (doc.data().accessRevoked) { await auth.signOut(); window.location.href = 'login.html?revoked=1'; return; }
         playerData = { id: user.uid, ...doc.data() };
         renderDashboard(playerData);
       } catch (e) {
