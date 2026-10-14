@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Register your team or as a player for Football 5 tournaments and IF5L.">
+    <meta name="description" content="Register your team or as a player for Football 5 tournaments and IFL.">
     <title>Registration | Sportera Global</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -271,7 +271,7 @@
                 <a href="../" class="nav-link">Home</a>
                 <a href="../about/" class="nav-link">About</a>
                 <a href="../football5/" class="nav-link">Football 5</a>
-                <a href="../if5l/" class="nav-link">IF5L</a>
+                <a href="../if5l/" class="nav-link">IFL</a>
                 <a href="../tournaments/" class="nav-link">Tournaments</a>
                 <a href="../live/" class="nav-link">Live</a>
                 <a href="../exposure/" class="nav-link">International</a>
@@ -756,7 +756,7 @@
                     <ul>
                         <li><a href="../about/">About Us</a></li>
                         <li><a href="../football5/">Football 5</a></li>
-                        <li><a href="../if5l/">IF5L</a></li>
+                        <li><a href="../if5l/">IFL</a></li>
                         <li><a href="../tournaments/">Tournaments</a></li>
                         <li><a href="../live/">Live</a></li>
                         <li><a href="../exposure/">International</a></li>
@@ -925,7 +925,7 @@
         function onPlayerTournamentSelectChange() {
             const tournamentName = document.getElementById('playerTournament').value;
             // A team name can repeat within the same tournament if it
-            // registered under more than one city (IF5L Mumbai vs IF5L
+            // registered under more than one city (IFL Mumbai vs IFL
             // Ambernath) — dedupe by name+city, not just name.
             const seen = new Set();
             _currentTournamentTeams = _allRegisteredTeams.filter(t => {
@@ -942,7 +942,7 @@
         }
 
         // A team name can repeat within the same tournament across different
-        // cities (IF5L Mumbai vs IF5L Ambernath) — the option value encodes
+        // cities (IFL Mumbai vs IFL Ambernath) — the option value encodes
         // both so selecting one can't be confused with the other.
         function teamOptionValue(name, city) { return city ? name + '|||' + city : name; }
         function parseTeamOptionValue(value) {
@@ -1596,7 +1596,7 @@
         function tournamentSlug(t) { return (t||'').replace(/[^a-zA-Z0-9]/g, '_'); }
 
         // A team can register the same age category once per city in a
-        // multi-city tournament (e.g. IF5L Mumbai U12 and IF5L Ambernath U12
+        // multi-city tournament (e.g. IFL Mumbai U12 and IFL Ambernath U12
         // are two separate team registrations). So the player's age-category
         // dropdown encodes city into the option value whenever a match has
         // one, keeping the value plain "U12" (unchanged) for every
@@ -1616,7 +1616,7 @@
             return [...document.querySelectorAll('#ageCategoryChecks input[type="checkbox"]:checked')].map(c => c.value);
         }
 
-        // Multi-city tournaments (e.g. IF5L — Mumbai / Ambernath / Hyderabad)
+        // Multi-city tournaments (e.g. IFL — Mumbai / Ambernath / Hyderabad)
         // add a required City step right after Tournament. A tournament with
         // nothing at cities/{slug} is single-city — the field stays hidden
         // and nothing about the rest of the form changes.
@@ -1703,7 +1703,7 @@
                     const d = child.val();
                     if (d.status === 'rejected') return;
                     // A team registering the same age category in a *different*
-                    // city (e.g. IF5L Mumbai and IF5L Ambernath) is not a clash —
+                    // city (e.g. IFL Mumbai and IFL Ambernath) is not a clash —
                     // only block re-registering the same tournament+city+category.
                     if ((d.teamName||'').trim().toLowerCase() === teamNameEntered.toLowerCase()
                         && d.tournament === tournamentEntered

@@ -26,7 +26,7 @@
                 <a href="../" class="nav-link">Home</a>
                 <a href="../about/" class="nav-link">About</a>
                 <a href="../football5/" class="nav-link">Football 5</a>
-                <a href="../if5l/" class="nav-link">IF5L</a>
+                <a href="../if5l/" class="nav-link">IFL</a>
                 <a href="../tournaments/" class="nav-link">Tournaments</a>
                 <a href="../live/" class="nav-link">Live</a>
                 <a href="./" class="nav-link active">International</a>
@@ -181,9 +181,9 @@
                 </div>
                 <div class="about-card fade-in">
                     <div class="icon"><i class="fas fa-futbol"></i></div>
-                    <h3>Indian Football 5 League (IF5L)</h3>
+                    <h3>Indian Football League (IFL)</h3>
                     <p style="color:var(--gold); font-size:.82rem; font-weight:700; margin-bottom:8px;"><i class="fas fa-map-marker-alt"></i> Multi-City, India</p>
-                    <p>India's premier Football 5 league format spanning multiple cities, bringing structured competitive football to athletes across the country.</p>
+                    <p>India's premier football league, with multiple game formats, spanning multiple cities, bringing structured competitive football to athletes across the country.</p>
                 </div>
                 <div class="about-card fade-in">
                     <div class="icon"><i class="fas fa-globe"></i></div>
@@ -225,7 +225,7 @@
                     <ul>
                         <li><a href="../about/">About Us</a></li>
                         <li><a href="../football5/">Football 5</a></li>
-                        <li><a href="../if5l/">IF5L</a></li>
+                        <li><a href="../if5l/">IFL</a></li>
                         <li><a href="../tournaments/">Tournaments</a></li>
                         <li><a href="../live/">Live</a></li>
                         <li><a href="../exposure/">International</a></li>
@@ -262,7 +262,7 @@
     <script>
       // Upcoming Tours destinations, editable from admin's International
       // Destinations panel instead of being hardcoded here — same
-      // REST-fetch pattern as News/Team/Partners/IF5L Cities.
+      // REST-fetch pattern as News/Team/Partners/IFL Cities.
       fetch("https://f5awebsite-default-rtdb.firebaseio.com/internationalDestinations.json", { cache: "no-store" }).then(r => r.json()).then(data => {
         const el = document.getElementById('dynamicIntlDestinations');
         if (!el || !data) return;

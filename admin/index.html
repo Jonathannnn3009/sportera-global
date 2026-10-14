@@ -373,7 +373,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="nav-item" data-panel="downloads-mgr"><i class="fas fa-download"></i> Manage Downloads</div>
   <div class="nav-item" data-panel="teammembers"><i class="fas fa-user-friends"></i> Manage Team</div>
   <div class="nav-item" data-panel="partners"><i class="fas fa-handshake"></i> Manage Partners</div>
-  <div class="nav-item" data-panel="if5lcities"><i class="fas fa-city"></i> IF5L Cities</div>
+  <div class="nav-item" data-panel="if5lcities"><i class="fas fa-city"></i> IFL Cities</div>
   <div class="nav-item" data-panel="intldest"><i class="fas fa-globe-asia"></i> International Destinations</div>
   <div class="nav-item" data-panel="upcomingevents"><i class="fas fa-star"></i> Upcoming Events</div>
   </div>
@@ -528,7 +528,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
     <div class="card-body">
       <input type="hidden" id="trn-edit-id">
       <div class="form-row">
-        <div class="fg"><label>Tournament Name *</label><input type="text" id="trn-name" placeholder="e.g. IF5L Season 3"></div>
+        <div class="fg"><label>Tournament Name *</label><input type="text" id="trn-name" placeholder="e.g. IFL Season 3"></div>
         <div class="fg"><label>Entry Type *</label>
           <select id="trn-entry-type">
             <option value="team">Team-based (teams pay a token fee, players free)</option>
@@ -542,7 +542,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <div class="fg"><label>Individual Player Fee (₹)</label><input type="number" id="trn-player-fee" placeholder="2999" value="2999"></div>
       </div>
       <div class="fg"><label>Age Categories</label><input type="text" id="trn-age-cats" placeholder="U9, U11, U13, U15, U17, U19, Senior"><p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Comma-separated. Leave blank to use the default U9–Senior list.</p></div>
-      <div class="fg"><label>Cities (for multi-city tournaments, e.g. IF5L)</label><input type="text" id="trn-cities" placeholder="Mumbai, Ambernath, Hyderabad"><p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Comma-separated. Leave blank for a single-city tournament — no city step is added anywhere. If set, teams must pick a city when registering, and fixtures/results/tables are organized per city.</p></div>
+      <div class="fg"><label>Cities (for multi-city tournaments, e.g. IFL)</label><input type="text" id="trn-cities" placeholder="Mumbai, Ambernath, Hyderabad"><p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Comma-separated. Leave blank for a single-city tournament — no city step is added anywhere. If set, teams must pick a city when registering, and fixtures/results/tables are organized per city.</p></div>
       <div class="form-row">
         <div class="fg"><label>Start Date</label><input type="date" id="trn-start-date"></div>
         <div class="fg"><label>End Date (optional, for multi-day tournaments)</label><input type="date" id="trn-end-date"></div>
@@ -707,8 +707,11 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <select id="playersAgeCatFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
           <option value="">All Age Categories</option>
         </select>
+        <select id="playersTeamFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
+          <option value="">All Teams</option>
+        </select>
         <select id="playerStatusFilter" onchange="renderPlayers()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;">
-          <option value="">All Status</option><option value="approved">Approved</option><option value="pending">Pending</option>
+          <option value="">All Status</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="rejected">Rejected</option>
         </select>
         <button class="btn btn-primary btn-sm" onclick="openAddPlayerModal()"><i class="fas fa-plus"></i> Add Player</button>
       </div>
@@ -716,7 +719,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
     <div class="card-body" style="padding:0;">
       <div class="tbl-wrap">
         <table class="dt">
-          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>#</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Guardian</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>DOB</th><th>Team</th><th>#</th><th>Tournament</th><th>Age Category</th><th>Position</th><th>Jersey Size</th><th>Guardian</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="players-body"></tbody>
         </table>
       </div>
@@ -1029,7 +1032,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
       <p style="font-size:.78rem;color:var(--muted);margin-top:10px;">
         <strong>Columns (first row = headers, exact spelling):</strong><br>
         <code>Tournament</code> — exact tournament name, e.g. "Football 5 Premier League"<br>
-        <code>City</code> — leave blank unless this is a multi-city tournament (e.g. IF5L); must match a city already configured for it<br>
+        <code>City</code> — leave blank unless this is a multi-city tournament (e.g. IFL); must match a city already configured for it<br>
         <code>Age Category</code> — e.g. "U8" — must be one this tournament actually has<br>
         <code>Pool</code> — optional; leave blank for no pool<br>
         <code>Home Team</code> / <code>Away Team</code> — exact registered team names<br>
@@ -1288,7 +1291,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <div class="fg"><label>Article Title *</label><input type="text" id="news-title" placeholder="Headline"></div>
         <div class="form-row">
           <div class="fg"><label>Category</label>
-            <select id="news-cat"><option>Announcement</option><option>Tournament</option><option>IF5L</option><option>Football 5</option><option>Results</option></select>
+            <select id="news-cat"><option>Announcement</option><option>Tournament</option><option>IFL</option><option>Football 5</option><option>Results</option></select>
           </div>
           <div class="fg"><label>Publish Date</label><input type="date" id="news-date"></div>
         </div>
@@ -1437,13 +1440,13 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   </div>
 </div>
 
-<!-- ── IF5L CITIES ──────────────────────────────────────── -->
+<!-- ── IFL CITIES ──────────────────────────────────────── -->
 <div class="panel" id="panel-if5lcities">
   <div class="two-col" style="align-items:start;">
     <div class="card">
       <div class="card-head"><h3 id="ifc-form-title"><i class="fas fa-city"></i> Add City</h3></div>
       <div class="card-body">
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up on the IF5L page's "League Cities" section.</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Shows up on the IFL page's "League Cities" section.</p>
         <input type="hidden" id="ifc-edit-id">
         <div class="fg"><label>City Name *</label><input type="text" id="ifc-name" placeholder="e.g. Mumbai"></div>
         <div class="fg"><label>3-Letter Code *</label><input type="text" id="ifc-code" maxlength="3" placeholder="e.g. MUM" style="text-transform:uppercase;"></div>
@@ -2035,7 +2038,7 @@ _fbDb.ref('pools').on('value', snap => {
   renderTeams();
 });
 
-// Same live-cache pattern for multi-city tournaments (e.g. IF5L — Mumbai /
+// Same live-cache pattern for multi-city tournaments (e.g. IFL — Mumbai /
 // Ambernath / Hyderabad): a tournament with nothing here is treated as
 // single-city everywhere, so this is fully backward compatible.
 let _fbCitiesByTournament = {};
@@ -2111,7 +2114,7 @@ function renderTournaments() {
 // ── LIVE PAGE VISIBILITY ─────────────────────────────────────────────────
 // Which tournaments show up in the public Live page's dropdown. Keyed by
 // tournament _key rather than name — two tournaments can share the same
-// name (e.g. re-running "IF5L Season 1" style names across years), and
+// name (e.g. re-running "IFL Season 1" style names across years), and
 // matching on name alone would show/hide the wrong one.
 let _liveVisSelected = null; // null = not loaded yet; [] or array of keys once loaded; 'all' = show everything
 _fbDb.ref('settings/liveVisibleTournaments').on('value', snap => {
@@ -2294,7 +2297,7 @@ const PANEL_TITLES = {
   fixtures:'Fixtures', lineup:'Match Lineup', results:'Update Results', tables:'League Tables',
   news:'Publish News', media:'Photos & Videos', 'downloads-mgr':'Manage Downloads',
   teammembers:'Manage Team', partners:'Manage Partners',
-  if5lcities:'IF5L Cities', intldest:'International Destinations', upcomingevents:'Upcoming Events',
+  if5lcities:'IFL Cities', intldest:'International Destinations', upcomingevents:'Upcoming Events',
   messages:'Contact Messages', admins:'Manage Admins', tournaments:'Tournaments'
 };
 function switchPanel(id) {
@@ -3141,6 +3144,14 @@ function deleteTeamReg(key){
 async function exportTeamWelcomePoster(teamKey){
   const t = (_fbRegs||[]).find(x=>x._key===teamKey);
   if(!t){ alert('Team not found.'); return; }
+  // Same team fielded in several age groups of this tournament (each one its
+  // own registration row) gets ONE poster listing every age group, instead of
+  // a separate poster per age group.
+  const sameTeam = (_fbRegs||[]).filter(r=>r.type==='team' && r.status==='approved' && r.tournament===t.tournament &&
+    (r.cityGroup||'')===(t.cityGroup||'') && (r.teamName||'').trim().toLowerCase()===(t.teamName||'').trim().toLowerCase());
+  const ageOrder = c => { const m=/\d+/.exec(c||''); return m?parseInt(m[0],10):999; };
+  const ageGroups = [...new Set((sameTeam.length?sameTeam:[t]).map(r=>r.ageCategory).filter(Boolean))].sort((a,b)=>ageOrder(a)-ageOrder(b));
+  const ageLine = ageGroups.length ? ageGroups.join(' &bull; ') : (t.ageCategory||'');
   const theme = getPosterTheme('poster-theme-teams');
   const logoHtml = t.teamLogoUrl
     ? `<img src="${t.teamLogoUrl}" style="width:260px;height:260px;border-radius:50%;object-fit:cover;background:#fff;border:4px solid rgba(255,255,255,.4);">`
@@ -3156,7 +3167,7 @@ async function exportTeamWelcomePoster(teamKey){
     <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.6rem;color:${theme.accent};text-align:center;margin-bottom:48px;">Welcome to ${t.tournament||'the tournament'}${t.cityGroup?' &bull; '+t.cityGroup:''}</div>
     <div style="margin-bottom:44px;">${logoHtml}</div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:3rem;text-align:center;margin-bottom:14px;">${t.teamName||''}</div>
-    <div style="font-size:1.7rem;font-weight:600;opacity:.9;margin-bottom:48px;">${t.ageCategory||''}</div>
+    <div style="font-size:${ageGroups.length>4?'1.3rem':'1.7rem'};font-weight:600;opacity:.9;margin-bottom:48px;text-align:center;max-width:900px;">${ageLine}</div>
     <div style="width:100%;border-top:2px solid rgba(255,255,255,.25);padding-top:30px;text-align:center;">
       <div style="font-size:1.4rem;opacity:.85;">Coach: <strong>${t.coachName||'—'}</strong></div>
     </div>
@@ -3247,13 +3258,30 @@ function renderPlayers(){
   let players=(_fbRegs||[]).filter(r=>r.type==='player');
   if(tf) players=players.filter(p=>p.playerTournament===tf);
   if(af) players=players.filter(p=>p.playerAgeCategory===af);
+  // Team dropdown follows the tournament -> age group picks above, so
+  // choosing all three lists exactly that squad's registered players.
+  const teamSel=document.getElementById('playersTeamFilter');
+  if(teamSel){
+    const norm=n=>(n||'').trim();
+    const names=[...new Set(players.map(p=>norm(p.playerTeam)).concat(
+      (_fbRegs||[]).filter(r=>r.type==='team' && (!tf||r.tournament===tf) && (!af||r.ageCategory===af)).map(r=>norm(r.teamName))
+    ).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const wanted=teamSel.value;
+    const sig=names.join('|');
+    if(teamSel.dataset.sig!==sig){
+      teamSel.innerHTML='<option value="">All Teams</option>'+names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('');
+      teamSel.dataset.sig=sig;
+      teamSel.value=names.includes(wanted)?wanted:'';
+    }
+    if(teamSel.value) players=players.filter(p=>norm(p.playerTeam).toLowerCase()===teamSel.value.toLowerCase());
+  }
   if(q) players=players.filter(p=>(p.playerName+(p.playerTeam||'')+(p.guardianName||'')).toLowerCase().includes(q));
   if(sf) players=players.filter(p=>p.status===sf);
   const tbody=document.getElementById('players-body');
-  if(!players.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
+  if(!players.length){ tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted);">No players match this filter.</td></tr>'; return; }
   tbody.innerHTML=players.map(p=>`<tr>
     <td style="font-family:monospace;font-size:.75rem;">${p.id}</td>
-    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerJerseyNumber||'—'}</td><td>${p.playerTournament||'—'}${p.playerCityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${p.playerCityGroup})</span>`:''}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.guardianName||'—'}</td><td>${p.guardianPhone||p.playerPhone||'—'}</td>
+    <td><strong>${p.playerName}</strong></td><td>${p.playerDOB||'—'}</td><td>${p.playerTeam||'—'}</td><td>${p.playerJerseyNumber||'—'}</td><td>${p.playerTournament||'—'}${p.playerCityGroup?` <span style="color:var(--primary);font-size:.75rem;">(${p.playerCityGroup})</span>`:''}</td><td>${p.playerAgeCategory||'—'}</td><td>${p.playerPosition||'—'}</td><td>${p.playerJerseySize||'—'}</td><td>${p.guardianName||'—'}</td><td>${p.guardianPhone||p.playerPhone||'—'}</td>
     <td>${badge(p.status)}</td>
     <td class="actions">
       <button class="btn btn-ghost btn-xs" onclick="editPlayer('${p._key}')"><i class="fas fa-edit"></i></button>
@@ -3826,7 +3854,7 @@ function renderReports(){
     <td style="font-family:monospace;font-size:.75rem;">${r.id}</td>
     <td><span class="badge ${r.type==='team'?'b-upcoming':'b-played'}">${r.type}</span></td>
     <td>${r.teamName||r.playerName||'—'}</td>
-    <td>${r.tournament||'—'}</td>
+    <td>${(r.type==='team'?r.tournament:r.playerTournament)||'—'}${(r.type==='team'?r.cityGroup:r.playerCityGroup)?` <span style="color:var(--primary);font-size:.75rem;">(${r.type==='team'?r.cityGroup:r.playerCityGroup})</span>`:''}</td>
     <td>${r.paymentMethod||'—'}</td>
     <td>${fmtDate(r.submittedAt)}</td>
     <td>${badge(r.status)}</td></tr>`).join('');
@@ -3838,11 +3866,11 @@ function exportCSV(type){
   else if(type==='approved') regs=regs.filter(r=>r.status==='approved');
   if(!regs.length){ alert('No data to export.'); return; }
   const header=type==='player'
-    ? ['ID','Name','DOB','Team','Position','Jersey Number','Jersey Size','Age Category','Guardian','Guardian Phone','Email','Payment','Status','Submitted']
-    : ['ID','Team Name','City','Coach','Coach Phone','Manager','Email','Tournament','Age Category','Payment','Status','Submitted'];
+    ? ['ID','Name','DOB','Team','Position','Jersey Number','Jersey Size','Tournament','City','Age Category','Guardian','Guardian Phone','Email','Payment','Status','Submitted']
+    : ['ID','Team Name','City','Coach','Coach Phone','Manager','Email','Tournament','City','Age Category','Payment','Status','Submitted'];
   const rows=regs.map(r=>type==='player'
-    ? [r.id,r.playerName,r.playerDOB,r.playerTeam,r.playerPosition,r.playerJerseyNumber,r.playerJerseySize,r.playerAgeCategory,r.guardianName,r.guardianPhone,r.playerEmail,r.paymentMethod,r.status,fmtDate(r.submittedAt)]
-    : [r.id,r.teamName,r.teamCity,r.coachName,r.coachPhone,r.managerName,r.teamEmail,r.tournament,r.ageCategory,r.paymentMethod,r.status,fmtDate(r.submittedAt)]);
+    ? [r.id,r.playerName,r.playerDOB,r.playerTeam,r.playerPosition,r.playerJerseyNumber,r.playerJerseySize,r.playerTournament,r.playerCityGroup,r.playerAgeCategory,r.guardianName,r.guardianPhone,r.playerEmail,r.paymentMethod,r.status,fmtDate(r.submittedAt)]
+    : [r.id,r.teamName,r.teamCity,r.coachName,r.coachPhone,r.managerName,r.teamEmail,r.tournament,r.cityGroup,r.ageCategory,r.paymentMethod,r.status,fmtDate(r.submittedAt)]);
   const csv=[header,...rows].map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`sportera_${type}_registrations_${new Date().toISOString().slice(0,10)}.csv`; a.click();
@@ -4022,7 +4050,7 @@ function populateFixtureAgeCatOptions(prefix){
 function onFixtureTournamentChange(){ populateFixtureAgeCatOptions('fx'); populateFixtureCityOptions('fx'); onFixtureFilterChange(); }
 function onEditFixtureTournamentChange(){ populateFixtureAgeCatOptions('efx'); populateFixtureCityOptions('efx'); onEditFixtureFilterChange(); }
 
-// Multi-city tournaments (e.g. IF5L — Mumbai / Ambernath / Hyderabad) get a
+// Multi-city tournaments (e.g. IFL — Mumbai / Ambernath / Hyderabad) get a
 // City step between Tournament and Age Category. A tournament with no
 // cities configured (cities/{slug} empty) never shows this row at all —
 // fully backward compatible with every single-city tournament.
@@ -5224,7 +5252,7 @@ function onLeagueTableTournamentChange(){
   agecatSel.innerHTML = tournamentName
     ? '<option value="">Select age category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('')
     : '<option value="">Select tournament first</option>';
-  // City selector only shows up for multi-city tournaments (e.g. IF5L) —
+  // City selector only shows up for multi-city tournaments (e.g. IFL) —
   // hidden entirely for every single-city tournament, same as the fixture
   // form's city row.
   const citySel = document.getElementById('lt-city');
@@ -5958,7 +5986,7 @@ function renderPartners(){
   </tr>`).join('');
 }
 
-// ── IF5L CITIES ───────────────────────────────────────────────────────────
+// ── IFL CITIES ───────────────────────────────────────────────────────────
 let _if5lCities = [];
 async function refreshIf5lCities(){
   try {
@@ -5995,10 +6023,10 @@ function addIf5lCity(){
     const existing = _if5lCities.find(c=>c._key===editKey);
     const obj = { name, code, color1, color2, photoUrl: _ifcPhotoUrl || (existing?existing.photoUrl:'') || '' };
     _fbDb.ref('if5lCities/'+editKey).update(obj).then(() => setTimeout(refreshIf5lCities, 500));
-    logActivity('Updated IF5L city', name);
+    logActivity('Updated IFL city', name);
   } else {
     _fbDb.ref('if5lCities').push({ name, code, color1, color2, photoUrl: _ifcPhotoUrl, order: _if5lCities.length, addedAt: new Date().toISOString() }).then(() => setTimeout(refreshIf5lCities, 500));
-    logActivity('Added IF5L city', name);
+    logActivity('Added IFL city', name);
   }
   clearIf5lCityForm();
 }
@@ -6025,10 +6053,10 @@ function clearIf5lCityForm(){
   _ifcPhotoUrl = '';
 }
 function deleteIf5lCity(key){
-  if (!confirm('Remove this city from the IF5L page?')) return;
+  if (!confirm('Remove this city from the IFL page?')) return;
   const c = _if5lCities.find(x=>x._key===key);
   _fbDb.ref('if5lCities/'+key).remove().then(() => setTimeout(refreshIf5lCities, 500));
-  logActivity('Removed IF5L city', c?c.name:key);
+  logActivity('Removed IFL city', c?c.name:key);
 }
 function renderIf5lCities(){
   const tbody = document.getElementById('if5lcities-body');
