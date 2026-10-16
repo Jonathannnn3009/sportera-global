@@ -976,6 +976,9 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
             <option value="">All Rounds</option>
             <option>League Stage</option><option>Quarter-Final</option><option>Semi-Final</option><option>Third Place</option><option>Grand Final</option>
           </select>
+          <select id="fx-filter-batch" onchange="renderFixtures()" title="Show only the fixtures from one Excel upload" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;max-width:260px;">
+            <option value="">All Uploads</option>
+          </select>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('png')"><i class="fas fa-image"></i> PNG</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFixturesImage('jpeg')"><i class="fas fa-image"></i> JPEG</button>
           <select id="poster-theme" style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit;outline:none;">
@@ -1000,7 +1003,14 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
           <button class="btn btn-gold btn-sm" onclick="exportFixturePoster()"><i class="fas fa-share-nodes"></i> Fixture Poster</button>
         </div>
       </div>
-      <div class="card-body" style="padding:0;"><div class="tbl-wrap capturable" id="fixtures-capture"><table class="dt"><thead><tr id="fixtures-head-row">
+      <div class="card-body" style="padding:0;">
+      <div id="fx-bulk-bar" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);background:#fafbff;">
+        <span id="fx-selected-count" style="font-size:.85rem;color:var(--muted);">Tick fixtures below to delete several at once.</span>
+        <button class="btn btn-danger btn-sm" id="fx-delete-selected" onclick="deleteSelectedFixtures()" style="display:none;"><i class="fas fa-trash"></i> Delete selected</button>
+        <button class="btn btn-danger btn-sm" id="fx-delete-batch" onclick="deleteFixtureBatch()" style="display:none;"><i class="fas fa-file-circle-xmark"></i> Delete this whole upload</button>
+      </div>
+      <div class="tbl-wrap capturable" id="fixtures-capture"><table class="dt"><thead><tr id="fixtures-head-row">
+        <th class="no-capture" style="width:34px;"><input type="checkbox" id="fx-select-all" title="Select all fixtures shown" onchange="toggleFxSelectAll(this.checked)"></th>
         <th data-sort="matchNumber" onclick="onFixturesSortClick('matchNumber')" style="cursor:pointer;">#<span class="sort-ind"></span></th>
         <th data-sort="ageCategory" onclick="onFixturesSortClick('ageCategory')" style="cursor:pointer;">Age<span class="sort-ind"></span></th>
         <th data-sort="cityGroup" onclick="onFixturesSortClick('cityGroup')" style="cursor:pointer;">City<span class="sort-ind"></span></th>
@@ -4311,19 +4321,24 @@ function renderFixtures(){
   const fa=(document.getElementById('fx-filter-age')||{}).value||'';
   const fp=(document.getElementById('fx-filter-pool')||{}).value||'';
   const fr=(document.getElementById('fx-filter-round')||{}).value||'';
+  refreshFxBatchOptions();
+  const fb=(document.getElementById('fx-filter-batch')||{}).value||'';
   let fx=_fbFixtures;
   if(ft) fx=fx.filter(f=>f.tournament===ft);
   if(fc) fx=fx.filter(f=>f.cityGroup===fc);
   if(fa) fx=fx.filter(f=>f.ageCategory===fa);
   if(fp) fx=fx.filter(f=>f.pool===fp);
   if(fr) fx=fx.filter(f=>(f.round||'League Stage')===fr);
+  if(fb) fx=fx.filter(f=>f.uploadBatch===fb);
   fx=[...fx].sort((a,b)=>fixturesCompare(a,b,_fxSortCol)*_fxSortDir);
   document.querySelectorAll('#fixtures-head-row th[data-sort]').forEach(th=>{
     th.querySelector('.sort-ind').textContent = th.dataset.sort===_fxSortCol ? (_fxSortDir===1?'▲':'▼') : '';
   });
   const tbody=document.getElementById('fixtures-body');
-  if(!fx.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; return; }
+  _fxShownKeys = fx.map(f=>f._key);
+  if(!fx.length){ tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; updateFxBulkBar(); return; }
   tbody.innerHTML=fx.map(f=>`<tr>
+    <td class="no-capture"><input type="checkbox" class="fx-check" ${_fxSelected.has(f._key)?'checked':''} onchange="toggleFxSelect('${f._key}',this.checked)"></td>
     <td>${f.matchNumber||'—'}</td><td>${f.ageCategory||'—'}</td><td>${f.cityGroup||'—'}</td><td>${f.pool||'—'}</td>
     <td><strong>${f.home}</strong></td><td><strong>${f.away}</strong></td>
     <td>${fmtDateTime(f.dt)}</td><td>${f.venue||'—'}</td><td>${f.ground||'—'}</td><td>${f.round}</td>
@@ -4333,6 +4348,83 @@ function renderFixtures(){
       <button class="btn btn-gold btn-xs" onclick="exportSingleFixturePoster('${f._key}')" title="Share this fixture"><i class="fas fa-share-nodes"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteFixture('${f._key}')" title="Delete fixture"><i class="fas fa-trash"></i></button>
     </td></tr>`).join('');
+  updateFxBulkBar();
+}
+
+// ── BULK DELETE FIXTURES ─────────────────────────────────────────────────
+// Tick rows (or the header box for everything currently shown/filtered) and
+// delete them in one go; every Excel upload is also tagged as a batch so a
+// wrong file can be removed whole. Results go with their fixtures, same as
+// the single delete, so no orphaned results are left behind.
+let _fxSelected = new Set();
+let _fxShownKeys = [];
+function toggleFxSelect(key, on){ if(on) _fxSelected.add(key); else _fxSelected.delete(key); updateFxBulkBar(); }
+function toggleFxSelectAll(on){
+  _fxShownKeys.forEach(k => on ? _fxSelected.add(k) : _fxSelected.delete(k));
+  document.querySelectorAll('#fixtures-body .fx-check').forEach(cb => cb.checked = on);
+  updateFxBulkBar();
+}
+function updateFxBulkBar(){
+  const live = new Set((_fbFixtures||[]).map(f=>f._key));
+  _fxSelected.forEach(k => { if(!live.has(k)) _fxSelected.delete(k); });
+  const n = _fxSelected.size;
+  const cnt = document.getElementById('fx-selected-count');
+  if(!cnt) return;
+  cnt.textContent = n ? n+' fixture'+(n===1?'':'s')+' selected' : 'Tick fixtures below to delete several at once.';
+  document.getElementById('fx-delete-selected').style.display = n ? '' : 'none';
+  const all = document.getElementById('fx-select-all');
+  if(all) all.checked = _fxShownKeys.length>0 && _fxShownKeys.every(k=>_fxSelected.has(k));
+  const batch = (document.getElementById('fx-filter-batch')||{}).value||'';
+  document.getElementById('fx-delete-batch').style.display = batch ? '' : 'none';
+}
+function refreshFxBatchOptions(){
+  const sel = document.getElementById('fx-filter-batch');
+  if(!sel) return;
+  const batches = {};
+  (_fbFixtures||[]).forEach(f => {
+    if(!f.uploadBatch) return;
+    const b = batches[f.uploadBatch] = batches[f.uploadBatch] || { n:0, file:f.uploadFile||'upload', at:f.uploadedAt||'' };
+    b.n++;
+  });
+  const ids = Object.keys(batches).sort((a,b)=>(batches[b].at||'').localeCompare(batches[a].at||''));
+  const sig = ids.map(id=>id+batches[id].n).join('|');
+  if(sel.dataset.sig === sig) return;
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">All Uploads</option>' + ids.map(id => {
+    const b = batches[id];
+    return `<option value="${id}">${b.file} — ${b.at?fmtDateTime(b.at):''} (${b.n} matches)</option>`;
+  }).join('');
+  sel.dataset.sig = sig;
+  sel.value = ids.includes(keep) ? keep : '';
+}
+async function bulkDeleteFixtures(keys, label){
+  if(!keys.length) return;
+  const withResult = keys.filter(k => (_fbResults||[]).some(r=>r._key===k)).length;
+  const msg = 'Delete '+label+'?\n\nThis permanently removes '+keys.length+' fixture'+(keys.length===1?'':'s')+
+    (withResult ? ' and '+withResult+' saved result'+(withResult===1?'':'s')+' attached to them' : '')+'. This cannot be undone.';
+  if(!confirm(msg)) return;
+  try {
+    for(let i=0;i<keys.length;i+=300){
+      const updates = {};
+      keys.slice(i,i+300).forEach(k => { updates['fixtures/'+k] = null; updates['results/'+k] = null; });
+      await _fbDb.ref().update(updates);
+    }
+    logActivity('Bulk deleted fixtures', keys.length+' fixture(s) — '+label);
+    keys.forEach(k=>_fxSelected.delete(k));
+    updateFxBulkBar();
+  } catch(e) {
+    alert('Could not delete: '+e.message);
+  }
+}
+function deleteSelectedFixtures(){
+  bulkDeleteFixtures([..._fxSelected], 'the selected fixtures');
+}
+function deleteFixtureBatch(){
+  const id = document.getElementById('fx-filter-batch').value;
+  if(!id) return;
+  const keys = (_fbFixtures||[]).filter(f=>f.uploadBatch===id).map(f=>f._key);
+  const name = document.getElementById('fx-filter-batch').selectedOptions[0].textContent;
+  bulkDeleteFixtures(keys, 'the whole upload "'+name+'"');
 }
 // Deleting a fixture that already has a result would leave an orphaned
 // results/ entry (still showing in the Results Log and counted in the
@@ -4602,6 +4694,8 @@ async function bulkUploadFixtures(){
   const poolsToEnsure = {};
   const teamPoolUpdates = [];
   const fixturesToPush = {};
+  const uploadBatch = 'b'+Date.now();
+  const uploadedAt = new Date().toISOString();
   const errors = [];
   const warnings = [];
   let successCount = 0;
@@ -4668,7 +4762,8 @@ async function bulkUploadFixtures(){
     const newKey = _fbDb.ref('fixtures').push().key;
     fixturesToPush[newKey] = {
       tournament, ageCategory, cityGroup: city || null, pool: pool || null,
-      matchNumber: matchCountCache[scopeKey], home, away, dt, venue: venue || '', ground: ground || '', round, status: 'upcoming'
+      matchNumber: matchCountCache[scopeKey], home, away, dt, venue: venue || '', ground: ground || '', round, status: 'upcoming',
+      uploadBatch, uploadFile: file.name, uploadedAt
     };
 
     if (pool) {
