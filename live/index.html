@@ -364,6 +364,21 @@
             </table></div>`;
     }
 
+    // Pool of a league fixture: its own pool (set at creation/upload) wins,
+    // else the pool assigned to either team (name match ignoring case and
+    // extra spaces). Matches the admin League Tables panel.
+    function groupFixturesByPool(fx, teams) {
+        const norm = s => (s || '').trim().toLowerCase();
+        const teamPool = n => { const t = teams.find(t => t.pool && norm(t.teamName) === norm(n)); return t ? t.pool : ''; };
+        const groups = {};
+        fx.forEach(f => { const p = f.pool || teamPool(f.home) || teamPool(f.away) || ''; (groups[p] = groups[p] || []).push(f); });
+        const pools = Object.keys(groups).filter(Boolean).sort();
+        if (!pools.length) return [{ pool: '', fixtures: fx }];
+        const out = pools.map(p => ({ pool: p, fixtures: groups[p] }));
+        if (groups['']) out.push({ pool: '', fixtures: groups[''], other: true });
+        return out;
+    }
+
     function renderPointsTable(tourn, city, ageCat, pool) {
         const container = document.getElementById('live-points-container');
         if (!tourn || !ageCat) {
@@ -381,17 +396,11 @@
             return;
         }
         const teams = _liveRegs.filter(r => r.tournament === tourn && r.ageCategory === ageCat && (!city || r.cityGroup === city));
-        let pools = [...new Set(teams.map(t => t.pool).filter(Boolean))].sort();
-        if (pool) pools = pools.filter(p => p === pool);
-        if (pools.length) {
-            container.innerHTML = pools.map(p => {
-                const poolTeamNames = new Set(teams.filter(t => t.pool === p).map(t => t.teamName));
-                const poolFx = fx.filter(f => poolTeamNames.has(f.home) || poolTeamNames.has(f.away));
-                return tableHtml(computeTableRows(poolFx), 'Pool ' + p);
-            }).join('');
-        } else {
-            container.innerHTML = tableHtml(computeTableRows(fx), null);
-        }
+        let groups = groupFixturesByPool(fx, teams);
+        if (pool) groups = groups.filter(g => g.pool === pool);
+        container.innerHTML = groups.map(g =>
+            tableHtml(computeTableRows(g.fixtures), g.pool ? 'Pool ' + g.pool : (g.other ? 'Other matches (no pool)' : null))
+        ).join('');
     }
 
     init();

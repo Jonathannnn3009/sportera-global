@@ -5375,6 +5375,27 @@ function computeTableRows(fx){
   return Object.entries(table).map(([name,d])=>({name,...d,gd:d.gf-d.ga})).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
 }
 
+// Which pool a league fixture belongs to: the pool written on the fixture
+// itself (set when it was created or uploaded from Excel) wins; failing that,
+// the pool assigned to either team in Manage Teams, matched ignoring
+// case/extra spaces (fixture spellings like "The Soccer company" rarely match
+// the registered "The Soccer Company" exactly). Reading only the team's pool
+// meant a tournament with pooled fixtures but unassigned teams showed ONE
+// combined table. Returns [{pool, fixtures}] — a single group with pool ''
+// when nothing is pooled, plus an "other" group for any unpooled leftovers.
+function groupFixturesByPool(fx, teams){
+  const norm=s=>(s||'').trim().toLowerCase();
+  const teamPool=n=>{ const t=(teams||[]).find(t=>t.pool&&norm(t.teamName)===norm(n)); return t?t.pool:''; };
+  const groups={};
+  fx.forEach(f=>{ const p=f.pool||teamPool(f.home)||teamPool(f.away)||''; (groups[p]=groups[p]||[]).push(f); });
+  const pools=Object.keys(groups).filter(Boolean).sort();
+  if(!pools.length) return [{pool:'',fixtures:fx}];
+  const out=pools.map(p=>({pool:p,fixtures:groups[p]}));
+  if(groups['']) out.push({pool:'',fixtures:groups[''],other:true});
+  return out;
+}
+const poolGroupLabel = g => g.pool ? 'Pool '+g.pool : (g.other ? 'Other matches (no pool)' : null);
+
 function tableHtml(rows, poolLabel){
   return `
     ${poolLabel ? `<h4 style="margin:18px 0 10px;color:var(--primary);">${poolLabel}</h4>` : ''}
@@ -5413,22 +5434,13 @@ function renderLeagueTable(){
   const knockoutFx = allPlayed.filter(f=>(f.round||'League Stage')!=='League Stage');
 
   const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&(!city||r.cityGroup===city)&&(!ageCat||r.ageCategory===ageCat));
-  const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
 
   if(!fx.length && !knockoutFx.length){ container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
 
   let html = '';
   if(fx.length){
-    if(pools.length){
-      html += pools.map(p=>{
-        const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
-        const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
-        return tableHtml(computeTableRows(poolFx), 'Pool ' + p);
-      }).join('');
-    } else {
-      html += tableHtml(computeTableRows(fx), null);
-    }
+    html += groupFixturesByPool(fx, teams).map(g => tableHtml(computeTableRows(g.fixtures), poolGroupLabel(g))).join('');
   }
   html += knockoutResultsHtml(knockoutFx);
   container.innerHTML = html;
@@ -5472,21 +5484,14 @@ function exportLeagueTable(){
   if(!fx.length){ alert('No table data to export yet.'); return; }
 
   const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&(!city||r.cityGroup===city)&&(!ageCat||r.ageCategory===ageCat));
-  const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
 
   const toRows = (rows, poolLabel) => rows.map((r,i) => [
     tourn, city || 'All', ageCat || 'All', poolLabel || '—', i+1, r.name, r.p, r.w, r.d, r.l, r.gf, r.ga, r.gd, r.pts
   ]);
   let dataRows = [];
-  if (pools.length) {
-    pools.forEach(p => {
-      const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
-      const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
-      dataRows = dataRows.concat(toRows(computeTableRows(poolFx), 'Pool ' + p));
-    });
-  } else {
-    dataRows = toRows(computeTableRows(fx), null);
-  }
+  groupFixturesByPool(fx, teams).forEach(g => {
+    dataRows = dataRows.concat(toRows(computeTableRows(g.fixtures), poolGroupLabel(g)));
+  });
 
   const header=['Tournament','City','Age Category','Pool','Rank','Team','P','W','D','L','GF','GA','GD','Pts'];
   const csv=[header,...dataRows].map(r=>r.map(c=>`"${(c??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -5511,7 +5516,6 @@ async function exportLeagueTablePoster(){
   if(!fx.length){ alert('No played results yet for this selection — the table has nothing to show.'); return; }
 
   const teams=(_fbRegs||[]).filter(r=>r.type==='team'&&r.tournament===tourn&&r.ageCategory===ageCat&&(!city||r.cityGroup===city));
-  const pools=[...new Set(teams.map(t=>t.pool).filter(Boolean))].sort();
 
   const teamLogo = (name) => {
     const reg = teams.find(r=>r.teamName===name);
@@ -5542,13 +5546,7 @@ async function exportLeagueTablePoster(){
       </table>
     </div>`;
 
-  const bodyHtml = pools.length
-    ? pools.map(p=>{
-        const poolTeamNames = new Set(teams.filter(t=>t.pool===p).map(t=>t.teamName));
-        const poolFx = fx.filter(f=>poolTeamNames.has(f.home)||poolTeamNames.has(f.away));
-        return tableBlock(computeTableRows(poolFx), 'Pool ' + p);
-      }).join('')
-    : tableBlock(computeTableRows(fx), null);
+  const bodyHtml = groupFixturesByPool(fx, teams).map(g => tableBlock(computeTableRows(g.fixtures), poolGroupLabel(g))).join('');
 
   const poster = document.createElement('div');
   poster.style.cssText = `position:fixed;left:-9999px;top:0;width:1080px;background:${theme.bg};color:#fff;font-family:"Open Sans",Arial,sans-serif;padding:50px 60px;box-sizing:border-box;`;
