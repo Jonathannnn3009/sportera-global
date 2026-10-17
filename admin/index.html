@@ -4102,6 +4102,7 @@ function fixtureFilterChangeFor(prefix){
     const msg = (needsCity && tournament && !city) ? 'Select city first' : 'Select tournament + age category first';
     homeSel.innerHTML = `<option value="">${msg}</option>`;
     awaySel.innerHTML = `<option value="">${msg}</option>`;
+    toggleTeamCustomInput(prefix+'-home'); toggleTeamCustomInput(prefix+'-away');
     if (prefix === 'fx') document.getElementById('fx-matchnum').value = '';
     poolRow.style.display = 'none';
     return;
@@ -4167,11 +4168,13 @@ function fixturePoolChangeFor(prefix){
   if (cityRequiredFor(tournament)) teams = teams.filter(t => t.cityGroup === city);
   const opts = '<option value="">Select team</option>' + (teams.length
     ? teams.map(t => `<option value="${t.teamName}">${t.teamName}</option>`).join('')
-    : '<option value="" disabled>No teams registered for this tournament/age category</option>');
+    : '<option value="" disabled>No teams registered for this tournament/age category</option>')
+    + `<option value="${CUSTOM_TEAM}">✏️ Type a team name (not registered)…</option>`;
   homeSel.innerHTML = opts;
   awaySel.innerHTML = opts;
   if ([...homeSel.options].some(o=>o.value===prevHome)) homeSel.value = prevHome;
   if ([...awaySel.options].some(o=>o.value===prevAway)) awaySel.value = prevAway;
+  toggleTeamCustomInput(prefix+'-home'); toggleTeamCustomInput(prefix+'-away');
   if (prefix === 'fx') {
     const count = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!pool || f.pool===pool)).length;
     document.getElementById('fx-matchnum').value = 'Match ' + (count+1);
@@ -4180,18 +4183,57 @@ function fixturePoolChangeFor(prefix){
 function onFixturePoolChange(){ fixturePoolChangeFor('fx'); }
 function onEditFixturePoolChange(){ fixturePoolChangeFor('efx'); }
 
+// A fixture's teams don't have to be registered (e.g. a team that never
+// registered online, or a knockout placeholder like "Winner - Semis 1"). The
+// team dropdowns list registered teams, plus a "Type a team name" choice that
+// reveals a text box; these helpers read/write whichever of the two is active.
+const CUSTOM_TEAM = '__custom__';
+function ensureTeamCustomInput(selId){
+  let inp = document.getElementById(selId+'-custom');
+  if (!inp) {
+    const sel = document.getElementById(selId);
+    inp = document.createElement('input');
+    inp.type = 'text'; inp.id = selId+'-custom'; inp.placeholder = 'Type the team name';
+    inp.style.cssText = 'display:none;margin-top:6px;';
+    sel.insertAdjacentElement('afterend', inp);
+    sel.addEventListener('change', () => toggleTeamCustomInput(selId));
+  }
+  return inp;
+}
+function toggleTeamCustomInput(selId){
+  const sel = document.getElementById(selId);
+  const inp = ensureTeamCustomInput(selId);
+  const on = sel.value === CUSTOM_TEAM;
+  inp.style.display = on ? '' : 'none';
+  if (on && !inp.value) inp.focus();
+}
+function getFixtureTeam(selId){
+  const sel = document.getElementById(selId);
+  if (sel.value === CUSTOM_TEAM) return (ensureTeamCustomInput(selId).value||'').trim().replace(/\s+/g,' ');
+  return sel.value;
+}
+function setFixtureTeam(selId, name){
+  const sel = document.getElementById(selId);
+  const inp = ensureTeamCustomInput(selId);
+  inp.value = '';
+  if (!name) sel.value = '';
+  else if ([...sel.options].some(o => o.value === name)) sel.value = name;
+  else { sel.value = CUSTOM_TEAM; inp.value = name; }
+  toggleTeamCustomInput(selId);
+}
+
 function addFixture(){
   const tournament = document.getElementById('fx-tournament').value;
   const ageCategory = document.getElementById('fx-agecat').value;
   const city = document.getElementById('fx-city').value || null;
   const pool = document.getElementById('fx-pool').value || null;
-  const home=document.getElementById('fx-home').value;
-  const away=document.getElementById('fx-away').value;
+  const home=getFixtureTeam('fx-home');
+  const away=getFixtureTeam('fx-away');
   const dt=document.getElementById('fx-dt').value;
   if(!tournament||!ageCategory){ alert('Please select tournament and age category.'); return; }
   if(cityRequiredFor(tournament) && !city){ alert('Please select a city — this is a multi-city tournament.'); return; }
   if(!home||!away||!dt){ alert('Home team, away team, and date are required.'); return; }
-  if(home===away){ alert('Home and away team cannot be the same.'); return; }
+  if(home.toLowerCase()===away.toLowerCase()){ alert('Home and away team cannot be the same.'); return; }
   const matchNumber = _fbFixtures.filter(f => f.tournament===tournament && f.ageCategory===ageCategory && (!city || f.cityGroup===city) && (!pool || f.pool===pool)).length + 1;
   _fbDb.ref('fixtures').push({
     tournament, ageCategory, cityGroup: city, pool, matchNumber, home, away, dt,
@@ -4211,7 +4253,7 @@ function addFixture(){
     });
   }
   ['fx-dt','fx-venue','fx-ground'].forEach(x=>document.getElementById(x).value='');
-  document.getElementById('fx-home').value=''; document.getElementById('fx-away').value='';
+  setFixtureTeam('fx-home',''); setFixtureTeam('fx-away','');
   onFixtureFilterChange();
 }
 
@@ -4229,8 +4271,8 @@ function openEditFixtureModal(key){
   fixtureFilterChangeFor('efx');
   document.getElementById('efx-pool').value = f.pool || '';
   fixturePoolChangeFor('efx');
-  document.getElementById('efx-home').value = f.home;
-  document.getElementById('efx-away').value = f.away;
+  setFixtureTeam('efx-home', f.home);
+  setFixtureTeam('efx-away', f.away);
   document.getElementById('efx-dt').value = f.dt;
   document.getElementById('efx-venue').value = f.venue || '';
   document.getElementById('efx-ground').value = f.ground || '';
@@ -4243,13 +4285,13 @@ function saveFixtureEdit(){
   const ageCategory = document.getElementById('efx-agecat').value;
   const city = document.getElementById('efx-city').value || null;
   const pool = document.getElementById('efx-pool').value || null;
-  const home = document.getElementById('efx-home').value;
-  const away = document.getElementById('efx-away').value;
+  const home = getFixtureTeam('efx-home');
+  const away = getFixtureTeam('efx-away');
   const dt = document.getElementById('efx-dt').value;
   if(!tournament||!ageCategory){ alert('Please select tournament and age category.'); return; }
   if(cityRequiredFor(tournament) && !city){ alert('Please select a city — this is a multi-city tournament.'); return; }
   if(!home||!away||!dt){ alert('Home team, away team, and date are required.'); return; }
-  if(home===away){ alert('Home and away team cannot be the same.'); return; }
+  if(home.toLowerCase()===away.toLowerCase()){ alert('Home and away team cannot be the same.'); return; }
   _fbDb.ref('fixtures/'+key).update({
     tournament, ageCategory, cityGroup: city, pool, home, away, dt,
     venue: document.getElementById('efx-venue').value,
