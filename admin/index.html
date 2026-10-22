@@ -4412,7 +4412,7 @@ function updateFxBulkBar(){
   const n = _fxSelected.size;
   const cnt = document.getElementById('fx-selected-count');
   if(!cnt) return;
-  cnt.textContent = n ? n+' fixture'+(n===1?'':'s')+' selected' : 'Tick fixtures below to delete several at once.';
+  cnt.textContent = n ? n+' fixture'+(n===1?'':'s')+' selected — PNG, JPEG and Fixture Poster will use only these' : 'Tick fixtures below to delete them, or to download only those as PNG/JPEG/poster.';
   document.getElementById('fx-delete-selected').style.display = n ? '' : 'none';
   const all = document.getElementById('fx-select-all');
   if(all) all.checked = _fxShownKeys.length>0 && _fxShownKeys.every(k=>_fxSelected.has(k));
@@ -4489,6 +4489,14 @@ async function downloadFixturesImage(format){
     return;
   }
   el.classList.add('capturing');
+  // Ticked fixtures only: temporarily hide every unticked row for the capture.
+  const hiddenRows = [];
+  if (_fxSelected.size) {
+    document.querySelectorAll('#fixtures-body tr').forEach(tr => {
+      const cb = tr.querySelector('.fx-check');
+      if (cb && !cb.checked) { hiddenRows.push([tr, tr.style.display]); tr.style.display = 'none'; }
+    });
+  }
   try {
     const canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
     const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
@@ -4497,6 +4505,7 @@ async function downloadFixturesImage(format){
     a.download = `fixtures_${new Date().toISOString().slice(0,10)}.${format === 'jpeg' ? 'jpg' : 'png'}`;
     a.click();
   } finally {
+    hiddenRows.forEach(([tr, d]) => { tr.style.display = d; });
     el.classList.remove('capturing');
   }
 }
@@ -4576,16 +4585,31 @@ function getPosterTheme(selectId){
 // single Fixtures table for that age group). Rendered off-screen and
 // captured with html2canvas, same technique as the ID cards.
 async function exportFixturePoster(){
-  const tournament = (document.getElementById('fx-filter')||{}).value||'';
-  const ageCategory = (document.getElementById('fx-filter-age')||{}).value||'';
-  const city = (document.getElementById('fx-filter-city')||{}).value||'';
-  const pool = (document.getElementById('fx-filter-pool')||{}).value||'';
-  if(!tournament){ alert('Select a Tournament in the filters above first.'); return; }
-  if(!ageCategory){ alert('Select an Age Category in the filters above first — the poster covers one age category at a time.'); return; }
-
-  let fx = _fbFixtures.filter(f=>f.tournament===tournament && f.ageCategory===ageCategory);
-  if (city) fx = fx.filter(f=>f.cityGroup===city);
-  if (pool) fx = fx.filter(f=>f.pool===pool);
+  let tournament = (document.getElementById('fx-filter')||{}).value||'';
+  let ageCategory = (document.getElementById('fx-filter-age')||{}).value||'';
+  let city = (document.getElementById('fx-filter-city')||{}).value||'';
+  let pool = (document.getElementById('fx-filter-pool')||{}).value||'';
+  let fx;
+  // If specific fixtures are ticked in the list, the poster is built from
+  // exactly those (header details taken from them) instead of everything the
+  // filters match.
+  const ticked = (_fbFixtures||[]).filter(f=>_fxSelected.has(f._key));
+  if (ticked.length) {
+    fx = ticked;
+    const tournaments = [...new Set(fx.map(f=>f.tournament))];
+    if (tournaments.length > 1) { alert('The ticked fixtures are from different tournaments — tick fixtures from one tournament at a time.'); return; }
+    tournament = tournaments[0];
+    const uniq = k => [...new Set(fx.map(f=>f[k]).filter(Boolean))];
+    ageCategory = uniq('ageCategory').sort((a,b)=>(ageCatNumeric(a)??999)-(ageCatNumeric(b)??999)).join(' • ');
+    city = uniq('cityGroup').join(' / ');
+    pool = uniq('pool').join(' / ');
+  } else {
+    if(!tournament){ alert('Select a Tournament in the filters above first.'); return; }
+    if(!ageCategory){ alert('Select an Age Category in the filters above first — the poster covers one age category at a time.'); return; }
+    fx = _fbFixtures.filter(f=>f.tournament===tournament && f.ageCategory===ageCategory);
+    if (city) fx = fx.filter(f=>f.cityGroup===city);
+    if (pool) fx = fx.filter(f=>f.pool===pool);
+  }
   if(!fx.length){ alert('No fixtures found for this selection.'); return; }
   fx = [...fx].sort((a,b)=>(a.matchNumber||0)-(b.matchNumber||0));
 
