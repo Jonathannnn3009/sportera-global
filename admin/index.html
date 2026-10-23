@@ -4378,6 +4378,11 @@ function renderFixtures(){
   });
   const tbody=document.getElementById('fixtures-body');
   _fxShownKeys = fx.map(f=>f._key);
+  // A tick only counts while its row is actually on screen. Without this, ticks
+  // made under one age group/tournament stayed remembered after switching
+  // filters — silently included in downloads and "Delete selected" even though
+  // the rows were no longer visible.
+  _fxSelected.forEach(k => { if(!_fxShownKeys.includes(k)) _fxSelected.delete(k); });
   if(!fx.length){ tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--muted);">No fixtures added yet.</td></tr>'; updateFxBulkBar(); return; }
   tbody.innerHTML=fx.map(f=>`<tr>
     <td class="no-capture"><input type="checkbox" class="fx-check" ${_fxSelected.has(f._key)?'checked':''} onchange="toggleFxSelect('${f._key}',this.checked)"></td>
