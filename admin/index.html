@@ -6047,18 +6047,44 @@ function deleteTeamMember(key){
   _fbDb.ref('teamMembers/'+key).remove().then(() => setTimeout(refreshTeamMembers, 500));
   logActivity('Removed team member', m?m.name:key);
 }
+// Swap a member with its neighbour on the same page, then renumber that
+// page's whole list 0..n-1 in one write (older entries can share an order
+// value, so swapping just two numbers wouldn't be reliable).
+async function moveTeamMember(key, dir){
+  const m = _teamMembers.find(x=>x._key===key); if (!m) return;
+  const page = m.page||'about';
+  const same = _teamMembers.filter(x=>(x.page||'about')===page).sort((a,b)=>(a.order||0)-(b.order||0));
+  const i = same.findIndex(x=>x._key===key), j = i + dir;
+  if (i < 0 || j < 0 || j >= same.length) return;
+  [same[i], same[j]] = [same[j], same[i]];
+  const updates = {};
+  same.forEach((x, idx) => { updates['teamMembers/'+x._key+'/order'] = idx; x.order = idx; });
+  _teamMembers.sort((a,b)=>(a.order||0)-(b.order||0));
+  renderTeamMembers();
+  try { await _fbDb.ref().update(updates); }
+  catch(e) { alert('Could not save the new order: '+e.message); }
+  setTimeout(refreshTeamMembers, 500);
+}
 function renderTeamMembers(){
   const tbody = document.getElementById('teammembers-body');
   if (!tbody) return;
   const filter = (document.getElementById('tm-filter')||{}).value || '';
-  const list = filter ? _teamMembers.filter(m=>(m.page||'about')===filter) : _teamMembers;
+  // Grouped by page, in the order visitors see them, so the arrows below
+  // reorder exactly what's shown.
+  const pageOf = m => m.page||'about';
+  const list = (filter ? _teamMembers.filter(m=>pageOf(m)===filter) : [..._teamMembers])
+    .sort((a,b) => pageOf(a).localeCompare(pageOf(b)) || (a.order||0)-(b.order||0));
   if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">No team members added yet.</td></tr>'; return; }
+  const posOf = {}; const countOf = {};
+  list.forEach(m => { const p = pageOf(m); posOf[m._key] = countOf[p] = (countOf[p]||0); countOf[p]++; });
   tbody.innerHTML = list.map(m => `<tr>
     <td style="font-size:.8rem;color:var(--muted);">${TEAM_PAGE_LABEL[m.page||'about']}</td>
     <td>${m.photoUrl?`<img src="${m.photoUrl}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">`:'—'}</td>
     <td><strong>${m.name}</strong></td>
     <td>${m.role}</td>
     <td class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="moveTeamMember('${m._key}',-1)" title="Move up (shows earlier on the page)" ${posOf[m._key]===0?'disabled style="opacity:.35;cursor:default;"':''}><i class="fas fa-arrow-up"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="moveTeamMember('${m._key}',1)" title="Move down (shows later on the page)" ${posOf[m._key]===countOf[pageOf(m)]-1?'disabled style="opacity:.35;cursor:default;"':''}><i class="fas fa-arrow-down"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="editTeamMember('${m._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTeamMember('${m._key}')"><i class="fas fa-trash"></i></button>
     </td>
