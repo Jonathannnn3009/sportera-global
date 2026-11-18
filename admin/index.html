@@ -606,6 +606,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
   <div class="card">
     <div class="card-head">
       <h3><i class="fas fa-clipboard-check"></i> Registrations</h3>
+      <button class="btn btn-primary btn-xs" onclick="createMissingLogins()" title="Create portal logins (and email the credentials) for every approved registration that doesn't have one yet"><i class="fas fa-key"></i> Create missing logins</button>
       <div class="search-bar">
         <input type="text" id="appSearch" placeholder="Search name / ID…" oninput="renderApprovals()">
         <select id="appFilter" onchange="renderApprovals()">
@@ -2472,7 +2473,7 @@ function setStatus(id, status, rejectionReason){
     if (status === 'rejected') update.rejectionReason = rejectionReason || '';
     _fbDb.ref('registrations/'+reg._key).update(update);
     logActivity(status==='approved'?'Approved':status==='rejected'?'Rejected':'Status changed to '+status, (reg.teamName||reg.playerName||reg.id)+' ('+(reg.type||'registration')+')'+(rejectionReason?' — '+rejectionReason:''));
-    if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg);
+    if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg).catch(e => alert('Approved, but the portal login for '+(reg.teamName||reg.playerName)+' could NOT be created: '+(e.message||e)+'\nUse Approvals > "Create missing logins" to retry.'));
     else if (status === 'approved') restorePortalAccess(reg); // re-approving a previously rejected registration
     if (status !== 'approved' && reg.status === 'approved' && reg.portalAccountCreated) revokePortalAccess(reg);
     if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
@@ -2526,12 +2527,17 @@ function confirmReject(){
 // login, writes their Firestore profile doc (what the portal dashboards
 // read), and emails them their credentials — all via the isolated secondary
 // app so it never disturbs the admin's own session.
+function _regTournament(reg) { return (reg.type === 'team' ? reg.tournament : reg.playerTournament) || reg.tournament || ''; }
 async function createPortalAccount(reg) {
   const email = reg.type === 'team' ? reg.teamEmail : reg.playerEmail;
   const name = reg.type === 'team' ? reg.teamName : reg.playerName;
   if (!email) return;
   const collection = reg.type === 'team' ? 'teams' : 'players';
   const emailField = reg.type === 'team' ? 'teamEmail' : 'email';
+  // Player registrations store the tournament as playerTournament (teams use
+  // tournament). Using reg.tournament for a player gave undefined, which
+  // Firestore rejects, so no player ever got a login.
+  const tour = _regTournament(reg);
 
   const password = _generatePassword();
   let uid, isNewAccount = true;
@@ -2554,7 +2560,7 @@ async function createPortalAccount(reg) {
       uid = q.docs[0].id;
     } else {
       console.error('Could not create portal account for', email, e);
-      return;
+      throw e;
     }
   }
 
@@ -2562,20 +2568,20 @@ async function createPortalAccount(reg) {
     const profile = reg.type === 'team'
       ? { teamName: reg.teamName, teamCity: reg.teamCity, teamEmail: reg.teamEmail, coachName: reg.coachName,
           coachPhone: reg.coachPhone, managerName: reg.managerName||'', managerPhone: reg.managerPhone||'',
-          tournament: reg.tournament, ageCategory: reg.ageCategory||'', regId: reg.id,
+          tournament: tour, ageCategory: reg.ageCategory||'', regId: reg.id,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           squad: [], stats: { goalsScored: 0, goalsConceded: 0, wins: 0, losses: 0 },
-          tournaments: [reg.tournament], matches: [] }
+          tournaments: [tour], matches: [] }
       : { playerName: reg.playerName, playerCity: reg.playerCity, playerPosition: reg.playerPosition||'',
           playerTeam: reg.playerTeam||'', playerDOB: reg.playerDOB||'', email: reg.playerEmail, regId: reg.id,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           stats: { matchesPlayed: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, cleanSheets: 0 },
-          tournaments: [reg.tournament], matches: [], awards: [] };
+          tournaments: [tour], matches: [], awards: [] };
     try {
       await _fbFs.collection(collection).doc(uid).set(profile);
     } catch (e) {
       console.error('Could not write portal profile for', email, e);
-      return;
+      throw e;
     }
   } else {
     // Existing account, new tournament — just fold it into their
@@ -2583,7 +2589,7 @@ async function createPortalAccount(reg) {
     // without touching their existing stats/squad/matches history.
     try {
       await _fbFs.collection(collection).doc(uid).update({
-        tournaments: firebase.firestore.FieldValue.arrayUnion(reg.tournament)
+        tournaments: firebase.firestore.FieldValue.arrayUnion(tour)
       });
     } catch (e) {
       console.error('Could not add tournament to existing portal profile for', email, e);
@@ -2607,6 +2613,22 @@ async function createPortalAccount(reg) {
   }
 }
 
+// One-click catch-up: every approved registration whose portal login was
+// never created (e.g. all players approved before the playerTournament fix).
+// Accounts that already exist are merged (no second email); new ones get the
+// credentials email. Sequential, so Firebase Auth isn't hammered.
+async function createMissingLogins(){
+  const todo = (_fbRegs||[]).filter(r => r.status==='approved' && !r.portalAccountCreated && (r.type==='team'?r.teamEmail:r.playerEmail));
+  if (!todo.length) { alert('Every approved registration already has a portal login.'); return; }
+  if (!confirm('Create portal logins for '+todo.length+' approved registration(s) and email each their login details?')) return;
+  let ok=0; const failed=[];
+  for (const r of todo) {
+    try { await createPortalAccount(r); ok++; }
+    catch(e) { failed.push((r.playerName||r.teamName||r.id)+': '+(e.message||e)); }
+  }
+  alert('Done. Logins created: '+ok+(failed.length?'\nFailed ('+failed.length+'):\n'+failed.join('\n'):''));
+}
+
 // ── PORTAL ACCESS REVOCATION / RESTORE ─────────────────────────────────────
 // A portal login is one account per email shared across every tournament that
 // email registered for, so rejecting (or deleting) ONE registration must only
@@ -2626,7 +2648,7 @@ async function revokePortalAccess(reg) {
     const ref = await _findPortalProfile(reg);
     if (!ref) return;
     const snap = await ref.get();
-    const remaining = (snap.data().tournaments || []).filter(t => t !== reg.tournament);
+    const remaining = (snap.data().tournaments || []).filter(t => t !== _regTournament(reg));
     // Another still-approved registration under the same email keeps access.
     const stillApproved = (_fbRegs || []).some(r => r._key !== reg._key && r.status === 'approved' &&
       (r.type === 'team' ? r.teamEmail : r.playerEmail) === (reg.type === 'team' ? reg.teamEmail : reg.playerEmail) && r.type === reg.type);
@@ -2639,7 +2661,7 @@ async function restorePortalAccess(reg) {
   try {
     const ref = await _findPortalProfile(reg);
     if (!ref) return;
-    await ref.update({ accessRevoked: false, tournaments: firebase.firestore.FieldValue.arrayUnion(reg.tournament) });
+    await ref.update({ accessRevoked: false, tournaments: firebase.firestore.FieldValue.arrayUnion(_regTournament(reg)) });
   } catch (e) {
     console.error('Could not restore portal access for', reg.teamEmail || reg.playerEmail, e);
   }
