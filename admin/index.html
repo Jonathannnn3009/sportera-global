@@ -2555,7 +2555,7 @@ async function createPortalAccount(reg) {
       const q = await _fbFs.collection(collection).where(emailField, '==', email).limit(1).get();
       if (q.empty) {
         console.error('Email already has an Auth login but no matching', collection, 'profile — cannot merge for', email);
-        return;
+        throw new Error('login already exists for '+email+' but has no profile (left over from the earlier bug) - use the key button to send a password reset');
       }
       uid = q.docs[0].id;
     } else {
