@@ -1030,7 +1030,8 @@
         function findTournament(name) { return _liveTournaments.find(t => t.name === name); }
 
         function applyLiveTournaments(list) {
-            _liveTournaments = list;
+            // Admin-chosen order (arrows in All Tournaments); unarranged keep their place at the end.
+            _liveTournaments = [...list].sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9));
             const sel = document.getElementById('tournament');
             const prevValue = sel.value;
             // Purely individual-entry tournaments don't have a team concept at
@@ -1546,7 +1547,7 @@
             generateAndSendOtp(type === 'team' ? data.teamEmail : data.playerEmail, type === 'team' ? data.teamName : data.playerName);
         }
 
-        const CONFIRMATION_EMAIL_URL = 'https://script.google.com/macros/s/AKfycbwxhcMOHEQvxmzqpgaGdU_1nkXcsecBUPX0snKwEm3qmh3K5HICtyP9biXAD4GObGqm/exec';
+        const CONFIRMATION_EMAIL_URL = 'https://script.google.com/macros/s/AKfycbweUGNAAj1plLDMmUf3DXL7XQKkq7c_bwoLQLiZ5f3AYChP3B_zp53hvtphJu2vZ0bF/exec';
 
         function sendConfirmationEmail(type, data) {
             const email = type === 'team' ? data.teamEmail : data.playerEmail;

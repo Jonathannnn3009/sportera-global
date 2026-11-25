@@ -223,7 +223,8 @@
         if (t.status !== 'open' && t.status !== 'closed') return; // hide drafts
         rows.push(t);
       });
-      rows.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+      // Admin-chosen order first; anything not arranged yet falls back to newest date.
+      rows.sort((a, b) => ((a.order ?? 1e9) - (b.order ?? 1e9)) || (b.startDate || '').localeCompare(a.startDate || ''));
       const statusHtml = t => t.status === 'open'
         ? '<span class="status-upcoming">Coming Soon</span>'
         : '<span class="status-completed">Completed</span>';
