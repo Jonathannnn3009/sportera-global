@@ -520,6 +520,7 @@ body.perm-write button[onclick*="remove" i] { display:none !important; }
         <button class="btn btn-primary" onclick="addTournamentHistory()" id="th-save-btn"><i class="fas fa-save"></i> Add Event</button>
         <button class="btn btn-ghost" onclick="clearTournamentHistoryForm()" id="th-cancel-btn" style="display:none;">Cancel</button>
       </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><button class="btn btn-ghost btn-xs" onclick="sortHistoryByDate()"><i class="fas fa-sort-amount-down"></i> Sort by date (newest first)</button><span style="font-size:.8rem;color:var(--muted);">or use the arrows to arrange manually</span></div>
       <div class="tbl-wrap" style="margin-top:16px;"><table class="dt"><thead><tr><th>Event</th><th>Date</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tournament-history-body"></tbody></table></div>
     </div>
   </div>
@@ -2474,7 +2475,10 @@ function setStatus(id, status, rejectionReason){
     _fbDb.ref('registrations/'+reg._key).update(update);
     logActivity(status==='approved'?'Approved':status==='rejected'?'Rejected':'Status changed to '+status, (reg.teamName||reg.playerName||reg.id)+' ('+(reg.type||'registration')+')'+(rejectionReason?' — '+rejectionReason:''));
     if (status === 'approved' && !reg.portalAccountCreated) createPortalAccount(reg).catch(e => alert('Approved, but the portal login for '+(reg.teamName||reg.playerName)+' could NOT be created: '+(e.message||e)+'\nUse Approvals > "Create missing logins" to retry.'));
-    else if (status === 'approved') restorePortalAccess(reg); // re-approving a previously rejected registration
+    else if (status === 'approved') { // re-approving a previously rejected registration
+      restorePortalAccess(reg);
+      if (APPROVAL_EMAIL_READY && reg.status !== 'approved') sendApprovalEmail(reg, '');
+    }
     if (status !== 'approved' && reg.status === 'approved' && reg.portalAccountCreated) revokePortalAccess(reg);
     if (status === 'approved' && reg.type === 'player' && !reg.idCardSent) {
       emailIDCardToPlayer(reg)
@@ -2527,6 +2531,25 @@ function confirmReject(){
 // login, writes their Firestore profile doc (what the portal dashboards
 // read), and emails them their credentials — all via the isolated secondary
 // app so it never disturbs the admin's own session.
+// Turn on ONLY after the 'registration_approved' handler has been added to
+// the Google Apps Script and redeployed — before that the script would not
+// know this email type and new accounts would receive nothing.
+const APPROVAL_EMAIL_READY = false;
+function sendApprovalEmail(reg, password) {
+  const isTeam = reg.type === 'team';
+  const email = isTeam ? reg.teamEmail : reg.playerEmail;
+  if (!email) return;
+  fetch(EMAIL_WEBHOOK_URL, {
+    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      email_type: 'registration_approved', to_email: email, to_name: isTeam ? reg.teamName : reg.playerName,
+      reg_type: reg.type, tournament: _regTournament(reg),
+      age_category: (isTeam ? reg.ageCategory : reg.playerAgeCategory) || '',
+      login_email: email, login_password: password || '',
+      portal_url: 'https://sporteraglobal.com/portal/login.html'
+    })
+  }).catch(() => {});
+}
 function _regTournament(reg) { return (reg.type === 'team' ? reg.tournament : reg.playerTournament) || reg.tournament || ''; }
 async function createPortalAccount(reg) {
   const email = reg.type === 'team' ? reg.teamEmail : reg.playerEmail;
@@ -2599,9 +2622,11 @@ async function createPortalAccount(reg) {
 
   if (reg._key) _fbDb.ref('registrations/'+reg._key).update({ portalAccountCreated: true });
 
-  // Only a brand-new account needs the "here's your login" email — an
-  // existing account re-registering under another tournament keeps using
-  // the password they already have.
+  // Combined "approved + login details" email, sent on every approval.
+  if (APPROVAL_EMAIL_READY) { sendApprovalEmail(reg, isNewAccount ? password : ''); return; }
+
+  // Until then: only a brand-new account gets the "here's your login" email —
+  // an existing account keeps using the password it already has.
   if (isNewAccount) {
     fetch(EMAIL_WEBHOOK_URL, {
       method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
@@ -6192,6 +6217,7 @@ function renderPartners(){
     <td><strong>${p.name}</strong>${p.type?`<br><span style="font-size:.78rem;color:var(--muted);">${p.type}</span>`:''}</td>
     <td>${p.link?`<a href="${p.link}" target="_blank" rel="noopener">${p.link}</a>`:'—'}</td>
     <td class="actions">
+      ${orderButtons('partners', p._key)}
       <button class="btn btn-ghost btn-xs" onclick="editPartner('${p._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deletePartner('${p._key}')"><i class="fas fa-trash"></i></button>
     </td>
@@ -6281,6 +6307,7 @@ function renderIf5lCities(){
     <td><strong>${c.name}</strong></td>
     <td>${c.code}</td>
     <td class="actions">
+      ${orderButtons('cities', c._key)}
       <button class="btn btn-ghost btn-xs" onclick="editIf5lCity('${c._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteIf5lCity('${c._key}')"><i class="fas fa-trash"></i></button>
     </td>
@@ -6372,6 +6399,7 @@ function renderIntlDestinations(){
     <td><strong>${d.country}</strong>${d.subtitle?`<br><span style="font-size:.78rem;color:var(--muted);">${d.subtitle}</span>`:''}</td>
     <td>${d.badgeText?`<span style="background:${d.badgeColor||'var(--primary)'};color:#fff;padding:3px 10px;border-radius:14px;font-size:.75rem;">${d.badgeText}</span>`:'—'}</td>
     <td class="actions">
+      ${orderButtons('destinations', d._key)}
       <button class="btn btn-ghost btn-xs" onclick="editIntlDestination('${d._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteIntlDestination('${d._key}')"><i class="fas fa-trash"></i></button>
     </td>
@@ -6493,6 +6521,44 @@ function hideTournamentFromUpcoming(key){
   logActivity('Hid tournament from Upcoming Events', (_fbTournaments.find(t=>t._key===key)||{}).name||key);
 }
 
+// ── DISPLAY ORDER (▲▼) ─────────────────────────────────────────────────────
+// Lists whose public page shows them in saved `order`. Moving one swaps it
+// with its neighbour and renumbers the whole list in one write (older rows
+// can share an order value or store it as text).
+const ORDERED_LISTS = {
+  history:      { path: 'tournamentHistory',       list: () => _tournamentHistory, render: () => renderTournamentHistory(), refresh: () => refreshTournamentHistory() },
+  partners:     { path: 'partners',                list: () => _partners,          render: () => renderPartners(),          refresh: () => refreshPartners() },
+  cities:       { path: 'if5lCities',              list: () => _if5lCities,        render: () => renderIf5lCities(),        refresh: () => refreshIf5lCities() },
+  destinations: { path: 'internationalDestinations', list: () => _intlDestinations, render: () => renderIntlDestinations(),  refresh: () => refreshIntlDestinations() }
+};
+function orderButtons(kind, key){
+  const list = ORDERED_LISTS[kind].list(); const i = list.findIndex(x=>x._key===key);
+  const btn = (dir, icon, title, off) => `<button class="btn btn-ghost btn-xs" onclick="moveOrdered('${kind}','${key}',${dir})" title="${title}" ${off?'disabled style="opacity:.35;cursor:default;"':''}><i class="fas fa-arrow-${icon}"></i></button>`;
+  return btn(-1,'up','Move up (shows earlier on the page)', i===0) + ' ' + btn(1,'down','Move down (shows later on the page)', i===list.length-1);
+}
+async function moveOrdered(kind, key, dir){
+  const cfg = ORDERED_LISTS[kind]; const list = cfg.list();
+  const i = list.findIndex(x=>x._key===key), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  const updates = {};
+  list.forEach((x, idx) => { updates[cfg.path+'/'+x._key+'/order'] = idx; x.order = idx; });
+  cfg.render();
+  try { await _fbDb.ref().update(updates); }
+  catch(e) { alert('Could not save the new order: '+e.message); }
+  setTimeout(cfg.refresh, 500);
+}
+// Past events: newest first in one click, using the "May 2026" style dates.
+async function sortHistoryByDate(){
+  if (!confirm('Re-arrange all past events by date, newest first?')) return;
+  const when = t => Date.parse('1 ' + (t.date||'')) || Date.parse(t.date||'') || 0;
+  const updates = {};
+  [..._tournamentHistory].sort((a,b) => when(b) - when(a)).forEach((x, idx) => { updates['tournamentHistory/'+x._key+'/order'] = idx; });
+  try { await _fbDb.ref().update(updates); logActivity('Sorted tournament history by date', 'newest first'); }
+  catch(e) { alert('Could not save the new order: '+e.message); }
+  refreshTournamentHistory();
+}
+
 // ── TOURNAMENT HISTORY (public Tournament Calendar, past events) ──────────
 let _tournamentHistory = [];
 async function refreshTournamentHistory(){
@@ -6559,6 +6625,7 @@ function renderTournamentHistory(){
     <td>${t.location||'—'}</td>
     <td>${t.status||'—'}</td>
     <td class="actions">
+      ${orderButtons('history', t._key)}
       <button class="btn btn-ghost btn-xs" onclick="editTournamentHistory('${t._key}')"><i class="fas fa-edit"></i></button>
       <button class="btn btn-danger btn-xs" onclick="deleteTournamentHistory('${t._key}')"><i class="fas fa-trash"></i></button>
     </td>
